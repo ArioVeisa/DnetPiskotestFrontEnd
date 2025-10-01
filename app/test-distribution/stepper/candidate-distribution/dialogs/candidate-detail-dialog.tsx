@@ -1,236 +1,269 @@
-// // modules/candidates/dialogs/candidate-detail-dialog.tsx
-// "use client";
+"use client";
 
-// /**
-//  * CandidateDetailDialog
-//  * - View/Edit dalam satu dialog
-//  * - Toggle edit di sebelah kanan judul (ikon pensil merah)
-//  * - Footer selalu: Cancel + Save (Save disabled saat view)
-//  *
-//  * Maintenance notes:
-//  * - NIK dikunci (tidak bisa diubah), konsisten dengan updateCandidateAPI.
-//  * - Save -> submit form -> onSave(payload).
-//  * - Cancel:
-//  *   - Saat view: tutup dialog.
-//  *   - Saat edit: reset ke data awal & keluar dari mode edit.
-//  */
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// import { useEffect, useState } from "react";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-// } from "@/components/ui/dialog";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Mail, Phone, User, Pencil } from "lucide-react";
-// import type { Candidate } from "../service/update-package-service";
-// import { cn } from "@/lib/utils";
+import type { Candidate } from "../service/candidate-service";
+import type { CreateCandidatePayload } from "../service/candidate-service";
 
-// type Props = {
-//   open: boolean;
-//   onOpenChange: (v: boolean) => void;
-//   candidate: Candidate | null;
-//   onSave: (payload: Candidate) => Promise<void>;
-//   saving?: boolean;
-//   error?: string | null;
-// };
+type Props = {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  candidate?: Candidate | null;
+  onSave: (payload: CreateCandidatePayload) => Promise<void> | void;
+  saving?: boolean;
+  error?: string | null;
+};
 
-// export default function CandidateDetailDialog({
-//   open,
-//   onOpenChange,
-//   candidate,
-//   onSave,
-//   saving,
-//   error,
-// }: Props) {
-//   // local form state
-//   const [form, setForm] = useState<Candidate>({
-//     nik: "",
-//     name: "",
-//     email: "",
-//     phone: "",
-//     status: "Pending",
-//   });
+export default function CandidateDetailDialog({
+  open,
+  onOpenChange,
+  candidate,
+  onSave,
+  saving,
+  error,
+}: Props) {
+  const initialForm: CreateCandidatePayload = {
+    nik: "",
+    name: "",
+    phone_number: "",
+    email: "",
+    position: "",
+    birth_date: "",
+     gender: "male" as "male" | "female",
+    department: "",
+  };
 
-//   // mode view/edit via toggle pensil
-//   const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<CreateCandidatePayload>(initialForm);
 
-//   // isi ulang form saat candidate berubah / dialog dibuka
-//   useEffect(() => {
-//     if (candidate) {
-//       setForm({
-//         nik: candidate.nik ?? "",
-//         name: candidate.name ?? "",
-//         email: candidate.email ?? "",
-//         phone: candidate.phone ?? "",
-//         status: candidate.status ?? "Pending",
-//       });
-//       setEditing(false); // default ke view
-//     }
-//   }, [candidate]);
+  // isi form saat candidate berubah
+  useEffect(() => {
+    if (candidate) {
+      setForm({
+        nik: candidate.nik ?? "",
+        name: candidate.name ?? "",
+        email: candidate.email ?? "",
+        phone_number: candidate.phone_number ?? "",
+        position: candidate.position ?? "",
+        birth_date: candidate.birth_date ?? "",
+        gender: (candidate.gender === "male" || candidate.gender === "female"
+          ? candidate.gender
+          : "male") as "male" | "female", // ✅ fix union type
+        department: candidate.department ?? "",
+      });
+    }
+  }, [candidate]);
 
-//   // submit hanya jika sedang edit
-//   async function handleSubmit(e: React.FormEvent) {
-//     e.preventDefault();
-//     if (!editing) return;
-//     await onSave(form);
-//     setEditing(false);
-//   }
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await onSave(form);
+    onOpenChange(false);
+  }
 
-//   // Cancel:
-//   // - saat editing => reset ke data awal + keluar edit
-//   // - saat view     => tutup dialog
-//   function handleCancel() {
-//     if (editing) {
-//       if (candidate) {
-//         setForm({
-//           nik: candidate.nik ?? "",
-//           name: candidate.name ?? "",
-//           email: candidate.email ?? "",
-//           phone: candidate.phone ?? "",
-//           status: candidate.status ?? "Pending",
-//         });
-//       }
-//       setEditing(false);
-//     } else {
-//       onOpenChange(false);
-//     }
-//   }
+  const isValid =
+    form.nik.trim() !== "" &&
+    form.name.trim() !== "" &&
+    form.email.trim() !== "" &&
+    form.phone_number.trim() !== "";
 
-//   return (
-//     <Dialog open={open} onOpenChange={onOpenChange}>
-//       <DialogContent className="w-[95vw] max-w-md p-0 rounded-2xl max-h-[95vh]">
-//         <DialogHeader>
-//           {/* Header: judul + toggle pensil di sebelah teks */}
-//           <div className="flex items-center justify-between gap-3 px-4 sm:px-8 pt-4 sm:pt-6">
-//             <DialogTitle className="text-lg sm:text-xl font-bold">
-//               <span className="inline-flex items-center gap-2">
-//                 Candidate Detail
-//                 <Button
-//                   type="button"
-//                   variant="ghost"
-//                   aria-pressed={editing}
-//                   onClick={() => setEditing((v) => !v)}
-//                   className={cn(
-//                     "h-8 w-8 p-0 rounded-full transition",
-//                     editing ? "bg-red-50 ring-1 ring-red-200" : "hover:bg-red-50"
-//                   )}
-//                   title={editing ? "Keluar mode edit" : "Masuk mode edit"}
-//                 >
-//                   <Pencil
-//                     className={cn(
-//                       "w-4 h-4",
-//                       editing ? "text-red-600" : "text-red-500"
-//                     )}
-//                   />
-//                 </Button>
-//               </span>
-//             </DialogTitle>
-//           </div>
-//         </DialogHeader>
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[90vw] sm:w-[80vw] max-w-full sm:max-w-2xl max-h-[100vh] p-4 bg-gradient-to-br from-slate-50 to-white">
+        <div className="flex h-full flex-col">
+          <DialogHeader className="px-4 sm:px-6 pb-2 sm:pt-6 flex flex-col items-center">
+            <DialogTitle className="text-base sm:text-lg font-semibold">
+              Candidate Detail
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              Ubah data kandidat sesuai kebutuhan.
+            </DialogDescription>
+          </DialogHeader>
 
-//         <form
-//           className="p-4 sm:p-8 pt-2 space-y-4 sm:space-y-6 overflow-y-auto"
-//           onSubmit={handleSubmit}
-//         >
-//           {error && (
-//             <div className="text-red-500 text-sm py-2 px-3 bg-red-50 rounded-md border border-red-100">
-//               {error}
-//             </div>
-//           )}
+          <ScrollArea className="h-[70vh]">
+            <form
+              onSubmit={handleSubmit}
+              className="px-4 sm:px-6 pb-6 pt-2 space-y-4"
+            >
+              {error && (
+                <div className="text-red-500 text-sm py-2 px-3 bg-red-50 rounded-md border border-red-100">
+                  {error}
+                </div>
+              )}
 
-//           {/* NIK (LOCKED) */}
-//           <div>
-//             <label className="block text-sm mb-1 font-semibold">NIK</label>
-//             <div className="relative">
-//               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-//               <Input
-//                 value={form.nik}
-//                 onChange={(e) => setForm((f) => ({ ...f, nik: e.target.value }))}
-//                 placeholder="e.g. 3271061702980001"
-//                 required
-//                 className="pl-10 text-sm"
-//                 disabled // selalu terkunci (tidak bisa ubah NIK)
-//               />
-//             </div>
-//             <p className="mt-1 text-[11px] text-gray-400">NIK tidak dapat diubah.</p>
-//           </div>
+              {/* NIK */}
+              <div>
+                <Label className="block text-xs sm:text-sm font-medium">
+                  NIK
+                </Label>
+                <Input
+                  value={form.nik}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, nik: e.target.value }))
+                  }
+                  placeholder="3201010101010001"
+                  required
+                  className="text-sm"
+                />
+              </div>
 
-//           {/* Full Name */}
-//           <div>
-//             <label className="block text-sm mb-1 font-semibold">Full Name</label>
-//             <div className="relative">
-//               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-//               <Input
-//                 value={form.name}
-//                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-//                 placeholder="e.g., Budi Santoso"
-//                 required
-//                 className="pl-10 text-sm"
-//                 disabled={!editing}
-//               />
-//             </div>
-//           </div>
+              {/* Full Name */}
+              <div>
+                <Label className="block text-xs sm:text-sm font-medium">
+                  Full Name
+                </Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  placeholder="Budi Santoso"
+                  required
+                  className="text-sm"
+                />
+              </div>
 
-//           {/* Email */}
-//           <div>
-//             <label className="block text-sm mb-1 font-semibold">Email</label>
-//             <div className="relative">
-//               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-//               <Input
-//                 type="email"
-//                 value={form.email}
-//                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-//                 placeholder="e.g. budi@example.com"
-//                 required
-//                 className="pl-10 text-sm"
-//                 disabled={!editing}
-//               />
-//             </div>
-//           </div>
+              {/* Email */}
+              <div>
+                <Label className="block text-xs sm:text-sm font-medium">
+                  Email
+                </Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  placeholder="budi@example.com"
+                  required
+                  className="text-sm"
+                />
+              </div>
 
-//           {/* Phone */}
-//           <div>
-//             <label className="block text-sm mb-1 font-semibold">Phone Number</label>
-//             <div className="relative">
-//               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-//               <Input
-//                 value={form.phone}
-//                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-//                 placeholder="e.g. +62 812 3456 7890"
-//                 required
-//                 className="pl-10 text-sm"
-//                 disabled={!editing}
-//               />
-//             </div>
-//           </div>
+              {/* Phone */}
+              <div>
+                <Label className="block text-xs sm:text-sm font-medium">
+                  Phone Number
+                </Label>
+                <Input
+                  value={form.phone_number}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, phone_number: e.target.value }))
+                  }
+                  placeholder="081234567890"
+                  required
+                  className="text-sm"
+                />
+              </div>
 
-//           {/* FOOTER: Cancel & Save (Save nonaktif saat view) */}
-//           <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
-//             <Button
-//               variant="outline"
-//               type="button"
-//               onClick={handleCancel}
-//               disabled={!!saving}
-//               className="w-full sm:w-auto"
-//             >
-//               Cancel
-//             </Button>
-//             <Button
-//               type="submit"
-//               className={cn(
-//                 "w-full sm:w-auto",
-//                 editing ? "bg-blue-500 text-white" : "bg-blue-100 text-blue-400 cursor-not-allowed"
-//               )}
-//               disabled={!editing || !!saving}
-//             >
-//               {saving ? "Saving..." : "Save"}
-//             </Button>
-//           </div>
-//         </form>
-//       </DialogContent>
-//     </Dialog>
-//   );
-// }
+              {/* Position + Department */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="block text-xs sm:text-sm font-medium">
+                    Position
+                  </Label>
+                  <Input
+                    value={form.position}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, position: e.target.value }))
+                    }
+                    placeholder="Staff / Manager"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-xs sm:text-sm font-medium">
+                    Department
+                  </Label>
+                  <Input
+                    value={form.department}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, department: e.target.value }))
+                    }
+                    placeholder="HRD / IT"
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Birth Date + Gender */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="block text-xs sm:text-sm font-medium">
+                    Birth Date
+                  </Label>
+                  <Input
+                    type="date"
+                    value={form.birth_date}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, birth_date: e.target.value }))
+                    }
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-xs sm:text-sm font-medium">
+                    Gender
+                  </Label>
+                  <Select
+                    value={form.gender}
+                    onValueChange={(val) =>
+                      setForm((f) => ({
+                        ...f,
+                        gender: val as "male" | "female",
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  className="min-w-[96px]"
+                  disabled={!!saving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="min-w-[96px] bg-blue-500 text-white"
+                  disabled={!isValid || !!saving}
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </form>
+          </ScrollArea>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

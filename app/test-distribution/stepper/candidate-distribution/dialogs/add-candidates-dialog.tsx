@@ -44,7 +44,7 @@ export default function AddCandidateDialog({
     email: "",
     position: "",
     birth_date: "",
-    gender: "male",
+      gender: "male" as "male" | "female",
     department: "",
   };
 
