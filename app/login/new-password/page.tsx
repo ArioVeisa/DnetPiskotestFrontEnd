@@ -1,6 +1,7 @@
 import LogoDWP from "../components/logo-dwp";
 import NewPasswordForm from "./components/new-password-form";
 import AsideIllustration from "../components/illustration-aside";
+import { Suspense } from "react";
 
 export default function NewPasswordPage() {
   return (
@@ -8,9 +9,9 @@ export default function NewPasswordPage() {
       {/* Left Section */}
       <div className="flex flex-col items-center sm:items-start px-8 py-8 sm:px-20">
         <LogoDWP />
-        <div className="flex-1 flex flex-col justify-center w-full max-w-md">
+        <Suspense fallback={<div>Loading...</div>}>
           <NewPasswordForm />
-        </div>
+        </Suspense>
       </div>
       {/* Right Section */}
       <div className="hidden md:flex flex-col justify-center bg-primary text-white px-20 py-20">
