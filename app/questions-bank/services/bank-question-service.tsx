@@ -1,25 +1,28 @@
+// app/questions-bank/services/bank-question-service.ts
+
+// ✅ Hanya deklarasi TestType global
 export type TestType = "DISC" | "CAAS" | "Fast Accuracy";
 
-export type Question = {
+// ✅ Question di level Bank: simpel aja
+export type BankQuestion = {
   id: string;
   text: string;
-  tags?: string[];
-  type?: "single" | "multiple" | "scale";
 };
 
+// ✅ Bank menyimpan daftar pertanyaan, tanpa detail type/option
 export type QuestionBank = {
   id: string;
   name: string;
-  testType: "DISC" | "CAAS" | "Fast Accuracy";
-  questions: Question[];
+  testType: TestType;
+  questions: BankQuestion[];
   importSessions: number;
   createdAt: number;
-  updatedAt?: number; // 👈 tambahkan ini
+  updatedAt?: number;
 };
-
 
 const STORAGE_KEY = "bank_questions_v1";
 
+// ===== Helper =====
 function read(): QuestionBank[] {
   if (typeof window === "undefined") return [];
   try {
@@ -28,12 +31,13 @@ function read(): QuestionBank[] {
     return [];
   }
 }
+
 function write(data: QuestionBank[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-
+// ===== CRUD BANK =====
 export function touchBank(id: string) {
   const banks = read();
   const idx = banks.findIndex((b) => b.id === id);
@@ -42,7 +46,6 @@ export function touchBank(id: string) {
   write(banks);
 }
 
-/** Seed BANK ONLY (tanpa questions) */
 export function seedBanksIfEmpty() {
   if (read().length) return;
   const now = Date.now();
@@ -54,7 +57,7 @@ export function seedBanksIfEmpty() {
       questions: [],
       importSessions: 2,
       createdAt: now - 1000,
-      updatedAt: now - 1000, // 👈 awalnya sama dengan created
+      updatedAt: now - 1000,
     },
     {
       id: crypto.randomUUID(),
@@ -77,23 +80,22 @@ export function seedBanksIfEmpty() {
   ]);
 }
 
-
 export function getBanks() {
   return read();
 }
+
 export function getBankById(id: string) {
   return read().find((b) => b.id === id);
 }
 
-export function addQuestion(bankId: string, question: Question) {
+export function addQuestion(bankId: string, question: BankQuestion) {
   const banks = read();
   const idx = banks.findIndex((b) => b.id === bankId);
   if (idx === -1) return;
   banks[idx].questions.push(question);
-  banks[idx].updatedAt = Date.now(); // 👈 setiap ada pertanyaan baru, update timestamp
+  banks[idx].updatedAt = Date.now();
   write(banks);
 }
-
 
 export function deleteBank(id: string) {
   write(read().filter((b) => b.id !== id));
