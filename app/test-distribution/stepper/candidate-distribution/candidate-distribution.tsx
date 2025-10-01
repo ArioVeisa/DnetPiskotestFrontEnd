@@ -421,18 +421,26 @@ export default function CandidatesDistributions({
         open={detailOpen}
         onOpenChange={setDetailOpen}
         candidate={selected}
-        onSave={async (candidate: Candidate) => {
+        onSave={async (payload: CreateCandidatePayload) => {
+          // pastikan selected ada (harus ada karena dialog dibuka untuk kandidat tertentu)
+          if (!selected) return;
+
           try {
             await updateCandidate({
-              id: candidate.id,
-              name: candidate.name,
-              email: candidate.email,
-              // tambahin field lain yang memang boleh diupdate
+              id: selected.id, // id diambil dari selected (backend butuh id)
+              name: payload.name,
+              email: payload.email,
+              phone_number: payload.phone_number,
+              position: payload.position,
+              department: payload.department,
+              birth_date: payload.birth_date,
+              gender: payload.gender as "male" | "female",
             });
             setDetailOpen(false);
             setSelected(null);
-          } catch {
-            // Error sudah ditangani di hook
+          } catch (err) {
+            // tangani error sesuai kebijakan (atau biarkan hook/handler global menangani)
+            console.error(err);
           }
         }}
         saving={candidateLoading}
