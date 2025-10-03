@@ -1,9 +1,8 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
+:root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
@@ -43,6 +42,76 @@
   --sidebar-border: 240 4.8% 95.9%;
   --sidebar-input: 240 4.8% 95.9%;
   --sidebar-ring: 240 5.9% 10%;
+  
+  /* Additional variables for Tailwind config */
+  --black: 0 0% 0%;
+  --white: 0 0% 100%;
+  --radius: 0.5rem;
+  
+  /* Neutral colors */
+  --neutral-25: 0 0% 98%;
+  --neutral-50: 0 0% 96%;
+  --neutral-100: 0 0% 94%;
+  --neutral-200: 0 0% 91%;
+  --neutral-300: 0 0% 87%;
+  --neutral-400: 0 0% 80%;
+  --neutral-500: 0 0% 64%;
+  --neutral-600: 0 0% 46%;
+  --neutral-700: 0 0% 32%;
+  --neutral-800: 0 0% 20%;
+  --neutral-900: 0 0% 9%;
+  
+  /* Primary colors */
+  --primary-25: 213 100% 97%;
+  --primary-50: 213 100% 95%;
+  --primary-100: 213 100% 90%;
+  --primary-200: 213 100% 82%;
+  --primary-300: 213 100% 71%;
+  --primary-400: 213 100% 57%;
+  --primary-500: 221.2 83.2% 53.3%;
+  --primary-600: 221.2 83.2% 48%;
+  --primary-700: 221.2 83.2% 42%;
+  --primary-800: 221.2 83.2% 36%;
+  --primary-900: 221.2 83.2% 30%;
+  
+  /* Success colors */
+  --success-25: 142 100% 97%;
+  --success-50: 142 100% 95%;
+  --success-100: 142 100% 90%;
+  --success-200: 142 100% 82%;
+  --success-300: 142 100% 71%;
+  --success-400: 142 100% 57%;
+  --success-500: 142 76% 36%;
+  --success-600: 142 76% 32%;
+  --success-700: 142 76% 28%;
+  --success-800: 142 76% 24%;
+  --success-900: 142 76% 20%;
+  
+  /* Warning colors */
+  --warning-25: 45 100% 97%;
+  --warning-50: 45 100% 95%;
+  --warning-100: 45 100% 90%;
+  --warning-200: 45 100% 82%;
+  --warning-300: 45 100% 71%;
+  --warning-400: 45 100% 57%;
+  --warning-500: 45 94% 47%;
+  --warning-600: 45 94% 42%;
+  --warning-700: 45 94% 37%;
+  --warning-800: 45 94% 32%;
+  --warning-900: 45 94% 27%;
+  
+  /* Error colors */
+  --error-25: 0 100% 97%;
+  --error-50: 0 100% 95%;
+  --error-100: 0 100% 90%;
+  --error-200: 0 100% 82%;
+  --error-300: 0 100% 71%;
+  --error-400: 0 100% 57%;
+  --error-500: 0 84.2% 60.2%;
+  --error-600: 0 84.2% 54%;
+  --error-700: 0 84.2% 48%;
+  --error-800: 0 84.2% 42%;
+  --error-900: 0 84.2% 36%;
 }
 
 .dark {
@@ -80,6 +149,75 @@
   --sidebar-border: 240 4.8% 95.9%;
   --sidebar-input: 240 4.8% 95.9%;
   --sidebar-ring: 240 5.9% 10%;
+  
+  /* Dark mode overrides for additional variables */
+  --black: 0 0% 100%;
+  --white: 0 0% 0%;
+  
+  /* Dark mode neutral colors */
+  --neutral-25: 0 0% 9%;
+  --neutral-50: 0 0% 20%;
+  --neutral-100: 0 0% 32%;
+  --neutral-200: 0 0% 46%;
+  --neutral-300: 0 0% 64%;
+  --neutral-400: 0 0% 80%;
+  --neutral-500: 0 0% 87%;
+  --neutral-600: 0 0% 91%;
+  --neutral-700: 0 0% 94%;
+  --neutral-800: 0 0% 96%;
+  --neutral-900: 0 0% 98%;
+  
+  /* Dark mode primary colors */
+  --primary-25: 221.2 83.2% 30%;
+  --primary-50: 221.2 83.2% 36%;
+  --primary-100: 221.2 83.2% 42%;
+  --primary-200: 221.2 83.2% 48%;
+  --primary-300: 217.2 91.2% 59.8%;
+  --primary-400: 217.2 91.2% 65%;
+  --primary-500: 217.2 91.2% 70%;
+  --primary-600: 217.2 91.2% 75%;
+  --primary-700: 217.2 91.2% 80%;
+  --primary-800: 217.2 91.2% 85%;
+  --primary-900: 217.2 91.2% 90%;
+  
+  /* Dark mode success colors */
+  --success-25: 142 76% 20%;
+  --success-50: 142 76% 24%;
+  --success-100: 142 76% 28%;
+  --success-200: 142 76% 32%;
+  --success-300: 142 76% 36%;
+  --success-400: 142 100% 57%;
+  --success-500: 142 100% 71%;
+  --success-600: 142 100% 82%;
+  --success-700: 142 100% 90%;
+  --success-800: 142 100% 95%;
+  --success-900: 142 100% 97%;
+  
+  /* Dark mode warning colors */
+  --warning-25: 45 94% 27%;
+  --warning-50: 45 94% 32%;
+  --warning-100: 45 94% 37%;
+  --warning-200: 45 94% 42%;
+  --warning-300: 45 94% 47%;
+  --warning-400: 45 100% 57%;
+  --warning-500: 45 100% 71%;
+  --warning-600: 45 100% 82%;
+  --warning-700: 45 100% 90%;
+  --warning-800: 45 100% 95%;
+  --warning-900: 45 100% 97%;
+  
+  /* Dark mode error colors */
+  --error-25: 0 84.2% 36%;
+  --error-50: 0 84.2% 42%;
+  --error-100: 0 84.2% 48%;
+  --error-200: 0 84.2% 54%;
+  --error-300: 0 62.8% 30.6%;
+  --error-400: 0 100% 57%;
+  --error-500: 0 100% 71%;
+  --error-600: 0 100% 82%;
+  --error-700: 0 100% 90%;
+  --error-800: 0 100% 95%;
+  --error-900: 0 100% 97%;
 }
 
 @layer base {
@@ -88,5 +226,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
 }
