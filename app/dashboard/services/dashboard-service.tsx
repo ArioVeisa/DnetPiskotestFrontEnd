@@ -93,8 +93,33 @@ export const getLatestTests = (): TestActivity[] => [
 ];
 
 export const getQuickActions = (): QuickAction[] => [
-  { label: "Tambah Kandidat", icon: <Plus className="w-5 h-5" />, onClick: () => {} },
-  { label: "Kelola Soal", icon: <FileText className="w-5 h-5" />, onClick: () => {} },
-  { label: "Lihat Laporan", icon: <BarChart2 className="w-5 h-5" />, onClick: () => {} },
-  { label: "Export Data", icon: <Download className="w-5 h-5" />, onClick: () => {} },
+  { 
+    label: "Tambah Kandidat", 
+    icon: <Plus className="w-5 h-5" />, 
+    onClick: () => {
+      window.location.href = '/candidates';
+    }
+  },
+  { 
+    label: "Kelola Soal", 
+    icon: <FileText className="w-5 h-5" />, 
+    onClick: () => {
+      window.location.href = '/questions-bank';
+    }
+  },
+  { 
+    label: "Lihat Laporan", 
+    icon: <BarChart2 className="w-5 h-5" />, 
+    onClick: () => {
+      window.location.href = '/results';
+    }
+  },
+  { 
+    label: "Export Data", 
+    icon: <Download className="w-5 h-5" />, 
+    onClick: () => {
+      // TODO: Implement export functionality
+      alert('Fitur export data akan segera tersedia!');
+    }
+  },
 ];
