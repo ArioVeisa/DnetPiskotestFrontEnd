@@ -4,12 +4,13 @@ const API_URL = process.env.NEXT_PRIVATE_API_URL || "https://humble-space-brocco
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.headers.get('authorization');
+    const { id } = await params;
     
-    const response = await fetch(`${API_URL}/api/candidates/${params.id}`, {
+    const response = await fetch(`${API_URL}/api/candidates/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -36,13 +37,14 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.headers.get('authorization');
     const body = await request.json();
+    const { id } = await params;
     
-    const response = await fetch(`${API_URL}/api/candidates/${params.id}`, {
+    const response = await fetch(`${API_URL}/api/candidates/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -70,12 +72,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.headers.get('authorization');
+    const { id } = await params;
     
-    const response = await fetch(`${API_URL}/api/candidates/${params.id}`, {
+    const response = await fetch(`${API_URL}/api/candidates/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
