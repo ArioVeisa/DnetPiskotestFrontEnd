@@ -1,46 +1,72 @@
 // src/app/user-management/hooks/use-user-management.ts
 import { useState, useEffect, useCallback } from "react";
-import { fetchUsers, updateUser, deleteUser, createUser } from "../services/user-manage-service"; // Import services untuk pengguna
-import { User } from "../services/user-manage-service"; // Import tipe User yang sesuai
+import { userManagementService, User } from "../services/user-manage-service";
 
 export function useUserManagement() {
-  const [users, setUsers] = useState<User[]>([]); // Ganti 'any' dengan tipe User yang sudah didefinisikan
-  const [loading, setLoading] = useState<boolean>(true); // Tipe boolean untuk loading
-  const [error, setError] = useState<string>(""); // Tipe string untuk error
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  const fetchAllUsers = useCallback(() => {
+  // Ambil semua user
+  const fetchAllUsers = useCallback(async () => {
     setLoading(true);
-    fetchUsers()
-      .then((data) => {
-        setUsers(data); // Menyimpan data pengguna yang didapatkan
-      })
-      .catch((err) => {
-        console.error(err);
-        setError("Failed to load users"); // Menampilkan pesan error jika gagal mengambil data
-      })
-      .finally(() => {
-        setLoading(false); // Menandakan bahwa pemuatan telah selesai
-      });
+    setError("");
+    try {
+      const data = await userManagementService.fetchAll();
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load users");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     fetchAllUsers();
   }, [fetchAllUsers]);
 
+  // Update user
   const updateUserInfo = async (user: User) => {
-    await updateUser(user.id, user); // Update data pengguna
-    fetchAllUsers(); // Ambil ulang data setelah update
+    try {
+      setLoading(true);
+      await userManagementService.update(user.id, user);
+      await fetchAllUsers();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update user");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Delete user
   const removeUser = async (id: string) => {
-    await deleteUser(id); // Hapus data pengguna berdasarkan ID
-    fetchAllUsers(); // Ambil ulang data setelah delete
+    try {
+      setLoading(true);
+      await userManagementService.deleteById(id);
+      await fetchAllUsers();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete user");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const addUser = async (user: User) => {
-    await createUser(user); // Tambah data pengguna baru
-    fetchAllUsers(); // Ambil ulang data setelah menambah
+  // Create user
+  const addUser = async (user: Omit<User, "id">) => {
+    try {
+      setLoading(true);
+      await userManagementService.create(user);
+      await fetchAllUsers();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to add user");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return { users, loading, error, updateUserInfo, removeUser, addUser };
+  return { users, loading, error, fetchAllUsers, updateUserInfo, removeUser, addUser };
 }
