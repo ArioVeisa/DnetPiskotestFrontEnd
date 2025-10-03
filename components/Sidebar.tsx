@@ -177,7 +177,7 @@ export default function Sidebar() {
         {/* Logout Button */}
         <div className="mt-auto">
           <Link
-            href="/logout"
+            href="/login"
             onClick={() => setIsOpen(false)}
             className="flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
           >

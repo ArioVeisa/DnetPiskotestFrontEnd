@@ -4,8 +4,7 @@ import axios from "axios";
 /* ================================================================
  * TYPES
  * ================================================================ */
-export type QuestionType = "DISC" | "CAAS" | "teliti"; 
-// ⚠️ pastikan sama dengan enum di backend! (cek ejaan: "CAAS" atau "CAAAS")
+export type QuestionType = "DISC" | "CAAS" | "teliti";
 
 export interface Question {
   id: string; // normalized ke string
@@ -29,13 +28,21 @@ export interface QuestionDetailResponse {
   category_id?: number | null;
   created_at: string;
   updated_at: string;
+  options?: { id: number; option_text: string }[];
 }
 
 export interface QuestionResponse {
-  id: number; // row id
-  question_id: number; // id soal aslinya
+  id: number;              // row id (join table)
+  question_id: number;     // id soal asli
   question_type: QuestionType;
   question_detail: QuestionDetailResponse | null;
+
+  // fallback (DISC/CAAS kadang data langsung di root)
+  question_text?: string;
+  category_id?: number;
+  media_path?: string | null;
+  correct_option_id?: number | null;
+  options?: { id: number; option_text: string }[];
 }
 
 export interface SectionResponse {
@@ -48,7 +55,7 @@ export interface SectionResponse {
 
 export interface TestWithSectionsResponse {
   data: {
-    test_id: number; // ubah ke number biar konsisten dengan service lain
+    test_id: number;
     sections: SectionResponse[];
   };
 }
@@ -57,19 +64,34 @@ export interface TestWithSectionsResponse {
  * MAPPER
  * ================================================================ */
 function mapQuestion(raw: QuestionResponse): Question {
+  const detail = raw.question_detail;
+
+  // Fallback text kalau question_text kosong
+  const qText =
+    detail?.question_text?.trim() ||
+    raw.question_text?.trim() ||
+    `(${raw.question_type}) Soal #${raw.question_id ?? raw.id}`;
+
+  const category = String(detail?.category_id ?? raw.category_id ?? "");
+  const mediaPath = detail?.media_path ?? raw.media_path ?? undefined;
+  const answer = detail?.correct_option_id ?? raw.correct_option_id ?? undefined;
+  const rawOptions = detail?.options ?? raw.options ?? [];
+
   return {
-    id: String(raw.question_id),
+    id: String(raw.question_id ?? raw.id),
     type: raw.question_type,
-    question_text: raw.question_detail?.question_text ?? "",
-    category: String(raw.question_detail?.category_id ?? ""),
-    mediaUrl: raw.question_detail?.media_path ?? undefined,
-    mediaType: raw.question_detail?.media_path ? "image" : undefined, // ganti logika kalau API dukung audio/video
-    options: {},
-    answer: raw.question_detail?.correct_option_id
-      ? String(raw.question_detail.correct_option_id)
-      : undefined,
+    question_text: qText, // ✅ selalu ada isi
+    category,
+    mediaUrl: mediaPath ?? undefined,
+    mediaType: mediaPath ? "image" : undefined,
+    options: rawOptions.reduce<Record<string, string>>((acc, opt) => {
+      acc[String(opt.id)] = opt.option_text;
+      return acc;
+    }, {}),
+    answer: answer ? String(answer) : undefined,
   };
 }
+
 
 /* ================================================================
  * RETURN TYPE untuk getSectionQuestions
@@ -84,9 +106,6 @@ export interface SectionQuestionData {
  * SERVICE
  * ================================================================ */
 export const listQuestionService = {
-  /**
-   * GET semua soal dari section (plus durasi & jumlah soal)
-   */
   async getSectionQuestions(
     testId: number,
     sectionId: number,
@@ -126,9 +145,6 @@ export const listQuestionService = {
     }
   },
 
-  /**
-   * ADD soal ke section
-   */
   async addQuestion(params: {
     testId: number;
     sectionId: number;
@@ -136,35 +152,22 @@ export const listQuestionService = {
     questionType: QuestionType;
     token: string;
   }): Promise<void> {
-    try {
-      const payload = {
-        questions: [
-          {
-            test_id: params.testId,
-            section_id: params.sectionId,
-            question_id: params.questionId,
-            question_type: params.questionType,
-          },
-        ],
-      };
+    const payload = {
+      questions: [
+        {
+          test_id: params.testId,
+          section_id: params.sectionId,
+          question_id: params.questionId,
+          question_type: params.questionType,
+        },
+      ],
+    };
 
-      await api.post("/manage-questions", payload, {
-        headers: { Authorization: `Bearer ${params.token}` },
-      });
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          (error.response?.data as { message?: string })?.message ??
-            "Gagal tambah soal"
-        );
-      }
-      throw new Error("Terjadi error tidak dikenal saat tambah soal");
-    }
+    await api.post("/manage-questions", payload, {
+      headers: { Authorization: `Bearer ${params.token}` },
+    });
   },
 
-  /**
-   * UPDATE soal di section
-   */
   async updateQuestion(params: {
     testId: number;
     sectionId: number;
@@ -172,64 +175,41 @@ export const listQuestionService = {
     questionType: QuestionType;
     token: string;
   }): Promise<void> {
-    try {
-      const payload = {
-        questions: [
-          {
-            test_id: params.testId,
-            section_id: params.sectionId,
-            question_id: params.questionId,
-            question_type: params.questionType,
-          },
-        ],
-      };
+    const payload = {
+      questions: [
+        {
+          test_id: params.testId,
+          section_id: params.sectionId,
+          question_id: params.questionId,
+          question_type: params.questionType,
+        },
+      ],
+    };
 
-      await api.put("/manage-questions", payload, {
-        headers: { Authorization: `Bearer ${params.token}` },
-      });
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          (error.response?.data as { message?: string })?.message ??
-            "Gagal update soal"
-        );
-      }
-      throw new Error("Terjadi error tidak dikenal saat update soal");
-    }
+    await api.put("/manage-questions", payload, {
+      headers: { Authorization: `Bearer ${params.token}` },
+    });
   },
 
-  /**
-   * DELETE soal dari section
-   */
   async deleteQuestion(params: {
     testId: number;
     sectionId: number;
     questionId: number;
     token: string;
   }): Promise<void> {
-    try {
-      const payload = {
-        questions: [
-          {
-            test_id: params.testId,
-            section_id: params.sectionId,
-            question_id: params.questionId,
-          },
-        ],
-      };
+    const payload = {
+      questions: [
+        {
+          test_id: params.testId,
+          section_id: params.sectionId,
+          question_id: params.questionId,
+        },
+      ],
+    };
 
-      await api.delete("/manage-questions", {
-        data: payload,
-        headers: { Authorization: `Bearer ${params.token}` },
-      });
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          (error.response?.data as { message?: string })?.message ??
-            "Gagal hapus soal"
-        );
-      }
-      throw new Error("Terjadi error tidak dikenal saat hapus soal");
-    }
+    await api.delete("/manage-questions", {
+      data: payload,
+      headers: { Authorization: `Bearer ${params.token}` },
+    });
   },
 };

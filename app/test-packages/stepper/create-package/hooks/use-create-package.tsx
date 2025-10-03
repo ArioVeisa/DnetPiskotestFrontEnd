@@ -6,8 +6,18 @@ import {
   CreateTestStep1Payload,
   Test,
 } from "../service/create-package-service";
+import { QuestionType } from "../../manage-question/service/manage-question-service";
 
-// Available test types
+// Hasil akhir yang dilempar ke parent
+export type CreateNewTestResult = {
+  testId: number;
+  testName: string;
+  icon: "square-code" | "graduation-cap" | "user-search";
+  targetPosition: string;
+  selectedTypes: QuestionType[];
+  sections?: { section_id: number; section_type: QuestionType }[];
+};
+
 export const TEST_TYPES = [
   { label: "DISC", value: "DISC", icon: "briefcase" },
   { label: "CAAS", value: "CAAS", icon: "graduation-cap" },
@@ -43,9 +53,10 @@ export function useCreateNewTestForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // simpan ID test setelah Step 1 sukses
+  // simpan hasil test dari BE
   const [createdTest, setCreatedTest] = useState<Test | null>(null);
 
+  // auto pilih template sesuai target position
   useEffect(() => {
     const label = POSITION_TEMPLATE_MAP[targetPosition];
     if (label) {
@@ -82,11 +93,12 @@ export function useCreateNewTestForm() {
 
   const handleSubmit = async (options?: {
     overrideTargetPosition?: string;
-  }) => {
-    if (loading) return; // cegah double submit
+  }): Promise<CreateNewTestResult | null> => {
+    if (loading) return null;
     setLoading(true);
     setError(null);
     setSuccess(false);
+
     try {
       const payload: CreateTestStep1Payload = {
         icon,
@@ -95,9 +107,24 @@ export function useCreateNewTestForm() {
         types: selectedTypes,
       };
 
-      const { test } = await createPackageService.createNewTestStep1(payload);
+      // 🚀 call BE sekali aja
+      const { test, raw } = await createPackageService.createNewTestStep1(payload);
+
       setCreatedTest(test);
       setSuccess(true);
+
+      // ✅ Format ulang ke bentuk yang parent butuh
+      return {
+        testId: Number(test.id),
+        testName: test.name,
+        icon,
+        targetPosition: payload.targetPosition,
+        selectedTypes: selectedTypes.map((t) => t.type as QuestionType),
+        sections: (raw?.sections ?? []).map((s) => ({
+          section_id: s.id,
+          section_type: s.section_type as QuestionType,
+        })),
+      };
     } catch (e: unknown) {
       if (typeof e === "string") {
         setError(e);
@@ -106,6 +133,7 @@ export function useCreateNewTestForm() {
       } else {
         setError("Failed to create test");
       }
+      return null;
     } finally {
       setLoading(false);
     }
@@ -126,8 +154,8 @@ export function useCreateNewTestForm() {
     setSelectedTemplate,
     handleTypeToggle,
     applyTemplate,
-    handleSubmit,
-    createdTest, // hasil dari Step 1 (ada id)
+    handleSubmit, // 🔑 return CreateNewTestResult
+    createdTest,
     loading,
     error,
     success,

@@ -274,7 +274,6 @@ export function useManageQuestions(
     }
   };
 
-
   /* ================================================================
    * Handlers
    * ================================================================ */
@@ -284,7 +283,7 @@ export function useManageQuestions(
   };
 
   const filteredQuestions: Question[] = questions.filter((q) =>
-    q.question_text.toLowerCase().includes(search.toLowerCase())
+    (q.question_text || "").toLowerCase().includes(search.toLowerCase())
   );
 
   /* ================================================================

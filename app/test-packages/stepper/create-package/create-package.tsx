@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -19,8 +19,7 @@ import { ICON_MAP, IconKey } from "@/lib/icon-mapping";
 const TYPE_COLOR_MAP: Record<string, string> = {
   DISC: "border-blue-400 ring-2 ring-blue-100 bg-blue-50 text-blue-700",
   CAAS: "border-yellow-400 ring-2 ring-yellow-100 bg-yellow-50 text-yellow-700",
-  "teliti":
-    "border-green-400 ring-2 ring-green-100 bg-green-50 text-green-700",
+  teliti: "border-green-400 ring-2 ring-green-100 bg-green-50 text-green-700",
 };
 
 // Opsi posisi target
@@ -39,37 +38,6 @@ export default function CreateNewTest({ onNext }: Props) {
   const form = useCreateNewTestForm();
   const [customPosition, setCustomPosition] = useState("");
   const [isCustomPosition, setIsCustomPosition] = useState(false);
-
-  const { success, testName, icon, setSuccess, selectedTypes } = form;
-
-  // Efek ketika sukses -> auto ke step berikutnya
-  useEffect(() => {
-    const currentTargetPosition = isCustomPosition
-      ? customPosition
-      : form.targetPosition;
-    if (success) {
-      const t = setTimeout(() => {
-        setSuccess(false);
-        onNext({
-          testName,
-          icon,
-          targetPosition: currentTargetPosition,
-          selectedTypes: selectedTypes.map((t) => t.type), // kirim hanya type
-        });
-      }, 400);
-      return () => clearTimeout(t);
-    }
-  }, [
-    success,
-    testName,
-    icon,
-    isCustomPosition,
-    customPosition,
-    onNext,
-    setSuccess,
-    selectedTypes,
-    form.targetPosition,
-  ]);
 
   // Handle perubahan posisi
   function handlePositionChange(val: string) {
@@ -91,10 +59,6 @@ export default function CreateNewTest({ onNext }: Props) {
     }
   }
 
-  const finalTargetPosition = isCustomPosition
-    ? customPosition
-    : form.targetPosition;
-
   return (
     <div className="w-full sm:px-2 md:px-4 lg:px-8 py-4">
       {/* Judul halaman */}
@@ -111,21 +75,23 @@ export default function CreateNewTest({ onNext }: Props) {
         <div>
           <label className="block text-xs text-gray-500 mb-1">Test Icon</label>
           <div className="flex gap-1 flex-wrap">
-            {(Object.keys(ICON_MAP) as Array<keyof typeof ICON_MAP>).map((k) => (
-              <Button
-                key={k}
-                type="button"
-                variant={form.icon === k ? "secondary" : "outline"}
-                size="icon"
-                className={cn(
-                  "rounded-full border w-10 h-10",
-                  form.icon === k ? "border-blue-400" : ""
-                )}
-                onClick={() => form.setIcon(k)}
-              >
-                {ICON_MAP[k]}
-              </Button>
-            ))}
+            {(Object.keys(ICON_MAP) as Array<keyof typeof ICON_MAP>).map(
+              (k) => (
+                <Button
+                  key={k}
+                  type="button"
+                  variant={form.icon === k ? "secondary" : "outline"}
+                  size="icon"
+                  className={cn(
+                    "rounded-full border w-10 h-10",
+                    form.icon === k ? "border-blue-400" : ""
+                  )}
+                  onClick={() => form.setIcon(k)}
+                >
+                  {ICON_MAP[k]}
+                </Button>
+              )
+            )}
           </div>
         </div>
       </div>
@@ -146,7 +112,9 @@ export default function CreateNewTest({ onNext }: Props) {
 
       {/* Posisi Target */}
       <div className="mb-4">
-        <label className="block text-sm mb-1 font-medium">Target Position</label>
+        <label className="block text-sm mb-1 font-medium">
+          Target Position
+        </label>
         {isCustomPosition ? (
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -158,7 +126,10 @@ export default function CreateNewTest({ onNext }: Props) {
                 onChange={(e) => setCustomPosition(e.target.value)}
               />
             </div>
-            <Select value="Add New Position" onValueChange={handlePositionChange}>
+            <Select
+              value="Add New Position"
+              onValueChange={handlePositionChange}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -174,7 +145,10 @@ export default function CreateNewTest({ onNext }: Props) {
         ) : (
           <div className="relative">
             <Users2 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Select value={form.targetPosition} onValueChange={handlePositionChange}>
+            <Select
+              value={form.targetPosition}
+              onValueChange={handlePositionChange}
+            >
               <SelectTrigger className="w-full pl-9">
                 <SelectValue placeholder="Select target position" />
               </SelectTrigger>
@@ -242,19 +216,22 @@ export default function CreateNewTest({ onNext }: Props) {
       <div className="flex justify-end gap-2 mt-7">
         <Button
           type="button"
-          onClick={() =>
-            form.handleSubmit({ overrideTargetPosition: finalTargetPosition })
-          }
-          disabled={form.loading || !form.testName || !finalTargetPosition}
+          onClick={() => {
+            onNext({
+              testName: form.testName,
+              icon: form.icon,
+              targetPosition: form.targetPosition,
+              selectedTypes: form.selectedTypes.map((t) => t.type),
+            });
+          }}
+          disabled={!form.testName || !form.targetPosition}
         >
-          {form.loading ? "Saving..." : "Next"}
+          Next
         </Button>
       </div>
 
       {form.error && <div className="text-red-500 mt-3">{form.error}</div>}
-      {form.success && (
-        <div className="text-green-600 mt-3">Test created!</div>
-      )}
+      {form.success && <div className="text-green-600 mt-3">Test created!</div>}
     </div>
   );
 }
