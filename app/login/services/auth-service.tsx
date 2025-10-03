@@ -5,12 +5,27 @@ import { api } from "@services/api";
 export const authService = {
   async login(_email: string, _password: string) {
     try {
-      const res = await api.post("/login", {
-        email: _email,
-        password: _password,
+      // Gunakan proxy lokal untuk menghindari CORS
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          email: _email,
+          password: _password,
+        }),
       });
 
-      const { access_token, user } = res.data;
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw errorData.message || 'Login gagal!';
+      }
+
+      const data = await res.json();
+
+      const { access_token, user } = data;
 
       // simpan token & user ke localStorage
       localStorage.setItem("token", access_token);
@@ -41,7 +56,15 @@ export const authService = {
 
   async logout() {
     try {
-      await api.post("/logout"); // token otomatis diinject
+      const token = localStorage.getItem("token");
+      await fetch("/api/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+      });
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       return true;
@@ -52,8 +75,24 @@ export const authService = {
 
   async checkSession() {
     try {
-      const res = await api.get("/user"); // token otomatis diinject
-      return res.data;
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/user", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+      });
+      
+      if (!res.ok) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        return null;
+      }
+      
+      const data = await res.json();
+      return data;
     } catch {
       localStorage.removeItem("token");
       localStorage.removeItem("user");

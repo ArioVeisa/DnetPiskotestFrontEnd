@@ -8,7 +8,7 @@ export const newPasswordService = {
     password: string,
     password_confirmation: string
   ) => {
-    const res = await api.post(`/reset-password`, {
+    const res = await api.post(`/api/reset-password`, {
       email,
       token,
       password,

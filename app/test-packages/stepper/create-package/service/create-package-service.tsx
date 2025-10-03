@@ -97,7 +97,7 @@ export const createPackageService = {
 
       // API call → bikin paket baru
       const res = await api.post<ApiResponse<TestPackageResponse>>(
-        "/test-package",
+        "/api/test-package",
         {
           name: payload.name,
           target_position: payload.targetPosition,

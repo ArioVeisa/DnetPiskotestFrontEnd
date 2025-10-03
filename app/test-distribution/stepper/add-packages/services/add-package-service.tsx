@@ -41,7 +41,7 @@ const LOCAL_KEY = "selectedPackageId";
 export const packageService = {
   async fetchAll(): Promise<TestPackage[]> {
     try {
-      const res = await api.get<ApiResponse>("/test-package"); // endpoint backend
+      const res = await api.get<ApiResponse>("/api/test-package"); // endpoint backend
       const items = res.data.data;
 
       return items.map((item) => {

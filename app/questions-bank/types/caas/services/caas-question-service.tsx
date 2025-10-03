@@ -60,7 +60,7 @@ type ApiResponse<T> = { data: T };
 
 /* ========== READ ALL ========== */
 export async function fetchQuestions(): Promise<Question[]> {
-  const res = await api.get<ApiResponse<ApiQuestion[]>>("/caas-questions");
+  const res = await api.get<ApiResponse<ApiQuestion[]>>("/api/caas-questions");
 
   return res.data.data.map((q) => ({
     id: q.id.toString(),
@@ -112,7 +112,7 @@ export async function createQuestion(data: Omit<Question, "id">): Promise<Questi
 
     console.log("[createQuestion] payload (API):", payload);
 
-    const res = await api.post<ApiResponse<ApiQuestion>>("/caas-questions", payload);
+    const res = await api.post<ApiResponse<ApiQuestion>>("/api/caas-questions", payload);
     const q = res.data.data;
 
     return {

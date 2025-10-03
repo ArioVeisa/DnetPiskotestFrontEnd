@@ -64,7 +64,7 @@ type ApiResponse<T> = { data: T };
 
 /* ========== READ ALL ========== */
 export async function fetchQuestions(): Promise<Question[]> {
-  const res = await api.get<ApiResponse<ApiQuestion[]>>("/disc-questions");
+  const res = await api.get<ApiResponse<ApiQuestion[]>>("/api/disc-questions");
 
   return res.data.data.map((q) => ({
     id: q.id.toString(),
@@ -125,7 +125,7 @@ export async function createQuestion(
     console.log("[createQuestion] payload (API):", payload);
 
     const res = await api.post<ApiResponse<ApiQuestion>>(
-      "/disc-questions",
+      "/api/disc-questions",
       payload
     );
     const q = res.data.data;

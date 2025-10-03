@@ -40,7 +40,7 @@ export interface UpdateCandidatePayload {
 export const candidateService = {
   async fetchAll(): Promise<Candidate[]> {
     try {
-      const res = await api.get("/candidates");
+      const res = await api.get("/api/candidates");
       return res.data.data ?? res.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -64,7 +64,7 @@ export const candidateService = {
 
   async create(payload: CreateCandidatePayload): Promise<Candidate> {
     try {
-      const res = await api.post("/candidates", payload);
+      const res = await api.post("/api/candidates", payload);
       return res.data.data ?? res.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {

@@ -37,7 +37,7 @@ export const testPackageService = {
   async fetchAll(): Promise<TestPackage[]> {
     try {
       console.log("[testPackageService.fetchAll] GET /test-package");
-      const res = await api.get("/test-package");
+      const res = await api.get("/api/test-package");
       console.log("[testPackageService.fetchAll] response:", res.data);
       return res.data.data ?? res.data;
     } catch (error) {

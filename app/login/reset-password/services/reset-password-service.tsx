@@ -3,13 +3,13 @@ import { api } from "@services/api";
 
 export const resetPasswordService = {
   async requestReset(email: string) {
-    const res = await api.post("/forgot-password", { email });
+    const res = await api.post("/api/forgot-password", { email });
     return res.data; 
     // biasanya: { message, email, reset_token_for_testing }
   },
 
   async confirmReset(token: string, password: string) {
-    const res = await api.post("/reset-password", {
+    const res = await api.post("/api/reset-password", {
       token,
       password,
     });

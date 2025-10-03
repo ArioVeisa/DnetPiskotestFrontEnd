@@ -1,5 +1,4 @@
-import { api } from "@services/api";
-import axios from "axios";
+// Service untuk test package menggunakan fetch langsung ke proxy lokal
 
 export interface Test {
   id: string;             // pakai string biar konsisten
@@ -73,14 +72,26 @@ export const testPackageService = {
   // Fetch all test packages
   async fetchAll(): Promise<Test[]> {
     try {
-      const res = await api.get<ApiResponse<TestResponse[]>>("/test-package");
-      return res.data.data.map((item) => mapApiToTest(item));
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/test-package", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw errorData.message || "Gagal mengambil data test package";
+      }
+      
+      const data: ApiResponse<TestResponse[]> = await res.json();
+      return data.data.map((item) => mapApiToTest(item));
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const message =
-          error.response?.data?.message ||
-          "Gagal mengambil data test package";
-        throw message;
+      if (error instanceof Error) {
+        throw error.message;
       }
       throw "Terjadi error tidak dikenal saat mengambil test package";
     }
@@ -89,14 +100,26 @@ export const testPackageService = {
   // Fetch test package by ID
   async fetchById(id: string): Promise<Test> {
     try {
-      const res = await api.get<ApiResponse<TestResponse>>(`/test-package/${id}`);
-      return mapApiToTest(res.data.data);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/test-package/${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw errorData.message || "Gagal mengambil detail test package";
+      }
+      
+      const data: ApiResponse<TestResponse> = await res.json();
+      return mapApiToTest(data.data);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const message =
-          error.response?.data?.message ||
-          "Gagal mengambil detail test package";
-        throw message;
+      if (error instanceof Error) {
+        throw error.message;
       }
       throw "Terjadi error tidak dikenal saat mengambil detail test package";
     }
@@ -105,18 +128,30 @@ export const testPackageService = {
   // Delete test package by ID
   async deleteById(id: string): Promise<void> {
     try {
-      const res = await api.delete<ApiResponse<null>>(`/test-package/${id}`);
-      if (res.data.status === "success") {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/test-package/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw errorData.message || "Gagal menghapus test package";
+      }
+      
+      const data: ApiResponse<null> = await res.json();
+      if (data.status === "success") {
         console.log("Test package successfully deleted");
       } else {
-        throw res.data.message || "Gagal menghapus test package";
+        throw data.message || "Gagal menghapus test package";
       }
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const message =
-          error.response?.data?.message ||
-          "Gagal menghapus test package";
-        throw message;
+      if (error instanceof Error) {
+        throw error.message;
       }
       throw "Terjadi error tidak dikenal saat menghapus test package";
     }

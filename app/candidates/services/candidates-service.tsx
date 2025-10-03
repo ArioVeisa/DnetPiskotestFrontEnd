@@ -36,11 +36,22 @@ export const candidatesService = {
   async getCandidates(): Promise<Candidate[]> {
     try {
       const token = localStorage.getItem("token");
-      const res = await api.get<CandidateApiResponse[]>("/candidates", {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch("/api/candidates", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
       });
+      
+      if (!res.ok) {
+        throw new Error("Failed to fetch candidates");
+      }
+      
+      const data = await res.json();
 
-      return res.data.map((c) => ({
+      return data.map((c: CandidateApiResponse) => ({
         id: c.id,
         name: c.name,
         nik: c.nik,
@@ -78,9 +89,18 @@ export const candidatesService = {
   async deleteCandidate(id: string): Promise<boolean> {
     try {
       const token = localStorage.getItem("token");
-      await api.delete(`/candidates/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`/api/candidates/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
       });
+      
+      if (!res.ok) {
+        throw new Error("Failed to delete candidate");
+      }
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {

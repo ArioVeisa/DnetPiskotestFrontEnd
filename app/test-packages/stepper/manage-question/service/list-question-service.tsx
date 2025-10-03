@@ -148,7 +148,7 @@ export const listQuestionService = {
         ],
       };
 
-      await api.post("/manage-questions", payload, {
+      await api.post("/api/manage-questions", payload, {
         headers: { Authorization: `Bearer ${params.token}` },
       });
     } catch (error) {
@@ -184,7 +184,7 @@ export const listQuestionService = {
         ],
       };
 
-      await api.put("/manage-questions", payload, {
+      await api.put("/api/manage-questions", payload, {
         headers: { Authorization: `Bearer ${params.token}` },
       });
     } catch (error) {
@@ -218,7 +218,7 @@ export const listQuestionService = {
         ],
       };
 
-      await api.delete("/manage-questions", {
+      await api.delete("/api/manage-questions", {
         data: payload,
         headers: { Authorization: `Bearer ${params.token}` },
       });
