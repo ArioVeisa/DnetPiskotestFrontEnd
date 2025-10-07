@@ -92,6 +92,18 @@ export default function ManageQuestions({
   /* ========================================================================
      SAFETY CHECK
      ======================================================================== */
+  // Tambahkan di atas return (setelah semua useState lain)
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // cek apakah user sudah scroll > 100px
+      setIsScrolled(window.scrollY > 100);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     if (!allowedTypes.includes(activeType)) {
       setActiveType(allowedTypes[0]);
@@ -243,7 +255,11 @@ export default function ManageQuestions({
             </label>
             <div className="relative">
               <ListOrdered className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input value={questionCount} className="pl-9 text-sm disabled" />
+              <Input
+                value={questionCount}
+                readOnly
+                className="pl-9 text-sm disabled"
+              />
             </div>
           </div>
         </div>
@@ -315,7 +331,14 @@ export default function ManageQuestions({
       )}
 
       {/* FOOTER */}
-      <div className="flex justify-end gap-3 pt-8">
+      <div
+        className={cn(
+          "bg-white border-t py-3 px-8 flex justify-end gap-3 transition-all duration-300",
+          isScrolled
+            ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
+            : "relative mt-8"
+        )}
+      >
         <Button variant="outline" type="button" onClick={onBack}>
           Back
         </Button>
@@ -323,9 +346,7 @@ export default function ManageQuestions({
           type="button"
           onClick={async () => {
             const hasEmpty = Object.values(sectionIds).some((sid) => !sid);
-            if (hasEmpty) {
-              return;
-            }
+            if (hasEmpty) return;
             const ok = await syncAllSections();
             if (ok) onNext();
           }}

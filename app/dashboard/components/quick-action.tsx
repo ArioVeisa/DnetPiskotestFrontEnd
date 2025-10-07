@@ -1,7 +1,7 @@
-// components/quick-actions.tsx
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { QuickAction } from "../services/dashboard-service";
@@ -11,6 +11,8 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ actions }: QuickActionsProps) {
+  const router = useRouter();
+
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -20,13 +22,15 @@ export function QuickActions({ actions }: QuickActionsProps) {
         {actions.map((a, idx) => (
           <Button
             key={a.label}
-            onClick={a.onClick}
+            onClick={() => {
+              if (a.onClick) return a.onClick();
+              if (a.path) router.push(a.path); // 👈 navigasi ke path
+            }}
             size="lg"
             variant={idx === 0 ? "default" : "outline"}
-            className={`
-              w-full h-16 flex items-center justify-center gap-2
-              ${idx === 0 ? "bg-blue-500 text-white hover:bg-blue-600" : ""}
-            `}
+            className={`w-full h-16 flex items-center justify-center gap-2 ${
+              idx === 0 ? "bg-blue-500 text-white hover:bg-blue-600" : ""
+            }`}
           >
             {a.icon}
             {a.label}

@@ -65,7 +65,7 @@ export function CandidateTable() {
         <table className="min-w-[900px] w-full table-auto">
           <thead>
             <tr className="text-gray-400 text-[15px] font-semibold">
-              {["Candidates", "NIK", "Position", "Status", "Actions"].map(
+              {["Candidates", "NIK", "Position", "Actions"].map(
                 (h) => (
                   <th key={h} className="px-4 pb-2 text-left">
                     {h}
@@ -100,19 +100,6 @@ export function CandidateTable() {
                     )}
                   >
                     {c.position}
-                  </span>
-                </td>
-                {/* Status */}
-                <td className="px-6 py-4 align-middle">
-                  <span
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
-                      STATUS_STYLE[
-                        c.status === "Active" ? "Active" : "Inactive"
-                      ]
-                    )}
-                  >
-                    {c.status}
                   </span>
                 </td>
                 {/* Actions */}

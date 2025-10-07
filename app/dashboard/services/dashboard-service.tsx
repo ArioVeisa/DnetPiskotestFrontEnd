@@ -6,7 +6,7 @@ import {
   Plus,
   FileText,
   BarChart2,
-  Download,
+  User,
 } from "lucide-react";
 import React from "react";
 
@@ -30,7 +30,8 @@ export interface TestActivity {
 export interface QuickAction {
   label: string;
   icon: React.ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
+  path?: string; // 👈 Tambahkan ini untuk navigasi
 }
 
 // Dummy data generators
@@ -93,8 +94,24 @@ export const getLatestTests = (): TestActivity[] => [
 ];
 
 export const getQuickActions = (): QuickAction[] => [
-  { label: "Tambah Kandidat", icon: <Plus className="w-5 h-5" />, onClick: () => {} },
-  { label: "Kelola Soal", icon: <FileText className="w-5 h-5" />, onClick: () => {} },
-  { label: "Lihat Laporan", icon: <BarChart2 className="w-5 h-5" />, onClick: () => {} },
-  { label: "Export Data", icon: <Download className="w-5 h-5" />, onClick: () => {} },
+  {
+    label: "Setup Paket Tes",
+    icon: <Plus className="w-5 h-5" />,
+    path: "/candidates", // 👈 arahkan ke halaman tambah kandidat
+  },
+  {
+    label: "Kelola Soal",
+    icon: <FileText className="w-5 h-5" />,
+    path: "/question-bank", // 👈 halaman manajemen soal
+  },
+  {
+    label: "Lihat Laporan",
+    icon: <BarChart2 className="w-5 h-5" />,
+    path: "/results", // 👈 halaman laporan
+  },
+  {
+    label: "Tambah Kandidat",
+    icon: <User className="w-5 h-5" />,
+    path: "/candidate", // 👈 halaman laporan
+  },
 ];

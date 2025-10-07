@@ -7,48 +7,41 @@ import TitleBar from "./components/title-bar";
 import TableSkeleton from "./components/table-skeleton";
 import { UserTable } from "./components/user-manage-table";
 import { useUserManagement } from "./hooks/use-user-manage";
-import DialogEdit from "./components/user-manage-dialog";
+import { AddUserDialog } from "./components/add-dialog"; // ✅ untuk tambah user
+import { EditUserDialog } from "./components/edit-dialog"; // ✅ untuk edit user
 import type { User } from "./services/user-manage-service";
 
 export default function UserManagementPage() {
-  // ✅ Ambil SEMUA fungsi dari hook, termasuk addUser, updateUserInfo, removeUser
-  const { users, loading, error, addUser, updateUserInfo, removeUser } = useUserManagement();
-  
+  const { users, loading, error, addUser, updateUserInfo, removeUser } =
+    useUserManagement();
+
   const [editUser, setEditUser] = useState<User | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
-  // Fungsi untuk membuka dialog Add New User
-  const handleAddUser = () => {
-    setShowAdd(true);
-  };
+  // 🔹 Open Add User Dialog
+  const handleAddUser = () => setShowAdd(true);
 
-  // ✅ FIX: Fungsi ini HARUS memanggil addUser atau updateUserInfo
-  const handleSaveUser = async (userData: User | Omit<User, "id">) => {
-    console.log("Saving user:", userData);
-    
+  // 🔹 Save Add User
+  const handleAddUserSave = async (data: Omit<User, "id">) => {
     try {
-      if ("id" in userData) {
-        // ✅ Mode Edit - panggil updateUserInfo
-        await updateUserInfo(userData as User);
-        setEditUser(null);
-      } else {
-        // ✅ Mode Add - panggil addUser
-        await addUser(userData);
-        setShowAdd(false);
-      }
-      
-      // Data akan auto-refresh karena fetchAllUsers dipanggil di dalam hook
+      await addUser(data);
+      setShowAdd(false);
     } catch (err) {
-      console.error("Failed to save user:", err);
+      console.error("Failed to add user:", err);
     }
   };
 
-  // ✅ Fungsi untuk handle update dari table
-  const handleUpdateUser = async (user: User) => {
-    await updateUserInfo(user);
+  // 🔹 Save Edit User
+  const handleEditUserSave = async (data: User) => {
+    try {
+      await updateUserInfo(data);
+      setEditUser(null);
+    } catch (err) {
+      console.error("Failed to update user:", err);
+    }
   };
 
-  // ✅ Fungsi untuk handle delete dari table
+  // 🔹 Delete user
   const handleDeleteUser = async (id: string) => {
     await removeUser(id);
   };
@@ -60,27 +53,23 @@ export default function UserManagementPage() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 bg-white">
-        {/* Top bar */}
         <Topbar />
 
         <main className="flex-1 px-8 pt-2 pb-8">
           <TitleBar onAdd={handleAddUser} />
-          
-          {/* Loading skeleton */}
+
           {loading && <TableSkeleton />}
-          
-          {/* Error message */}
+
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-lg mt-4">
               {error}
             </div>
           )}
-          
-          {/* ✅ UserTable dengan props yang benar */}
+
           {!loading && !error && (
-            <UserTable 
+            <UserTable
               users={users}
-              onUpdate={handleUpdateUser}
+              onEdit={setEditUser} // ✅ ganti jadi onEdit
               onDelete={handleDeleteUser}
               loading={loading}
             />
@@ -90,24 +79,23 @@ export default function UserManagementPage() {
 
       {/* Dialog Add User */}
       {showAdd && (
-        <DialogEdit
-          user={null}
+        <AddUserDialog
           open={showAdd}
           onOpenChange={setShowAdd}
-          onSave={handleSaveUser}
+          onSave={handleAddUserSave} // ✅ khusus Add
           loading={loading}
         />
       )}
 
       {/* Dialog Edit User */}
       {editUser && (
-        <DialogEdit
+        <EditUserDialog
           user={editUser}
-          open={!!editUser}
+          open={true} // ✅ pakai true saja, karena kondisi editUser sudah nge-handle
           onOpenChange={(open) => {
             if (!open) setEditUser(null);
           }}
-          onSave={handleSaveUser}
+          onSave={handleEditUserSave}
           loading={loading}
         />
       )}

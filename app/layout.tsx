@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import LayoutClient from "./layoutClient";
 
 export const metadata: Metadata = {
-  title: "My App",
+  title: "Dnet Psikotest App",
   description: "App with session handling",
 };
 

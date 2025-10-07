@@ -71,13 +71,17 @@ export default function TestManagementPage() {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex flex-col flex-1 bg-white">
-        <Topbar />
-        <main className="flex-1 px-8 pt-2 pb-8">
+        {/* ✅ Jadikan Topbar sticky */}
+        <div className="sticky top-0 z-50 bg-white shadow-sm">
+          <Topbar />
+        </div>
+
+        <main className="flex-1 px-8 pt-2 pb-20 overflow-y-auto">
           {showStepper ? (
             <>
               <StepperCreate activeStep={activeStep ?? 0} />
 
-              {/* Step 1: Create New Test */}
+              {/* Step 1 */}
               {activeStep === 0 && (
                 <CreateNewTest
                   onNext={async (data) => {
@@ -102,7 +106,7 @@ export default function TestManagementPage() {
                         targetPosition: data.targetPosition,
                         allowedTypes: data.selectedTypes as QuestionType[],
                         sections: (raw?.sections ?? []).map((s) => ({
-                          section_id: s.id, // ✅ rename id → section_id
+                          section_id: s.id,
                           section_type: s.section_type as QuestionType,
                         })),
                         token: localStorage.getItem("token") || "",
@@ -116,7 +120,7 @@ export default function TestManagementPage() {
                 />
               )}
 
-              {/* Step 2: Manage Questions */}
+              {/* Step 2 */}
               {activeStep === 1 && (
                 <ManageQuestions
                   testId={stepData.testId}
@@ -131,7 +135,7 @@ export default function TestManagementPage() {
                 />
               )}
 
-              {/* Step 3: Publish Test */}
+              {/* Step 3 */}
               {activeStep === 2 && (
                 <PublishTestPage
                   testId={stepData.testId}
@@ -148,7 +152,7 @@ export default function TestManagementPage() {
                       icon: "square-code",
                       targetPosition: "",
                       allowedTypes: ["DISC", "CAAS", "teliti"],
-                      sections: [], // ✅ reset ke kosong lagi
+                      sections: [],
                       token: "",
                     });
                   }}

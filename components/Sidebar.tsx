@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { api } from "@services/api";
 import {
   Users,
   LayoutDashboard,
@@ -30,10 +31,10 @@ const menuMapping: Record<
       title: "ASSESSMENTS",
       items: [
         { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-        { name: "Question Bank", icon: Landmark, href: "/questions-bank" },
-        { name: "Candidates", icon: Users, href: "/candidates" },
         { name: "Test Packages", icon: FileBox, href: "/test-packages" },
         { name: "Test Distribution", icon: Send, href: "/test-distribution" },
+        { name: "Question Bank", icon: Landmark, href: "/questions-bank" },
+        { name: "Candidates", icon: Users, href: "/candidates" },
         { name: "Results", icon: BarChart2, href: "/results" },
       ],
     },
@@ -60,30 +61,26 @@ const menuMapping: Record<
     },
     {
       title: "OTHERS",
-      items: [
-        // 👇 tanpa menu user management
-        { name: "Logs", icon: SquareActivity, href: "/logs" },
-      ],
+      items: [{ name: "Logs", icon: SquareActivity, href: "/logs" }],
     },
   ],
 
   kandidat: [
     {
       title: "ASSESSMENTS",
-      items: [
-        { name: "Results", icon: BarChart2, href: "/results" },
-      ],
+      items: [{ name: "Results", icon: BarChart2, href: "/results" }],
     },
   ],
 };
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [role, setRole] = useState<string>("viewer"); // default viewer
+  const [loadingLogout, setLoadingLogout] = useState(false);
 
   useEffect(() => {
-    // ambil role dari localStorage (disimpan saat login)
     const user = localStorage.getItem("user");
     if (user) {
       try {
@@ -94,6 +91,30 @@ export default function Sidebar() {
       }
     }
   }, []);
+
+  const handleLogout = async () => {
+    setLoadingLogout(true);
+    try {
+      // Panggil logout ke server (kalau server hapus cookie HttpOnly)
+      await api.post("/logout");
+    } catch (error) {
+      console.warn("Gagal logout di server, hapus session lokal saja", error);
+    } finally {
+      // Tetap hapus session lokal
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // 🧹 Hapus cookie (semua yang berhubungan dengan auth)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
+      });
+
+      setLoadingLogout(false);
+      router.push("/login");
+    }
+  };
 
   const menuSections = menuMapping[role] || [];
 
@@ -176,14 +197,17 @@ export default function Sidebar() {
 
         {/* Logout Button */}
         <div className="mt-auto">
-          <Link
-            href="/login"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+          <button
+            onClick={handleLogout}
+            disabled={loadingLogout}
+            className={clsx(
+              "flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50",
+              loadingLogout && "opacity-50 cursor-not-allowed"
+            )}
           >
             <LogOut size={18} className="text-red-600" />
-            Logout
-          </Link>
+            {loadingLogout ? "Logging out..." : "Logout"}
+          </button>
         </div>
       </aside>
     </>

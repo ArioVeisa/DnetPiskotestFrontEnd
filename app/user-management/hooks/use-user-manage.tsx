@@ -1,16 +1,16 @@
-// src/app/user-management/hooks/use-user-management.ts
 import { useState, useEffect, useCallback } from "react";
 import { userManagementService, User } from "../services/user-manage-service";
 
 export function useUserManagement() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);        // loading fetch list
+  const [actionLoading, setActionLoading] = useState(false); // loading CRUD
+  const [error, setError] = useState<string | null>(null);
 
   // Ambil semua user
   const fetchAllUsers = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError(null);
     try {
       const data = await userManagementService.fetchAll();
       setUsers(data);
@@ -28,45 +28,55 @@ export function useUserManagement() {
 
   // Update user
   const updateUserInfo = async (user: User) => {
+    setActionLoading(true);
     try {
-      setLoading(true);
       await userManagementService.update(user.id, user);
       await fetchAllUsers();
     } catch (err) {
       console.error(err);
       setError("Failed to update user");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
   // Delete user
   const removeUser = async (id: string) => {
+    setActionLoading(true);
     try {
-      setLoading(true);
       await userManagementService.deleteById(id);
       await fetchAllUsers();
     } catch (err) {
       console.error(err);
       setError("Failed to delete user");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
   // Create user
   const addUser = async (user: Omit<User, "id">) => {
+    setActionLoading(true);
     try {
-      setLoading(true);
       await userManagementService.create(user);
       await fetchAllUsers();
     } catch (err) {
       console.error(err);
       setError("Failed to add user");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
-  return { users, loading, error, fetchAllUsers, updateUserInfo, removeUser, addUser };
+  return {
+    users,
+    loading,
+    actionLoading,
+    error,
+    fetchAllUsers,
+    updateUserInfo,
+    removeUser,
+    addUser,
+    isLoading: loading || actionLoading, // ✨ tambahan opsional
+  };
 }

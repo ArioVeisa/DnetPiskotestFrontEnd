@@ -1,7 +1,7 @@
 // app/questions-bank/stepper/type/teliti/teliti-question.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -76,6 +76,17 @@ export default function CaasQuestionsStep({
       // Handle error jika perlu
     }
   };
+
+  // di atas return, di dalam komponen
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleEditSave = async (id: string, data: Omit<StepQuestion, "id">) => {
     try {
@@ -330,16 +341,23 @@ export default function CaasQuestionsStep({
         )}
       </div>
 
-      {/* Footer tombol kanan */}
-      <div className="flex justify-end gap-2 mt-7">
+      {/* Footer tombol kanan (sticky) */}
+      {/* FOOTER */}
+      <div
+        className={`border-t bg-white py-3 px-8 flex justify-end gap-2 transition-all duration-300 ${
+          isScrolled
+            ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
+            : "relative mt-8"
+        }`}
+      >
         <Button variant="ghost" type="button" onClick={onCancel}>
           Back
         </Button>
         <Button
           type="button"
           onClick={async () => {
-            await done(); // kalau ada simpan data
-            onCancel(); // ✅ balik ke halaman list bank
+            await done();
+            onCancel();
           }}
           className="bg-blue-500 hover:bg-blue-600 text-white"
           disabled={loading}

@@ -1,4 +1,6 @@
 // /app/login/services/auth-service.ts
+"use client";
+
 import axios from "axios";
 import { api } from "@services/api";
 
@@ -12,9 +14,12 @@ export const authService = {
 
       const { access_token, user } = res.data;
 
-      // simpan token & user ke localStorage
+      // Simpan ke localStorage untuk frontend
       localStorage.setItem("token", access_token);
       localStorage.setItem("user", JSON.stringify(user));
+
+      // Simpan token ke cookie agar bisa diakses middleware (server-side)
+      document.cookie = `token=${access_token}; path=/; max-age=${60 * 60 * 24}; secure; samesite=strict`;
 
       return user;
     } catch (error) {
@@ -39,17 +44,6 @@ export const authService = {
     }
   },
 
-  async logout() {
-    try {
-      await api.post("/logout"); // token otomatis diinject
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      return true;
-    } catch {
-      return false;
-    }
-  },
-
   async checkSession() {
     try {
       const res = await api.get("/user"); // token otomatis diinject
@@ -57,6 +51,7 @@ export const authService = {
     } catch {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      document.cookie = "token=; path=/; max-age=0";
       return null;
     }
   },

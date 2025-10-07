@@ -9,8 +9,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: string;          // bebas string
-  department: string | null;
+  role: string;     
+  department: string; // ✅ selalu string (tidak boleh null di FE)
 }
 
 /* ============================
@@ -21,7 +21,7 @@ interface UserResponse {
   name: string;
   email: string;
   role: string;
-  department: string | null;
+  department: string | null; // ✅ backend bisa kirim null
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +35,7 @@ function mapApiToUser(apiData: UserResponse): User {
     name: apiData.name,
     email: apiData.email,
     role: apiData.role,
-    department: apiData.department,
+    department: apiData.department ?? "", // ✅ null → ""
   };
 }
 
@@ -49,7 +49,7 @@ export const userManagementService = {
       const res = await api.get<UserResponse[]>("/users");
       console.log("✅ [fetchAll] Response:", res.data);
 
-      return res.data.map((item) => mapApiToUser(item));
+      return res.data.map(mapApiToUser);
     } catch (error) {
       console.error("❌ [fetchAll] Error:", error);
       if (axios.isAxiosError(error)) {
@@ -81,7 +81,13 @@ export const userManagementService = {
   // Create new user
   async create(payload: Omit<User, "id">): Promise<User> {
     try {
-      const res = await api.post<UserResponse>("/users", payload);
+      // ✅ ubah "" jadi null biar API tetap valid
+      const reqBody = {
+        ...payload,
+        department: payload.department.trim() === "" ? null : payload.department,
+      };
+
+      const res = await api.post<UserResponse>("/users", reqBody);
       return mapApiToUser(res.data);
     } catch (error) {
       console.error("❌ [create] Error:", error);
@@ -97,7 +103,16 @@ export const userManagementService = {
   // Update user by ID
   async update(id: string, payload: Partial<User>): Promise<User> {
     try {
-      const res = await api.put<UserResponse>(`/users/${id}`, payload);
+      // ✅ ubah "" jadi null untuk department
+      const reqBody = {
+        ...payload,
+        department:
+          payload.department !== undefined && payload.department.trim() === ""
+            ? null
+            : payload.department,
+      };
+
+      const res = await api.put<UserResponse>(`/users/${id}`, reqBody);
       return mapApiToUser(res.data);
     } catch (error) {
       console.error("❌ [update] Error:", error);

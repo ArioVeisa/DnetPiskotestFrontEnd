@@ -79,7 +79,7 @@ export default function QuestionBankPage() {
       <Sidebar />
       <div className="flex flex-1 flex-col bg-white">
         <TopBar />
-        <main className="flex-1 px-8 pt-2 pb-8">
+        <main className="flex-1 px-8 pt-2 pb-16">
           {/* List Bank */}
           {!activeBank && (
             <>

@@ -1,7 +1,7 @@
 // services/api.ts
 import axios, { AxiosError } from "axios";
 
-const API_URL = process.env.NEXT_PRIVATE_API_URL || "https://humble-space-broccoli-rv46xjr57g5fpxp6-8000.app.github.dev/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL_LOCAL;
 
 export const api = axios.create({
   baseURL: API_URL,
