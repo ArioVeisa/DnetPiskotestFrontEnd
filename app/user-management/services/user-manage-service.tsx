@@ -2,6 +2,8 @@
 import { api } from "@services/api";
 import axios from "axios";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL_LOCAL || "http://localhost:8000/api";
+
 /* ============================
    Frontend Model
 ============================ */
@@ -103,9 +105,10 @@ export const userManagementService = {
   // Update user by ID
   async update(id: string, payload: Partial<User>): Promise<User> {
     try {
-      // ✅ ubah "" jadi null untuk department
+      // ✅ ubah "" jadi null untuk department, hapus id dari payload
+      const { id: _, ...payloadWithoutId } = payload;
       const reqBody = {
-        ...payload,
+        ...payloadWithoutId,
         department:
           payload.department !== undefined && payload.department.trim() === ""
             ? null
@@ -117,8 +120,14 @@ export const userManagementService = {
     } catch (error) {
       console.error("❌ [update] Error:", error);
       if (axios.isAxiosError(error)) {
+        console.error("❌ [update] Status:", error.response?.status);
+        console.error("❌ [update] Response:", error.response?.data);
+        console.error("❌ [update] Headers:", error.response?.headers);
+        
         const message =
-          error.response?.data?.message || "Gagal memperbarui pengguna";
+          error.response?.data?.message || 
+          error.response?.data?.error ||
+          "Gagal memperbarui pengguna";
         throw message;
       }
       throw "Terjadi error tidak dikenal saat memperbarui pengguna";

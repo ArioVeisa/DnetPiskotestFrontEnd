@@ -29,12 +29,14 @@ export function useUserManagement() {
   // Update user
   const updateUserInfo = async (user: User) => {
     setActionLoading(true);
+    setError(null); // Clear error before update
     try {
       await userManagementService.update(user.id, user);
       await fetchAllUsers();
+      setError(null); // Clear error after success
     } catch (err) {
-      console.error(err);
-      setError("Failed to update user");
+      console.error("❌ Update user error:", err);
+      setError(typeof err === 'string' ? err : "Failed to update user");
     } finally {
       setActionLoading(false);
     }
@@ -68,6 +70,9 @@ export function useUserManagement() {
     }
   };
 
+  // Clear error function
+  const clearError = () => setError(null);
+
   return {
     users,
     loading,
@@ -77,6 +82,7 @@ export function useUserManagement() {
     updateUserInfo,
     removeUser,
     addUser,
+    clearError,
     isLoading: loading || actionLoading, // ✨ tambahan opsional
   };
 }

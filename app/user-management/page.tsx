@@ -12,7 +12,7 @@ import { EditUserDialog } from "./components/edit-dialog"; // ✅ untuk edit use
 import type { User } from "./services/user-manage-service";
 
 export default function UserManagementPage() {
-  const { users, loading, error, addUser, updateUserInfo, removeUser } =
+  const { users, loading, error, addUser, updateUserInfo, removeUser, clearError } =
     useUserManagement();
 
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -61,8 +61,14 @@ export default function UserManagementPage() {
           {loading && <TableSkeleton />}
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg mt-4">
-              {error}
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg mt-4 flex justify-between items-center">
+              <span>{error}</span>
+              <button 
+                onClick={clearError}
+                className="text-red-600 hover:text-red-800 font-bold"
+              >
+                ×
+              </button>
             </div>
           )}
 
@@ -93,7 +99,10 @@ export default function UserManagementPage() {
           user={editUser}
           open={true} // ✅ pakai true saja, karena kondisi editUser sudah nge-handle
           onOpenChange={(open) => {
-            if (!open) setEditUser(null);
+            if (!open) {
+              setEditUser(null);
+              clearError(); // Clear error when dialog closes
+            }
           }}
           onSave={handleEditUserSave}
           loading={loading}

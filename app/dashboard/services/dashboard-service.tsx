@@ -9,6 +9,8 @@ import {
   User,
 } from "lucide-react";
 import React from "react";
+import { api } from "@services/api";
+import axios from "axios";
 
 export interface StatCard {
   title: string;
@@ -34,38 +36,122 @@ export interface QuickAction {
   path?: string; // 👈 Tambahkan ini untuk navigasi
 }
 
-// Dummy data generators
-export const getStats = (): StatCard[] => [
+// API Response interfaces
+export interface DashboardApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    summary: {
+      total_tests_completed: number;
+      total_tests_in_progress: number;
+      total_tests_pending: number;
+      completion_rate: string;
+      total_candidates: number;
+      total_hrd_users: number;
+    };
+    recent_activities: Array<{
+      user_name: string;
+      description: string;
+      timestamp: string;
+    }>;
+  };
+}
+
+// API Service functions
+export const getDashboardData = async (): Promise<DashboardApiResponse> => {
+  try {
+    console.log('🔍 [dashboard] Fetching dashboard data...');
+    const response = await api.get<DashboardApiResponse>('/dashboard');
+    console.log('✅ [dashboard] Dashboard data received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [dashboard] Error fetching dashboard data:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('❌ [dashboard] Response:', error.response?.data);
+      console.error('❌ [dashboard] Status:', error.response?.status);
+      throw new Error(error.response?.data?.message || 'Gagal mengambil data dashboard');
+    }
+    throw new Error('Terjadi error tidak dikenal saat mengambil data dashboard');
+  }
+};
+
+// Convert API data to StatCard format
+export const convertApiDataToStats = (apiData: DashboardApiResponse['data']): StatCard[] => [
   {
     title: "Total Kandidat",
-    value: 156,
-    change: 12,
-    changeLabel: "% dari bulan lalu",
+    value: apiData.summary.total_candidates,
+    change: 0, // API tidak menyediakan perubahan
+    changeLabel: "",
     icon: <Users className="w-5 h-5 text-blue-500" />,
   },
   {
     title: "Tes Berlangsung",
-    value: 23,
-    change: 5,
-    changeLabel: "% dari bulan lalu",
+    value: apiData.summary.total_tests_in_progress,
+    change: 0,
+    changeLabel: "",
     icon: <Clock className="w-5 h-5 text-blue-500" />,
   },
   {
     title: "Tes Selesai",
-    value: 89,
-    change: 18,
-    changeLabel: "% dari bulan lalu",
+    value: apiData.summary.total_tests_completed,
+    change: 0,
+    changeLabel: "",
     icon: <CheckCircle className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Menunggu Review",
-    value: 44,
-    change: -3,
-    changeLabel: "% dari bulan lalu",
+    title: "Tes Pending",
+    value: apiData.summary.total_tests_pending,
+    change: 0,
+    changeLabel: "",
     icon: <AlertCircle className="w-5 h-5 text-blue-500" />,
   },
 ];
 
+// Fallback dummy data generators (untuk development)
+export const getStats = (): StatCard[] => [
+  {
+    title: "Total Kandidat",
+    value: 0,
+    change: 0,
+    changeLabel: "",
+    icon: <Users className="w-5 h-5 text-blue-500" />,
+  },
+  {
+    title: "Tes Berlangsung",
+    value: 0,
+    change: 0,
+    changeLabel: "",
+    icon: <Clock className="w-5 h-5 text-blue-500" />,
+  },
+  {
+    title: "Tes Selesai",
+    value: 0,
+    change: 0,
+    changeLabel: "",
+    icon: <CheckCircle className="w-5 h-5 text-blue-500" />,
+  },
+  {
+    title: "Tes Pending",
+    value: 0,
+    change: 0,
+    changeLabel: "",
+    icon: <AlertCircle className="w-5 h-5 text-blue-500" />,
+  },
+];
+
+// Convert API recent activities to TestActivity format
+export const convertApiDataToActivities = (apiData: DashboardApiResponse['data']): TestActivity[] => {
+  return apiData.recent_activities.map((activity, index) => ({
+    id: (index + 1).toString(),
+    name: activity.user_name,
+    position: "System Activity", // API tidak menyediakan position
+    types: ["Activity"],
+    status: "Selesai" as const,
+    date: activity.timestamp.split(' ')[0], // Ambil hanya tanggal
+  }));
+};
+
+// Fallback dummy data generators (untuk development) - hanya tes yang sudah selesai
 export const getLatestTests = (): TestActivity[] => [
   {
     id: "1",
@@ -73,14 +159,14 @@ export const getLatestTests = (): TestActivity[] => [
     position: "Software Engineer",
     types: ["DISC", "CAAS"],
     status: "Selesai",
-    date: "2025-06-27",
+    date: "2025-10-07",
   },
   {
     id: "2",
     name: "Sari Dewi",
     position: "Marketing Manager",
     types: ["DISC", "Fast Accuracy"],
-    status: "Berlangsung",
+    status: "Selesai",
     date: "2025-06-27",
   },
   {
@@ -88,8 +174,24 @@ export const getLatestTests = (): TestActivity[] => [
     name: "Budi Santoso",
     position: "HR Specialist",
     types: ["CAAS"],
-    status: "Belum Mulai",
-    date: "2025-06-26",
+    status: "Selesai",
+    date: "2025-10-06",
+  },
+  {
+    id: "4",
+    name: "Citra Lestari",
+    position: "Finance Manager",
+    types: ["DISC", "Fast Accuracy"],
+    status: "Selesai",
+    date: "2025-10-05",
+  },
+  {
+    id: "5",
+    name: "Doni Firmansyah",
+    position: "IT Manager",
+    types: ["DISC", "CAAS"],
+    status: "Selesai",
+    date: "2025-10-04",
   },
 ];
 
@@ -97,12 +199,12 @@ export const getQuickActions = (): QuickAction[] => [
   {
     label: "Setup Paket Tes",
     icon: <Plus className="w-5 h-5" />,
-    path: "/candidates", // 👈 arahkan ke halaman tambah kandidat
+    path: "/test-packages", // 👈 arahkan ke halaman test packages
   },
   {
     label: "Kelola Soal",
     icon: <FileText className="w-5 h-5" />,
-    path: "/question-bank", // 👈 halaman manajemen soal
+    path: "/questions-bank", // 👈 halaman manajemen soal
   },
   {
     label: "Lihat Laporan",
@@ -110,8 +212,8 @@ export const getQuickActions = (): QuickAction[] => [
     path: "/results", // 👈 halaman laporan
   },
   {
-    label: "Tambah Kandidat",
+    label: "Candidate",
     icon: <User className="w-5 h-5" />,
-    path: "/candidate", // 👈 halaman laporan
+    path: "/candidates", // 👈 halaman kandidat
   },
 ];
