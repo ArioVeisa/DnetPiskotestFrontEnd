@@ -103,7 +103,7 @@ function normalizeQuestion(q: ApiQuestion): Question {
 
 /* ========== READ ALL ========== */
 export async function fetchQuestions(): Promise<Question[]> {
-  const res = await api.get<ApiResponse<ApiQuestion[]>>("/teliti-questions");
+  const res = await api.get<ApiResponse<ApiQuestion[]>>("/test/teliti-questions");
   return res.data.data.map(normalizeQuestion);
 }
 
@@ -134,7 +134,7 @@ export async function createQuestion(
     console.log("[createQuestion] payload (API):", payload);
 
     const res = await api.post<ApiResponse<ApiQuestion>>(
-      "/teliti-questions",
+      "/test/teliti-questions",
       payload
     );
 
