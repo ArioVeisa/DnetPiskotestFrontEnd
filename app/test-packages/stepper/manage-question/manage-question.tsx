@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { ICON_MAP } from "@/lib/icon-mapping";
 import {
   Search,
-  FileSpreadsheet,
   BookPlus,
   Edit,
   Clock,
@@ -20,7 +19,6 @@ import {
    DIALOGS
    =========================== */
 import AddQuestionDialog from "./dialogs/add-question-dialog";
-import ImportQuestionDialog from "./dialogs/import-question-dialog";
 
 /* ===========================
    SERVICES & TYPES
@@ -63,7 +61,6 @@ export default function ManageQuestions({
 }: ManageQuestionsProps) {
   const [activeType, setActiveType] = useState<QuestionType>(allowedTypes[0]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
   /* ========================================================================
@@ -179,15 +176,6 @@ export default function ManageQuestions({
             Test Question
           </h2>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              onClick={() => setShowImportModal(true)}
-              variant="outline"
-              className="border border-gray-200 flex-1 sm:flex-none"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-green-600" />
-              <span className="sm:hidden">Import</span>
-              <span className="hidden sm:inline">Import Question</span>
-            </Button>
             <Button
               onClick={() => setShowAddModal(true)}
               className="flex-1 sm:flex-none"
@@ -363,16 +351,6 @@ export default function ManageQuestions({
         token={token}
         onSave={(id) => handleAdd(id, activeType)} // 👈 fix disini
         existingIds={existingIds}
-      />
-
-      <ImportQuestionDialog
-        open={showImportModal}
-        onOpenChange={setShowImportModal}
-        onImport={async (questionIds: number[]) => {
-          for (const questionId of questionIds) {
-            await handleAdd(questionId, activeType);
-          }
-        }}
       />
     </div>
   );

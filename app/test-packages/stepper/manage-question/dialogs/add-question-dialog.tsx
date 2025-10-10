@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   showQuestionService,
   ShowQuestion,
@@ -22,7 +23,7 @@ type AddQuestionDialogProps = {
   activeType: ShowQuestionType;
   token: string;
   onSave: (questionId: number, questionType: ShowQuestionType) => Promise<void>;
-  existingIds: number[]; // 🔹 kirim daftar soal yang sudah ada di section
+  existingIds: number[];
 };
 
 export default function AddQuestionDialog({
@@ -35,14 +36,16 @@ export default function AddQuestionDialog({
 }: AddQuestionDialogProps) {
   const [questions, setQuestions] = useState<ShowQuestion[]>([]);
   const [fetching, setFetching] = useState(false);
-  const [addingId, setAddingId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [adding, setAdding] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   // 🔹 Fetch soal dari bank soal sesuai type
   useEffect(() => {
     if (!open) return;
     setFetching(true);
-    setLocalError(null); // reset error tiap buka
+    setLocalError(null);
+    setSelectedIds([]); // reset selection
     showQuestionService
       .getByType(activeType, token)
       .then(setQuestions)
@@ -50,23 +53,54 @@ export default function AddQuestionDialog({
       .finally(() => setFetching(false));
   }, [open, activeType, token]);
 
+  // 🔹 Filter soal yang belum ditambahkan
+  const availableQuestions = questions.filter(
+    (q) => !existingIds.includes(q.id)
+  );
+
+  // 🔹 Toggle single checkbox
+  const toggleQuestion = (questionId: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(questionId)
+        ? prev.filter((id) => id !== questionId)
+        : [...prev, questionId]
+    );
+  };
+
+  // 🔹 Select/Deselect All
+  const isAllSelected =
+    availableQuestions.length > 0 &&
+    selectedIds.length === availableQuestions.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(availableQuestions.map((q) => q.id));
+    }
+  };
+
   // 🔹 Tambah soal ke test
-  const handleAdd = async (questionId: number) => {
-    if (existingIds.includes(questionId)) {
-      setLocalError("❌ Soal sudah ditambahkan");
+  const handleAddSelected = async () => {
+    if (selectedIds.length === 0) {
+      setLocalError("❌ Pilih minimal 1 soal");
       return;
     }
 
-    setAddingId(questionId);
+    setAdding(true);
     setLocalError(null);
 
     try {
-      await onSave(questionId, activeType);
+      // Tambahkan semua soal yang dipilih
+      for (const questionId of selectedIds) {
+        await onSave(questionId, activeType);
+      }
       onOpenChange(false); // close dialog setelah sukses
     } catch (error) {
-      console.error("Error adding question:", error);
+      console.error("Error adding questions:", error);
+      setLocalError("❌ Gagal menambahkan soal");
     } finally {
-      setAddingId(null);
+      setAdding(false);
     }
   };
 
@@ -83,36 +117,51 @@ export default function AddQuestionDialog({
           )}
         </DialogHeader>
 
+        {/* SELECT ALL */}
+        {!fetching && availableQuestions.length > 0 && (
+          <div className="px-6 py-3 bg-gray-50 border-y">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="select-all"
+                checked={isAllSelected}
+                onCheckedChange={toggleSelectAll}
+              />
+              <label
+                htmlFor="select-all"
+                className="text-sm font-medium cursor-pointer"
+              >
+                Pilih Semua ({selectedIds.length}/{availableQuestions.length})
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* BODY */}
         <ScrollArea className="flex-1 overflow-y-auto px-6 py-4">
           {fetching ? (
             <p className="text-sm text-muted-foreground">Loading questions...</p>
-          ) : questions.length === 0 ? (
+          ) : availableQuestions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Tidak ada soal tersedia untuk tipe ini.
+              {questions.length === 0
+                ? "Tidak ada soal tersedia untuk tipe ini."
+                : "Semua soal sudah ditambahkan ke test."}
             </p>
           ) : (
-            <div className="space-y-4">
-              {questions.map((q) => (
+            <div className="space-y-3">
+              {availableQuestions.map((q) => (
                 <div
                   key={q.id}
-                  className="border rounded-lg p-4 shadow-sm hover:bg-blue-50 transition"
+                  className="border rounded-lg p-4 shadow-sm hover:bg-blue-50 transition cursor-pointer"
+                  onClick={() => toggleQuestion(q.id)}
                 >
-                  <p className="font-medium">{q.question_text}</p>
-                  <ul className="list-disc ml-6 mt-2 text-sm text-gray-600">
-                    {q.options.map((opt) => (
-                      <li key={opt.id}>{opt.option_text}</li>
-                    ))}
-                  </ul>
-                  <Button
-                    size="sm"
-                    className="mt-3 bg-blue-600 hover:bg-blue-700"
-                    onClick={() => handleAdd(q.id)}
-                    disabled={addingId === q.id}
-                    aria-busy={addingId === q.id}
-                  >
-                    {addingId === q.id ? "Menambahkan..." : "Tambah"}
-                  </Button>
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      checked={selectedIds.includes(q.id)}
+                      onCheckedChange={() => toggleQuestion(q.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <p className="text-sm flex-1">{q.question_text}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -121,14 +170,26 @@ export default function AddQuestionDialog({
 
         <Separator />
         {/* FOOTER */}
-        <div className="flex justify-end p-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={addingId !== null}
-          >
-            Cancel
-          </Button>
+        <div className="flex justify-between items-center p-4">
+          <p className="text-sm text-gray-600">
+            {selectedIds.length} soal dipilih
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={adding}
+            >
+              Batal
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleAddSelected}
+              disabled={adding || selectedIds.length === 0}
+            >
+              {adding ? "Menambahkan..." : `Tambah ${selectedIds.length} Soal`}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

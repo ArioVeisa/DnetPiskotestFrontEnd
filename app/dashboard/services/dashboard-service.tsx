@@ -102,7 +102,7 @@ export const getQuickActions = (): QuickAction[] => [
   {
     label: "Kelola Soal",
     icon: <FileText className="w-5 h-5" />,
-    path: "/question-bank", // 👈 halaman manajemen soal
+    path: "/questions-bank", // 👈 halaman manajemen soal
   },
   {
     label: "Lihat Laporan",
@@ -112,6 +112,6 @@ export const getQuickActions = (): QuickAction[] => [
   {
     label: "Tambah Kandidat",
     icon: <User className="w-5 h-5" />,
-    path: "/candidate", // 👈 halaman laporan
+    path: "/candidates", // 👈 halaman laporan
   },
 ];

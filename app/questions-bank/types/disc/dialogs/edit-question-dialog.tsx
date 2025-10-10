@@ -10,7 +10,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import type {
   Question,
-  MediaType,
   QuestionOption,
 } from "../services/disc-question-service";
 
@@ -38,97 +36,116 @@ export default function EditQuestionDialog({
   question,
   onSave,
 }: EditQuestionDialogProps) {
-  const [questionText, setQuestionText] = useState("");
+  const [options, setOptions] = useState<QuestionOption[]>([]);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaType, setMediaType] = useState<MediaType | undefined>(undefined);
-  const [options, setOptions] = useState<
-    (QuestionOption & { error?: string })[]
-  >([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const fixedOptions = [
-    "Sangat Setuju",
-    "Setuju",
-    "Netral",
-    "Tidak Setuju",
-    "Sangat Tidak Setuju",
-  ];
-
-  // isi data ketika edit dibuka
+  // load data existing
   useEffect(() => {
     if (!question) return;
-    setQuestionText(question.text ?? "");
-    setMediaType(question.mediaType ?? undefined);
 
-    const initOptions =
-      question.options?.length > 0
-        ? question.options
-        : fixedOptions.map((text, idx) => ({
-            id: (idx + 1).toString(),
-            text,
-            dimensionMost: "",
-            dimensionLeast: "",
-          }));
-
-    setOptions(validateOptions(initOptions));
-  }, [question, open,]);
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type.startsWith("image/")) {
-        setMediaFile(file);
-      } else {
-        alert("Hanya file gambar yang diperbolehkan.");
-      }
-    }
-  }
+    setOptions(
+      question.options?.length
+        ? question.options.map((o) => ({
+            id: o.id,
+            text: o.text ?? "",
+            dimensionMost: o.dimensionMost ?? "",
+            dimensionLeast: o.dimensionLeast ?? "",
+          }))
+        : [
+            { id: "1", text: "", dimensionMost: "", dimensionLeast: "" },
+            { id: "2", text: "", dimensionMost: "", dimensionLeast: "" },
+            { id: "3", text: "", dimensionMost: "", dimensionLeast: "" },
+            { id: "4", text: "", dimensionMost: "", dimensionLeast: "" },
+            { id: "5", text: "", dimensionMost: "", dimensionLeast: "" },
+          ]
+    );
+  }, [question, open]);
 
   function handleOptionChange(
     index: number,
-    field: "dimensionMost" | "dimensionLeast",
+    field: keyof QuestionOption,
     value: string
   ) {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], [field]: value };
-    setOptions(validateOptions(newOptions));
+    setOptions(newOptions);
+    validateOption(newOptions[index]);
   }
 
-  // validasi Most ≠ Least
-  function validateOptions(opts: QuestionOption[]) {
-    return opts.map((opt) => ({
-      ...opt,
-      error:
-        opt.dimensionMost && opt.dimensionMost === opt.dimensionLeast
-          ? "Most dan Least tidak boleh sama"
-          : "",
-    }));
+  function validateOption(opt: QuestionOption) {
+    let errorMsg = "";
+
+    if (!opt.text.trim()) {
+      errorMsg = "Teks jawaban wajib diisi";
+    } else if (!opt.dimensionMost || !opt.dimensionLeast) {
+      errorMsg = "Dimensi Most & Least wajib diisi";
+    } else if (opt.dimensionMost === opt.dimensionLeast) {
+      errorMsg = "Most dan Least tidak boleh sama";
+    }
+
+    setErrors((prev) => {
+      const updated = { ...prev };
+      if (errorMsg) {
+        updated[opt.id] = errorMsg;
+      } else {
+        delete updated[opt.id];
+      }
+      return updated;
+    });
   }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!question) return;
 
+    options.forEach((opt) => validateOption(opt));
+
+    if (Object.keys(errors).length > 0) {
+      alert("Periksa kembali input: semua teks & dimensi wajib diisi dan valid.");
+      return;
+    }
+
+    const allFilled = options.every(
+      (opt) =>
+        opt.text.trim() !== "" &&
+        opt.dimensionMost &&
+        opt.dimensionLeast &&
+        opt.dimensionMost !== opt.dimensionLeast
+    );
+
+    if (!allFilled) {
+      alert("Pastikan semua opsi dan dimensi sudah diisi dengan benar.");
+      return;
+    }
+
     const payload: Omit<Question, "id"> = {
       type: question.type,
-      text: questionText,
+      text: question.text ?? "-",
       mediaUrl: mediaFile
         ? URL.createObjectURL(mediaFile)
         : question.mediaUrl ?? undefined,
-      mediaType: mediaFile ? "image" : mediaType,
-      category: question.category || "1",
-      options: options.map(({ ...rest }) => rest), // buang error sebelum simpan
+      mediaType: mediaFile ? "image" : question.mediaType,
+      category: question.category ?? "1",
+      options,
       answer: undefined,
     };
 
     await onSave(question.id, payload);
 
-    // reset setelah update
     setMediaFile(null);
+    setErrors({});
     onOpenChange(false);
   }
 
   const isValid =
-    questionText.trim() !== "" && options.every((opt) => !opt.error);
+    options.every(
+      (opt) =>
+        opt.text.trim() !== "" &&
+        opt.dimensionMost &&
+        opt.dimensionLeast &&
+        opt.dimensionMost !== opt.dimensionLeast
+    ) && Object.keys(errors).length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,7 +156,7 @@ export default function EditQuestionDialog({
               Edit Question {question?.type}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              Perbarui pertanyaan & gambar (opsional).
+              Perbarui pilihan jawaban & dimensi (Most / Least)
             </DialogDescription>
           </DialogHeader>
 
@@ -148,67 +165,35 @@ export default function EditQuestionDialog({
               onSubmit={handleSave}
               className="px-4 sm:px-6 pb-6 pt-2 space-y-4"
             >
-              {/* Pertanyaan */}
-              <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-medium">
-                  Statement
-                </label>
-                <Textarea
-                  placeholder="Masukkan pertanyaan"
-                  value={questionText}
-                  onChange={(e) => setQuestionText(e.target.value)}
-                  className="text-sm"
-                />
-              </div>
-
-              {/* Media (opsional, hanya gambar) */}
-              <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-medium">
-                  Upload Gambar (opsional)
-                </label>
-                <Input type="file" accept="image/*" onChange={handleFileChange} />
-                {mediaFile ? (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {mediaFile.name}
-                  </p>
-                ) : (
-                  question?.mediaUrl && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      File sudah ada: {question.mediaUrl}
-                    </p>
-                  )
-                )}
-              </div>
-
-              {/* Opsi fixed */}
+              {/* Pilihan Jawaban */}
               <div className="space-y-2">
                 <span className="text-xs sm:text-sm font-medium">
                   Pilihan Jawaban
                 </span>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {options.map((opt, idx) => (
                     <div
                       key={opt.id}
-                      className="flex flex-col gap-1 rounded-md border px-3 py-2 bg-gray-50 text-sm"
+                      className="rounded-md border px-3 py-2 bg-gray-50 text-sm"
                     >
-                      <div className="flex items-center justify-between">
-                        {/* Label jawaban */}
-                        <span className="font-medium">{opt.text}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <Input
+                          placeholder={`Jawaban ${idx + 1}`}
+                          value={opt.text}
+                          onChange={(e) =>
+                            handleOptionChange(idx, "text", e.target.value)
+                          }
+                          className="flex-1 text-sm border-0 shadow-none"
+                        />
 
-                        {/* Dropdown Most & Least */}
                         <div className="flex gap-2">
-                          {/* MOST */}
                           <Select
                             value={opt.dimensionMost || ""}
                             onValueChange={(val) =>
                               handleOptionChange(idx, "dimensionMost", val)
                             }
                           >
-                            <SelectTrigger
-                              className={`w-16 h-7 text-xs ${
-                                opt.error ? "border-red-500" : ""
-                              }`}
-                            >
+                            <SelectTrigger className="w-16 h-7 text-xs">
                               <SelectValue placeholder="M" />
                             </SelectTrigger>
                             <SelectContent>
@@ -216,21 +201,17 @@ export default function EditQuestionDialog({
                               <SelectItem value="I">I</SelectItem>
                               <SelectItem value="S">S</SelectItem>
                               <SelectItem value="C">C</SelectItem>
+                              <SelectItem value="*">*</SelectItem>
                             </SelectContent>
                           </Select>
 
-                          {/* LEAST */}
                           <Select
                             value={opt.dimensionLeast || ""}
                             onValueChange={(val) =>
                               handleOptionChange(idx, "dimensionLeast", val)
                             }
                           >
-                            <SelectTrigger
-                              className={`w-16 h-7 text-xs ${
-                                opt.error ? "border-red-500" : ""
-                              }`}
-                            >
+                            <SelectTrigger className="w-16 h-7 text-xs">
                               <SelectValue placeholder="L" />
                             </SelectTrigger>
                             <SelectContent>
@@ -238,14 +219,16 @@ export default function EditQuestionDialog({
                               <SelectItem value="I">I</SelectItem>
                               <SelectItem value="S">S</SelectItem>
                               <SelectItem value="C">C</SelectItem>
+                              <SelectItem value="*">*</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
 
-                      {/* error text */}
-                      {opt.error && (
-                        <span className="text-xs text-red-500">{opt.error}</span>
+                      {errors[opt.id] && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {errors[opt.id]}
+                        </p>
                       )}
                     </div>
                   ))}
@@ -265,7 +248,7 @@ export default function EditQuestionDialog({
                 <Button
                   type="submit"
                   className="min-w-[96px]"
-                  disabled={!question || !isValid}
+                  disabled={!isValid}
                 >
                   Update
                 </Button>

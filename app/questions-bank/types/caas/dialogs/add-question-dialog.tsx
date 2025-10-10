@@ -7,9 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type {
@@ -43,17 +41,6 @@ export default function AddQuestionDialog({
     { id: "4", text: "Cukup kuat", score: 2 },
     { id: "5", text: "Tidak kuat", score: 1 },
   ];
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type.startsWith("image/")) {
-        setMediaFile(file);
-      } else {
-        alert("Hanya file gambar yang diperbolehkan.");
-      }
-    }
-  }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -89,31 +76,19 @@ export default function AddQuestionDialog({
             <DialogTitle className="text-base sm:text-lg">
               Add Question {activeType}
             </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              Masukkan pertanyaan & gambar (opsional).
-            </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="h-[70vh]">
             <form onSubmit={handleSave} className="px-4 sm:px-6 pb-6 pt-2 space-y-4">
               {/* Pertanyaan */}
               <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-medium">Statement</label>
+                <label className="block text-xs sm:text-sm font-medium">Pertanyaan</label>
                 <Textarea
                   placeholder="Masukkan pertanyaan"
                   value={questionText}
                   onChange={(e) => setQuestionText(e.target.value)}
                   className="text-sm"
                 />
-              </div>
-
-              {/* Media (opsional, hanya gambar) */}
-              <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-medium">Upload Gambar (opsional)</label>
-                <Input type="file" accept="image/*" onChange={handleFileChange} />
-                {mediaFile && (
-                  <p className="text-xs text-muted-foreground mt-1">{mediaFile.name}</p>
-                )}
               </div>
 
               {/* Opsi default (read-only) */}

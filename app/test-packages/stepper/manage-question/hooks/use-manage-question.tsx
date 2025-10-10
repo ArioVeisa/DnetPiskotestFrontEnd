@@ -150,7 +150,6 @@ export function useManageQuestions(
       handleAxiosError("handleUpdate", err, setError);
     }
   };
-
   const handleDelete = async (questionId: number | string): Promise<void> => {
     if (!testId || !sectionId || !token) return;
 
@@ -161,7 +160,16 @@ export function useManageQuestions(
         questionId: parseQuestionId(questionId),
         token,
       });
-      await fetchQuestions();
+
+      // 🧠 langsung hapus dari state lokal biar gak perlu fetch ulang
+      setQuestions((prev) =>
+        prev.filter(
+          (q) => parseQuestionId(q.id) !== parseQuestionId(questionId)
+        )
+      );
+
+      // kalau mau tetap sync dari backend, boleh fetchQuestions() di bawah
+      // await fetchQuestions();
     } catch (err) {
       handleAxiosError("handleDelete", err, setError);
     }

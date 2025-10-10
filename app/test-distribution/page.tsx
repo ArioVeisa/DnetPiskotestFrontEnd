@@ -48,7 +48,7 @@ export default function TestDistributionPage() {
       <Sidebar />
       <div className="flex flex-col flex-1 bg-white">
         <Topbar />
-        <main className="flex-1 px-8 pt-2 pb-8">
+        <main className="flex-1 px-8">
           {showStepper ? (
             <MakeSessionProvider>
               {/* Stepper progress indicator */}

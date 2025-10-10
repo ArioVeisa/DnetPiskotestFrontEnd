@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type {
   Question,
@@ -38,105 +37,112 @@ export default function AddQuestionDialog({
   activeType,
   onSave,
 }: AddQuestionDialogProps) {
-  const [questionText, setQuestionText] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [category] = useState("");
 
-  // fixed options DISC
-  const fixedOptions = [
-    "Sangat Setuju",
-    "Setuju",
-    "Netral",
-    "Tidak Setuju",
-    "Sangat Tidak Setuju",
-  ];
-
-  const [options, setOptions] = useState<QuestionOption[]>(
-    fixedOptions.map((text, idx) => ({
-      id: (idx + 1).toString(),
-      text,
-      dimensionMost: "",
-      dimensionLeast: "",
-    }))
-  );
+  const [options, setOptions] = useState<QuestionOption[]>([
+    { id: "1", text: "", dimensionMost: "", dimensionLeast: "" },
+    { id: "2", text: "", dimensionMost: "", dimensionLeast: "" },
+    { id: "3", text: "", dimensionMost: "", dimensionLeast: "" },
+    { id: "4", text: "", dimensionMost: "", dimensionLeast: "" },
+    { id: "5", text: "", dimensionMost: "", dimensionLeast: "" },
+  ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type.startsWith("image/")) {
-        setMediaFile(file);
-      } else {
-        alert("Hanya file gambar yang diperbolehkan.");
-      }
-    }
-  }
-
   function handleOptionChange(
     index: number,
-    field: "dimensionMost" | "dimensionLeast",
+    field: keyof QuestionOption,
     value: string
   ) {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], [field]: value };
     setOptions(newOptions);
 
-    // validasi Most ≠ Least
-    if (
-      newOptions[index].dimensionMost &&
-      newOptions[index].dimensionLeast &&
-      newOptions[index].dimensionMost === newOptions[index].dimensionLeast
-    ) {
-      setErrors((prev) => ({
-        ...prev,
-        [newOptions[index].id]: "Most dan Least tidak boleh sama",
-      }));
-    } else {
-      setErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[newOptions[index].id];
-        return updated;
-      });
+    validateOption(newOptions[index]);
+  }
+
+  function validateOption(opt: QuestionOption) {
+    let errorMsg = "";
+
+    if (!opt.text.trim()) {
+      errorMsg = "Teks jawaban wajib diisi";
+    } else if (!opt.dimensionMost || !opt.dimensionLeast) {
+      errorMsg = "Dimensi Most & Least wajib diisi";
+    } else if (opt.dimensionMost === opt.dimensionLeast) {
+      errorMsg = "Most dan Least tidak boleh sama";
     }
+
+    setErrors((prev) => {
+      const updated = { ...prev };
+      if (errorMsg) {
+        updated[opt.id] = errorMsg;
+      } else {
+        delete updated[opt.id];
+      }
+      return updated;
+    });
   }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    // validasi ulang semua opsi
+    options.forEach((opt) => validateOption(opt));
+
     if (Object.keys(errors).length > 0) {
-      alert("Periksa kembali input Most & Least, tidak boleh sama.");
+      alert(
+        "Periksa kembali input: semua teks & dimensi wajib diisi dan valid."
+      );
+      return;
+    }
+
+    const allFilled = options.every(
+      (opt) =>
+        opt.text.trim() !== "" &&
+        opt.dimensionMost &&
+        opt.dimensionLeast &&
+        opt.dimensionMost !== opt.dimensionLeast
+    );
+
+    if (!allFilled) {
+      alert("Pastikan semua opsi dan dimensi sudah diisi dengan benar.");
       return;
     }
 
     const payload: Omit<Question, "id"> = {
       type: activeType,
-      text: questionText,
+      text: "-", // placeholder karena kolom pertanyaan dihapus
       mediaUrl: mediaFile ? URL.createObjectURL(mediaFile) : undefined,
       mediaType: mediaFile ? "image" : undefined,
-      category: category || "1", // default category id 1
+      category: category || "1",
       options,
       answer: undefined,
     };
 
     await onSave(payload);
 
-    // reset form setelah berhasil
-    setQuestionText("");
+    // reset form
     setMediaFile(null);
-    setOptions(
-      fixedOptions.map((text, idx) => ({
-        id: (idx + 1).toString(),
-        text,
-        dimensionMost: "",
-        dimensionLeast: "",
-      }))
-    );
+    setOptions([
+      { id: "1", text: "", dimensionMost: "", dimensionLeast: "" },
+      { id: "2", text: "", dimensionMost: "", dimensionLeast: "" },
+      { id: "3", text: "", dimensionMost: "", dimensionLeast: "" },
+      { id: "4", text: "", dimensionMost: "", dimensionLeast: "" },
+      { id: "5", text: "", dimensionMost: "", dimensionLeast: "" },
+    ]);
     setErrors({});
     onOpenChange(false);
   }
 
-  const isValid = questionText.trim() !== "" && Object.keys(errors).length === 0;
+  const isValid =
+    options.every(
+      (opt) =>
+        opt.text.trim() !== "" &&
+        opt.dimensionMost &&
+        opt.dimensionLeast &&
+        opt.dimensionMost !== opt.dimensionLeast
+    ) && Object.keys(errors).length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -147,7 +153,7 @@ export default function AddQuestionDialog({
               Add Question {activeType}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              Masukkan pertanyaan & gambar (opsional).
+              Masukkan pilihan jawaban & dimensi (Most / Least)
             </DialogDescription>
           </DialogHeader>
 
@@ -156,50 +162,24 @@ export default function AddQuestionDialog({
               onSubmit={handleSave}
               className="px-4 sm:px-6 pb-6 pt-2 space-y-4"
             >
-              {/* Pertanyaan */}
-              <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-medium">
-                  Statement
-                </label>
-                <Textarea
-                  placeholder="Masukkan pertanyaan"
-                  value={questionText}
-                  onChange={(e) => setQuestionText(e.target.value)}
-                  className="text-sm"
-                />
-              </div>
-
-              {/* Media (opsional, hanya gambar) */}
-              <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-medium">
-                  Upload Gambar (opsional)
-                </label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                {mediaFile && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {mediaFile.name}
-                  </p>
-                )}
-              </div>
-
-              {/* Opsi fixed */}
+              {/* Pilihan Jawaban */}
               <div className="space-y-2">
-                <span className="text-xs sm:text-sm font-medium">
-                  Pilihan Jawaban
-                </span>
                 <div className="space-y-3">
                   {options.map((opt, idx) => (
                     <div
                       key={opt.id}
                       className="rounded-md border px-3 py-2 bg-gray-50 text-sm"
                     >
-                      <div className="flex items-center justify-between">
-                        {/* Label jawaban */}
-                        <span className="font-medium">{opt.text}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Input jawaban manual */}
+                        <Input
+                          placeholder={`Pertanyaan ${idx + 1}`}
+                          value={opt.text}
+                          onChange={(e) =>
+                            handleOptionChange(idx, "text", e.target.value)
+                          }
+                          className="flex-1 text-sm border-0 shadow-none"
+                        />
 
                         {/* Dropdown Most & Least */}
                         <div className="flex gap-2">
@@ -218,6 +198,7 @@ export default function AddQuestionDialog({
                               <SelectItem value="I">I</SelectItem>
                               <SelectItem value="S">S</SelectItem>
                               <SelectItem value="C">C</SelectItem>
+                              <SelectItem value="*">*</SelectItem>
                             </SelectContent>
                           </Select>
 
@@ -236,6 +217,7 @@ export default function AddQuestionDialog({
                               <SelectItem value="I">I</SelectItem>
                               <SelectItem value="S">S</SelectItem>
                               <SelectItem value="C">C</SelectItem>
+                              <SelectItem value="*">*</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

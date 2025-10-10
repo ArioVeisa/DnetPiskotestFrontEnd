@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { useAddPackage } from "./hooks/use-add-package";
@@ -8,7 +8,7 @@ import { useMakeSession } from "../../hooks/use-make-session";
 import { NotepadText, Clock } from "lucide-react";
 
 type Props = {
-  onNext: (id: number) => void; // ✅ sekarang terima id
+  onNext: (id: number) => void;
   onCancel: () => void;
 };
 
@@ -16,28 +16,35 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
   const { packages, loading, error } = useAddPackage();
   const { packageId, setPackageId, setTestName } = useMakeSession();
 
-  // pake number | null biar konsisten sama backend
   const [selected, setSelected] = useState<number | null>(packageId ?? null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 100);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   if (loading) return <div>Loading packages...</div>;
   if (error) return <div className="text-red-500">Gagal load: {error}</div>;
 
   function handleSelect(id: number, name: string) {
     setSelected(id);
-    setPackageId(id); // simpan id di global state
-    setTestName(name); // simpan nama paket di global state
-    localStorage.setItem("selectedPackageId", String(id)); // ✅ simpan juga ke localStorage
+    setPackageId(id);
+    setTestName(name);
+    localStorage.setItem("selectedPackageId", String(id));
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 md:px-8 py-8">
-      {/* Judul halaman */}
+    <div className="w-full px-4 sm:px-6 md:px-8">
+      {/* JUDUL */}
       <h2 className="font-bold text-2xl mb-1">Add Packages</h2>
       <p className="text-gray-500 text-sm mb-6">
         Add Packages from test packages
       </p>
 
-      <div className="space-y-4">
+      {/* LIST PACKAGE */}
+      <div className="space-y-4 pb-24"> {/* ada padding bawah supaya tidak ketutup sticky footer */}
         {packages.map((p) => (
           <Card
             key={p.id}
@@ -48,7 +55,6 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
                 : "hover:border-blue-400"
             }`}
           >
-            {/* HEADER: judul + radio */}
             <CardContent>
               <div className="flex flex-col sm:flex-row sm:items-center">
                 <CardTitle className="text-base font-semibold flex-1">
@@ -69,7 +75,6 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
               </div>
             </CardContent>
 
-            {/* CONTENT: badges biru */}
             <CardContent className="font-medium">
               <div className="flex flex-wrap gap-2 text-xs">
                 <span className="px-2 py-1 rounded-sm bg-blue-50 text-blue-500 flex gap-2">
@@ -91,13 +96,21 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
         ))}
       </div>
 
-      <div className="flex justify-end gap-2 mt-7">
+      {/* FOOTER STICKY */}
+      <div
+        className={`border-t bg-white py-3 px-6 md:px-8 flex justify-end gap-2 transition-all duration-300 ${
+          isScrolled
+            ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
+            : "relative mt-8"
+        }`}
+      >
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          Back
         </Button>
         <Button
-          onClick={() => selected && onNext(selected)} // ✅ kirim id yang dipilih
+          onClick={() => selected && onNext(selected)}
           disabled={!selected}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
         >
           Next
         </Button>

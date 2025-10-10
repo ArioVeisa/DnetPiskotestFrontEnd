@@ -202,24 +202,24 @@ export default function CaasQuestionsStep({
         {/* Import */}
         <div className="flex items-center gap-2">
           <Button
-            className="hidden md:flex bg-blue-500 hover:bg-blue-600 text-white"
+            className="hidden md:flex bg-white hover:bg-gray-100 cursor-pointer text-black shadow-sm"
             size="sm"
             type="button"
             onClick={openImport}
             disabled={loading}
           >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
             Import Question
           </Button>
           <Button
-            className="md:hidden bg-blue-500 hover:bg-blue-600 text-white"
+            className="md:hidden bg-white hover:bg-gray-100 cursor-pointer text-black shadow-sm"
             size="icon"
             type="button"
             title="Import"
             onClick={openImport}
             disabled={loading}
           >
-            <FileSpreadsheet className="h-4 w-4" />
+            <FileSpreadsheet className="h-4 w-4 text-green-600" />
           </Button>
         </div>
       </div>

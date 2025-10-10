@@ -18,7 +18,7 @@ export function QuickActions({ actions }: QuickActionsProps) {
       <CardHeader>
         <CardTitle>Aksi Cepat</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 cursor-pointer">
         {actions.map((a, idx) => (
           <Button
             key={a.label}
@@ -28,7 +28,7 @@ export function QuickActions({ actions }: QuickActionsProps) {
             }}
             size="lg"
             variant={idx === 0 ? "default" : "outline"}
-            className={`w-full h-16 flex items-center justify-center gap-2 ${
+            className={`w-full h-16 flex items-center justify-center gap-2 cursor-pointer${
               idx === 0 ? "bg-blue-500 text-white hover:bg-blue-600" : ""
             }`}
           >
