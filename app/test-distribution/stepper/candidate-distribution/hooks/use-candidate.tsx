@@ -7,6 +7,7 @@ import {
   CreateCandidatePayload,
   UpdateCandidatePayload,
 } from "../service/candidate-service";
+import { AxiosError } from "axios";
 
 /** Kandidat dengan status tambahan di frontend */
 export interface CandidateWithStatus extends Candidate {
@@ -21,12 +22,8 @@ export function useCandidates(testId?: number) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   /** Helper: tambahkan default status "Pending" */
-  const normalizeCandidates = (data: Candidate[]): CandidateWithStatus[] => {
-    return data.map((c) => ({
-      ...c,
-      localStatus: "Pending",
-    }));
-  };
+  const normalizeCandidates = (data: Candidate[]): CandidateWithStatus[] =>
+    data.map((c) => ({ ...c, localStatus: "Pending" }));
 
   /** Refresh kandidat yang tersedia (belum pernah test) */
   const refreshCandidates = useCallback(async () => {
@@ -71,33 +68,27 @@ export function useCandidates(testId?: number) {
       const withStatus: CandidateWithStatus = { ...created, localStatus: "Pending" };
       setCandidates((prev) => [...prev, withStatus]);
       return withStatus;
-    } catch (err: any) {
-      console.log('Error details:', err);
-      console.log('Error response:', err.response);
-      console.log('Error response data:', err.response?.data);
-      
-      // Handle Laravel validation errors (422 status)
-      if (err.response?.status === 422 && err.response?.data?.errors) {
-        const errors = err.response.data.errors;
-        console.log('Validation errors:', errors);
-        
-        // Convert Laravel validation errors to field errors
-        const fieldErrors: Record<string, string> = {};
-        Object.keys(errors).forEach(field => {
-          if (Array.isArray(errors[field]) && errors[field].length > 0) {
-            fieldErrors[field] = errors[field][0];
-          }
-        });
-        
-        setFieldErrors(fieldErrors);
-        setError(null);
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-        setFieldErrors({});
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        if (err.response?.status === 422 && err.response.data?.errors) {
+          const errors: Record<string, string[]> = err.response.data.errors;
+          const fieldErrors: Record<string, string> = {};
+          Object.entries(errors).forEach(([field, msgs]) => {
+            if (msgs.length > 0) fieldErrors[field] = msgs[0];
+          });
+          setFieldErrors(fieldErrors);
+          setError(null);
+        } else if (err.response?.data?.message) {
+          setError(err.response.data.message);
+          setFieldErrors({});
+        } else {
+          setError(err.message);
+          setFieldErrors({});
+        }
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(msg);
-        setFieldErrors({});
+        setError(String(err));
       }
       throw err;
     } finally {
@@ -122,7 +113,6 @@ export function useCandidates(testId?: number) {
           localStatus:
             candidates.find((c) => c.id === payload.id)?.localStatus || "Pending",
         };
-
         setCandidates((prev) =>
           prev.map((c) => (c.id === payload.id ? withStatus : c))
         );
@@ -183,7 +173,7 @@ export function useCandidates(testId?: number) {
     loading,
     error,
     fieldErrors,
-    setError, // biar bisa di-clear manual dari luar
+    setError,
     refreshCandidates,
     refreshAfterAdd,
     fetchCandidateById,

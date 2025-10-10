@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, Mail, FileText, AlertCircle } from "lucide-react";
+import { User, Mail, FileText } from "lucide-react";
 
 interface UserType {
   id: string;

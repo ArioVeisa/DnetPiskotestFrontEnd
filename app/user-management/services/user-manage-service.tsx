@@ -2,7 +2,6 @@
 import { api } from "@services/api";
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL_LOCAL || "http://localhost:8000/api";
 
 /* ============================
    Frontend Model
@@ -106,7 +105,7 @@ export const userManagementService = {
   async update(id: string, payload: Partial<User>): Promise<User> {
     try {
       // ✅ ubah "" jadi null untuk department, hapus id dari payload
-      const { id: _, ...payloadWithoutId } = payload;
+      const { id, ...payloadWithoutId } = payload;
       const reqBody = {
         ...payloadWithoutId,
         department:
