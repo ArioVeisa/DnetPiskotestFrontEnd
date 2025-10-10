@@ -80,8 +80,8 @@ export default function AddQuestionDialog({
         mediaType: undefined,
         category,
         options: [
-          { id: "1", text: "True", score: answer === "True" ? 10 : 0 },
-          { id: "2", text: "False", score: answer === "False" ? 10 : 0 },
+          { id: "1", text: "True", score: 10, is_correct: answer === "True" },
+          { id: "2", text: "False", score: 10, is_correct: answer === "False" },
         ],
         answer,
       };

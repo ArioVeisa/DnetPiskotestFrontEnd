@@ -28,6 +28,7 @@ type Props = {
   onSave: (payload: CreateCandidatePayload) => Promise<void> | void;
   saving?: boolean;
   error?: string | null;
+  fieldErrors?: Record<string, string>;
 };
 
 export default function AddCandidateDialog({
@@ -36,6 +37,7 @@ export default function AddCandidateDialog({
   onSave,
   saving,
   error,
+  fieldErrors = {},
 }: Props) {
   const initialForm: CreateCandidatePayload = {
     nik: "",
@@ -49,6 +51,19 @@ export default function AddCandidateDialog({
   };
 
   const [form, setForm] = useState<CreateCandidatePayload>(initialForm);
+
+  // Helper function untuk menampilkan error field
+  function FieldError({ field }: { field: string }) {
+    const errorMessage = fieldErrors[field];
+    if (!errorMessage) return null;
+    
+    return (
+      <div className="text-red-500 text-xs mt-1 flex items-center gap-1">
+        <span className="text-red-500">⚠</span>
+        {errorMessage}
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,7 +96,7 @@ export default function AddCandidateDialog({
               onSubmit={handleSubmit}
               className="px-4 sm:px-6 pb-6 pt-2 space-y-4"
             >
-              {error && (
+              {error && Object.keys(fieldErrors).length === 0 && (
                 <div className="text-red-500 text-sm py-2 px-3 bg-red-50 rounded-md border border-red-100">
                   {error}
                 </div>
@@ -99,8 +114,9 @@ export default function AddCandidateDialog({
                   }
                   placeholder="3201010101010001"
                   required
-                  className="text-sm"
+                  className={`text-sm ${fieldErrors.nik ? 'border-red-500' : ''}`}
                 />
+                <FieldError field="nik" />
               </div>
 
               {/* Full Name */}
@@ -115,8 +131,9 @@ export default function AddCandidateDialog({
                   }
                   placeholder="Budi Santoso"
                   required
-                  className="text-sm"
+                  className={`text-sm ${fieldErrors.name ? 'border-red-500' : ''}`}
                 />
+                <FieldError field="name" />
               </div>
 
               {/* Email */}
@@ -132,8 +149,9 @@ export default function AddCandidateDialog({
                   }
                   placeholder="budi@example.com"
                   required
-                  className="text-sm"
+                  className={`text-sm ${fieldErrors.email ? 'border-red-500' : ''}`}
                 />
+                <FieldError field="email" />
               </div>
 
               {/* Phone */}
@@ -148,8 +166,9 @@ export default function AddCandidateDialog({
                   }
                   placeholder="081234567890"
                   required
-                  className="text-sm"
+                  className={`text-sm ${fieldErrors.phone_number ? 'border-red-500' : ''}`}
                 />
+                <FieldError field="phone_number" />
               </div>
 
               {/* Position + Department */}
@@ -164,8 +183,9 @@ export default function AddCandidateDialog({
                       setForm((f) => ({ ...f, position: e.target.value }))
                     }
                     placeholder="Staff / Manager"
-                    className="text-sm"
+                    className={`text-sm ${fieldErrors.position ? 'border-red-500' : ''}`}
                   />
+                  <FieldError field="position" />
                 </div>
                 <div>
                   <Label className="block text-xs sm:text-sm font-medium">
@@ -177,8 +197,9 @@ export default function AddCandidateDialog({
                       setForm((f) => ({ ...f, department: e.target.value }))
                     }
                     placeholder="HRD / IT"
-                    className="text-sm"
+                    className={`text-sm ${fieldErrors.department ? 'border-red-500' : ''}`}
                   />
+                  <FieldError field="department" />
                 </div>
               </div>
 
@@ -194,8 +215,9 @@ export default function AddCandidateDialog({
                     onChange={(e) =>
                       setForm((f) => ({ ...f, birth_date: e.target.value }))
                     }
-                    className="text-sm"
+                    className={`text-sm ${fieldErrors.birth_date ? 'border-red-500' : ''}`}
                   />
+                  <FieldError field="birth_date" />
                 </div>
                 <div>
                   <Label className="block text-xs sm:text-sm font-medium">
@@ -207,7 +229,7 @@ export default function AddCandidateDialog({
                       setForm((f) => ({ ...f, gender: val as "male" | "female" }))
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className={`w-full ${fieldErrors.gender ? 'border-red-500' : ''}`}>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -215,6 +237,7 @@ export default function AddCandidateDialog({
                       <SelectItem value="female">Female</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FieldError field="gender" />
                 </div>
               </div>
 

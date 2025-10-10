@@ -31,6 +31,8 @@ export const authService = {
           message = data;
         } else if (data?.message) {
           message = data.message;
+        } else if (data?.error) {
+          message = data.error;
         } else if (data?.errors) {
           const firstKey = Object.keys(data.errors)[0];
           message = data.errors[firstKey][0];
@@ -46,7 +48,7 @@ export const authService = {
 
   async checkSession() {
     try {
-      const res = await api.get("/user"); // token otomatis diinject
+      const res = await api.get("/me"); // token otomatis diinject
       return res.data;
     } catch {
       localStorage.removeItem("token");

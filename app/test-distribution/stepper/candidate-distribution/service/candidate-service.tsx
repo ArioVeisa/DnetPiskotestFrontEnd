@@ -50,6 +50,21 @@ export const candidateService = {
     }
   },
 
+  async fetchAvailableCandidates(testId?: number): Promise<Candidate[]> {
+    try {
+      const url = testId 
+        ? `/candidates/available?test_id=${testId}`
+        : "/candidates/available";
+      const res = await api.get(url);
+      return res.data.data ?? res.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error.response?.data?.message || "Gagal mengambil kandidat yang tersedia";
+      }
+      throw "Terjadi error tidak dikenal";
+    }
+  },
+
   async fetchById(id: number): Promise<Candidate> {
     try {
       const res = await api.get(`/candidates/${id}`);
@@ -64,11 +79,17 @@ export const candidateService = {
 
   async create(payload: CreateCandidatePayload): Promise<Candidate> {
     try {
+      console.log('Creating candidate with payload:', payload);
       const res = await api.post("/candidates", payload);
+      console.log('Candidate created successfully:', res.data);
       return res.data.data ?? res.data;
     } catch (error) {
+      console.error('Error creating candidate:', error);
       if (axios.isAxiosError(error)) {
-        throw error.response?.data?.message || "Gagal membuat kandidat";
+        console.error('Axios error response:', error.response);
+        console.error('Error response data:', error.response?.data);
+        // Don't throw here, let the hook handle the error
+        throw error;
       }
       throw "Terjadi error tidak dikenal";
     }

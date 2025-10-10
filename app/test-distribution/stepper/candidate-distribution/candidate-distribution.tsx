@@ -80,11 +80,13 @@ export default function CandidatesDistributions({
     candidates,
     loading: candidateLoading,
     error: candidateError,
+    fieldErrors: candidateFieldErrors,
     setError,
     addCandidate,
     updateCandidate,
     removeCandidate,
-  } = useCandidates();
+    refreshAfterAdd,
+  } = useCandidates(testPackageId);
 
   // hooks for email invitation
   const {
@@ -408,6 +410,7 @@ export default function CandidatesDistributions({
         onSave={async (formData: CreateCandidatePayload) => {
           try {
             await addCandidate(formData);
+            await refreshAfterAdd(); // Refresh daftar kandidat setelah menambah
             setAddOpen(false);
           } catch {
             // Error sudah ditangani di hook
@@ -415,6 +418,7 @@ export default function CandidatesDistributions({
         }}
         saving={candidateLoading}
         error={candidateError}
+        fieldErrors={candidateFieldErrors}
       />
 
       <CandidateDetailDialog

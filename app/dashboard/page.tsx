@@ -9,7 +9,7 @@ import { QuickActions } from "./components/quick-action";
 import { useDashboard } from "./hooks/use-dashboard";
 
 export default function DashboardPage() {
-  const { stats, activities, actions, loading } = useDashboard();
+  const { stats, activities, actions, loading, error } = useDashboard();
 
   return (
     <div className="flex min-h-screen">
@@ -23,6 +23,15 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
+              {/* Error message jika ada */}
+              {error && (
+                <div className="bg-yellow-50 text-yellow-700 p-4 rounded-lg">
+                  <p className="text-sm">
+                    <strong>Perhatian:</strong> {error}. Menampilkan data dummy.
+                  </p>
+                </div>
+              )}
+
               {/* Statistik atas */}
               <StatCards stats={stats} />
 

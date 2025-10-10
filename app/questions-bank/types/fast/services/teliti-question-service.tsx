@@ -53,6 +53,7 @@ type ApiQuestion = {
   question_text: string;
   media_path: string | null;
   is_active: number;
+  correct_option_id: number | null;
   category_id: number;
   created_at: string;
   updated_at: string;
@@ -65,13 +66,17 @@ type ApiResponse<T> = { data: T };
 function normalizeQuestion(q: ApiQuestion): Question {
   let correctId: string | null = null;
 
-  // 🔹 parsing kalau ada tanda "|"
-  if (q.question_text.includes("|")) {
+  // 🔹 Jika backend sudah menyediakan correct_option_id, gunakan itu
+  if (q.correct_option_id) {
+    correctId = q.correct_option_id.toString();
+  }
+  // 🔹 Jika belum ada correct_option_id, tentukan berdasarkan logika Fast Accuracy
+  else if (q.question_text.includes("|")) {
     const [left, right] = q.question_text.split("|").map((s) => s.trim());
     const isSame = left === right;
 
     const correctOpt = q.options.find((opt) => {
-      const txt = opt.option_text.toLowerCase();
+      const txt = opt.option_text.toLowerCase().trim();
       return (isSame && txt === "true") || (!isSame && txt === "false");
     });
 
@@ -98,7 +103,7 @@ function normalizeQuestion(q: ApiQuestion): Question {
 
 /* ========== READ ALL ========== */
 export async function fetchQuestions(): Promise<Question[]> {
-  const res = await api.get<ApiResponse<ApiQuestion[]>>("/teliti-questions");
+  const res = await api.get<ApiResponse<ApiQuestion[]>>("/test/teliti-questions");
   return res.data.data.map(normalizeQuestion);
 }
 
@@ -129,7 +134,7 @@ export async function createQuestion(
     console.log("[createQuestion] payload (API):", payload);
 
     const res = await api.post<ApiResponse<ApiQuestion>>(
-      "/teliti-questions",
+      "/test/teliti-questions",
       payload
     );
 
