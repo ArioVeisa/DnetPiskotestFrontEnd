@@ -85,11 +85,6 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
                   <Clock className="h-3.5 w-3.5" aria-hidden />
                   {p.duration}
                 </span>
-                {p.target && (
-                  <span className="px-2 py-1 rounded-sm bg-blue-50 text-blue-500">
-                    {p.target}
-                  </span>
-                )}
               </div>
             </CardContent>
           </Card>
