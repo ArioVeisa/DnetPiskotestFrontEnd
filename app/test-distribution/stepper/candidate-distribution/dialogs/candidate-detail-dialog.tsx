@@ -69,12 +69,21 @@ export default function CandidateDetailDialog({
         department: candidate.department ?? "",
       });
     }
-  }, [candidate]);
+  }, [candidate?.id]); // Only depend on candidate ID to avoid infinite re-renders
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await onSave(form);
-    onOpenChange(false);
+    try {
+      console.log('💾 Submitting candidate form:', form);
+      await onSave(form);
+      console.log('✅ Candidate form submitted successfully');
+      // Don't close dialog here - let parent component handle it
+      // onOpenChange(false);
+    } catch (error) {
+      console.error('❌ Error submitting candidate form:', error);
+      // Error handling is done by parent component
+      // Don't close dialog on error
+    }
   }
 
   const isValid =

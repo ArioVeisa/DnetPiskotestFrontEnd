@@ -77,12 +77,12 @@ export default function AuthForm() {
             Remember Me
           </Label>
         </div>
-        <Link
-          href="/login/reset-password"
-          className="text-sm text-primary hover:underline"
-        >
-          Forgot Password?
-        </Link>
+          {/* <Link
+            href="/login/reset-password"
+            className="text-sm text-primary hover:underline"
+          >
+            Forgot Password?
+          </Link> */}
       </div>
 
       {/* Error */}

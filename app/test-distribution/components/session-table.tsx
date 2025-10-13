@@ -39,12 +39,25 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
 const STATUS_STYLE: Record<string, string> = {
   Completed: "bg-green-100 text-green-700",
   Ongoing: "bg-yellow-100 text-yellow-700",
+  Scheduled: "bg-blue-100 text-blue-700",
   Draft: "bg-gray-100 text-gray-700",
   Expired: "bg-red-100 text-red-700",
 };
 
 export default function DistributionTable() {
-  const { distributions, loading, error } = useTestDistributions();
+  const { distributions, loading, error, remove, refresh } = useTestDistributions();
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus test distribution ini?')) {
+      try {
+        await remove(id);
+        await refresh(); // Refresh data setelah delete
+      } catch (error) {
+        console.error('Error deleting distribution:', error);
+        alert('Gagal menghapus test distribution');
+      }
+    }
+  };
 
   if (loading) return <TableSkeleton />;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -126,7 +139,10 @@ export default function DistributionTable() {
                       <DropdownMenuItem>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-500">
+                      <DropdownMenuItem 
+                        className="text-red-500"
+                        onClick={() => handleDelete(d.id)}
+                      >
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -170,7 +186,10 @@ export default function DistributionTable() {
                   <DropdownMenuItem>
                     <Edit className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-500">
+                  <DropdownMenuItem 
+                    className="text-red-500"
+                    onClick={() => handleDelete(d.id)}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>

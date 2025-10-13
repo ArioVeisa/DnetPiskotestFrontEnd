@@ -65,6 +65,51 @@ export const candidateService = {
     }
   },
 
+  async loadExistingCandidates(testId?: number): Promise<Candidate[]> {
+    try {
+      const url = testId
+        ? `/candidates/load-existing?test_id=${testId}`
+        : "/candidates/load-existing";
+      const res = await api.get(url);
+      return res.data.data ?? res.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error.response?.data?.message || "Gagal memuat kandidat yang sudah ada";
+      }
+      throw "Terjadi error tidak dikenal";
+    }
+  },
+
+  async getTestDistributionCandidates(testId: number): Promise<Candidate[]> {
+    try {
+      console.log(`📋 Loading test distribution candidates for test ${testId}`);
+      const res = await api.get(`/candidates/test-distribution-candidates?test_id=${testId}`);
+      console.log(`✅ Test distribution candidates loaded:`, res.data.data);
+      return res.data.data ?? res.data;
+    } catch (error) {
+      console.error(`❌ Error loading test distribution candidates:`, error);
+      if (axios.isAxiosError(error)) {
+        throw error.response?.data?.message || "Gagal memuat kandidat test distribution";
+      }
+      throw "Terjadi error tidak dikenal";
+    }
+  },
+
+  async addToTestDistribution(payload: CreateCandidatePayload & { test_id: number }): Promise<Candidate> {
+    try {
+      console.log(`➕ Adding candidate to test distribution:`, payload);
+      const res = await api.post(`/candidates/add-to-test-distribution`, payload);
+      console.log(`✅ Candidate added to test distribution:`, res.data);
+      return res.data.data;
+    } catch (error) {
+      console.error(`❌ Error adding candidate to test distribution:`, error);
+      if (axios.isAxiosError(error)) {
+        throw error.response?.data?.message || "Gagal menambahkan kandidat ke test distribution";
+      }
+      throw "Terjadi error tidak dikenal";
+    }
+  },
+
   async fetchById(id: number): Promise<Candidate> {
     try {
       const res = await api.get(`/candidates/${id}`);
@@ -97,9 +142,12 @@ export const candidateService = {
 
   async update(id: number, payload: UpdateCandidatePayload): Promise<Candidate> {
     try {
+      console.log(`📝 Updating candidate ${id} with payload:`, payload);
       const res = await api.put(`/candidates/${id}`, payload);
+      console.log(`✅ Candidate update response:`, res.data);
       return res.data.data ?? res.data;
     } catch (error) {
+      console.error(`❌ Error updating candidate ${id}:`, error);
       if (axios.isAxiosError(error)) {
         throw error.response?.data?.message || "Gagal update kandidat";
       }
@@ -109,8 +157,11 @@ export const candidateService = {
 
   async remove(id: number): Promise<void> {
     try {
+      console.log(`🗑️ Deleting candidate with ID: ${id}`);
       await api.delete(`/candidates/${id}`);
+      console.log(`✅ Candidate ${id} successfully deleted from backend`);
     } catch (error) {
+      console.error(`❌ Error deleting candidate ${id}:`, error);
       if (axios.isAxiosError(error)) {
         throw error.response?.data?.message || "Gagal menghapus kandidat";
       }

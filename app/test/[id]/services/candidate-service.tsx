@@ -8,6 +8,15 @@ export interface TestInfo {
   name: string;
   questionCount: number;
   duration: number;
+  sections?: TestSection[];
+}
+
+export interface TestSection {
+  section_id: number;
+  section_type: string;
+  duration_minutes: number;
+  question_count: number;
+  questions: any[];
 }
 
 export interface Candidate {
@@ -30,6 +39,14 @@ interface BackendTest {
   duration_minutes?: number; // optional, tergantung BE
 }
 
+interface BackendSection {
+  section_id: number;
+  section_type: string;
+  duration_minutes: number;
+  question_count: number;
+  questions: any[];
+}
+
 interface BackendCandidate {
   id: number;
   nik: string;
@@ -49,7 +66,8 @@ interface BackendQuestion {
 interface CandidateResponse {
   candidate: BackendCandidate;
   test?: BackendTest; // singular, sesuai response BE
-  questions?: BackendQuestion[]; // tidak pakai any
+  sections?: BackendSection[]; // sections dengan questions
+  questions?: BackendQuestion[]; // fallback untuk kompatibilitas
   started_at?: string;
 }
 
@@ -80,8 +98,15 @@ export const candidateService = {
               {
                 id: data.test.id,
                 name: data.test.name,
-                questionCount: data.questions?.length ?? 0,
-                duration: data.test.duration_minutes ?? 0,
+                questionCount: data.sections?.reduce((total, section) => total + section.question_count, 0) ?? data.questions?.length ?? 0,
+                duration: data.sections?.reduce((total, section) => total + section.duration_minutes, 0) ?? data.test.duration_minutes ?? 0,
+                sections: data.sections?.map(section => ({
+                  section_id: section.section_id,
+                  section_type: section.section_type,
+                  duration_minutes: section.duration_minutes,
+                  question_count: section.question_count,
+                  questions: section.questions,
+                })) ?? [],
               },
             ]
           : [],
@@ -95,6 +120,11 @@ export const candidateService = {
           data: error.response?.data,
           message: error.message,
         });
+
+        // Handle test already completed
+        if (error.response?.status === 403 && error.response?.data?.status === 'completed') {
+          throw new Error(`TEST_COMPLETED:${error.response.data.completed_at}`);
+        }
 
         throw (
           (error.response?.data as { message?: string })?.message ||

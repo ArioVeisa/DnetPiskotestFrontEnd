@@ -1,5 +1,7 @@
 // services/test-distribution-service.ts
 
+import { api } from "@services/api";
+
 export type DistributionStatus =
   | "Draft"
   | "Scheduled"
@@ -39,52 +41,19 @@ function persistDistributions(items: Distribution[]) {
    FETCH
    ============================ */
 export async function fetchDistributions(): Promise<Distribution[]> {
-  const saved = loadDistributions();
-  if (saved.length > 0) return saved;
-
-  // Dummy awal
-  const now = Date.now();
-  const dummy: Distribution[] = [
-    {
-      id: now,
-      testName: "Leadership Assessment",
-      category: "Managerial",
-      startDate: "2025-06-30",
-      endDate: "2025-07-05",
-      candidatesTotal: 78,
-      status: "Completed",
-    },
-    {
-      id: now + 1,
-      testName: "Focus & Accuracy Test",
-      category: "All Candidates",
-      startDate: "2025-06-25",
-      endDate: "2025-06-30",
-      candidatesTotal: 120,
-      status: "Ongoing",
-    },
-    {
-      id: now + 2,
-      testName: "Entry-Level Psychotest",
-      category: "Fresh Graduates",
-      startDate: null,
-      endDate: null,
-      candidatesTotal: 32,
-      status: "Draft",
-    },
-    {
-      id: now + 3,
-      testName: "Emotional Intelligence",
-      category: "HR Staff",
-      startDate: "2025-06-11",
-      endDate: "2025-06-20",
-      candidatesTotal: 82,
-      status: "Expired",
-    },
-  ];
-
-  persistDistributions(dummy);
-  return dummy;
+  try {
+    console.log('📋 Fetching test distributions...');
+    
+    // Ambil data dari backend API menggunakan axios instance
+    const response = await api.get('/test-distributions');
+    
+    console.log('✅ Fetched distributions:', response.data);
+    return response.data.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching distributions:', error);
+    // Return empty array jika API gagal - tidak ada fallback ke dummy data
+    return [];
+  }
 }
 
 /* ============================
@@ -124,7 +93,22 @@ export async function updateDistribution(
    DELETE
    ============================ */
 export async function deleteDistribution(id: number): Promise<void> {
-  const saved = loadDistributions();
-  const filtered = saved.filter((t) => t.id !== id);
-  persistDistributions(filtered);
+  try {
+    console.log('🗑️ Deleting test distribution with ID:', id);
+    
+    // Use the existing api helper
+    const response = await api.delete(`/test-distributions/${id}`);
+    
+    console.log('✅ Delete response:', response.data);
+
+    // Also remove from local storage as backup
+    const saved = loadDistributions();
+    const filtered = saved.filter((t) => t.id !== id);
+    persistDistributions(filtered);
+    
+    console.log('✅ Distribution deleted successfully');
+  } catch (error) {
+    console.error('❌ Error deleting distribution:', error);
+    throw error;
+  }
 }

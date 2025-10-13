@@ -29,6 +29,20 @@ export function useTestDistributions() {
     load();
   }, []);
 
+  // 🔹 Refresh distributions
+  async function refresh() {
+    try {
+      setLoading(true);
+      const data = await fetchDistributions();
+      setDistributions(data);
+      setError(null);
+    } catch {
+      setError("Failed to refresh distributions");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // 🔹 Create new distribution
   async function create(item: Distribution) {
     try {
@@ -63,5 +77,5 @@ export function useTestDistributions() {
     }
   }
 
-  return { distributions, loading, error, create, update, remove };
+  return { distributions, loading, error, create, update, remove, refresh };
 }
