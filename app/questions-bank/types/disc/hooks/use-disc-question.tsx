@@ -16,8 +16,6 @@ export function useCaasQuestions() {
   const [loading, setLoading] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-
-  
   // === READ ALL ===
   async function refresh() {
     setLoading(true);
@@ -101,11 +99,13 @@ export function useCaasQuestions() {
   }
 
   // Save Halaman
-  function done() {
-    console.log("[useCaasQuestions] done() called, closing…");
+  async function done() {
+    console.log("[useCaasQuestions] done() called, closing and refreshing…");
     setOpen(false);
     setActiveId(null);
-    setItems([]);
+
+    // Tunggu refresh selesai
+    await refresh();
   }
 
   // Load semua pertanyaan pertama kali
