@@ -13,7 +13,6 @@ export interface TestSection {
 export interface TestPackage {
   id: number;
   name: string;
-  target_position: string;
   icon_path?: string | null;
   started_date?: string | null; // ISO date (YYYY-MM-DD)
   ended_date?: string | null;   // ISO date (YYYY-MM-DD)
@@ -25,7 +24,6 @@ export interface TestPackage {
 
 export interface UpdateTestPackagePayload {
   name: string;
-  target_position: string;
   started_date: string;
   ended_date?: string;
   sections: TestSection[];
@@ -93,7 +91,6 @@ export const testPackageService = {
 
     const payload: UpdateTestPackagePayload = {
       name: current.name,
-      target_position: current.target_position,
       started_date,
       ended_date: current.ended_date ?? undefined,
       sections: current.sections ?? [],

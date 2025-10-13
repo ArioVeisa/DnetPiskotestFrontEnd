@@ -23,7 +23,6 @@ export function useUpdatePackage() {
         // ✅ gabungkan data lama + payload baru
         const mergedPayload: UpdateTestPackagePayload = {
           name: current.name,
-          target_position: current.target_position,
           started_date: payload.started_date ?? current.started_date!,
           ended_date: payload.ended_date ?? current.ended_date ?? undefined,
           sections: current.sections ?? [],

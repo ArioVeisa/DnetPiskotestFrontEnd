@@ -32,7 +32,6 @@ export interface QuestionDetailResponse {
 export interface TestResponse {
   id: number;
   name: string;
-  target_position: string;
 }
 
 export interface QuestionResponse {

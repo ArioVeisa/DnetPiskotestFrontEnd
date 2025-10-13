@@ -33,7 +33,6 @@ export interface Candidate {
 interface BackendTest {
   id: string;
   name: string;
-  target_position: string;
   icon_path?: string | null;
   started_date: string;
   duration_minutes?: number; // optional, tergantung BE

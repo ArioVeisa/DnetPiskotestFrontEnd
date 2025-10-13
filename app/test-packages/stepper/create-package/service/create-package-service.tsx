@@ -1,11 +1,14 @@
 import { api } from "@services/api";
 import axios from "axios";
 
-// Payload dari FE → dikirim ke API saat step 1
+/* =================================================================
+   🧩 INTERFACES
+================================================================= */
+
+// Payload dari FE → dikirim ke API saat step 1 (create)
 export interface CreateTestStep1Payload {
-  icon: string | null;
+  icon_path: string | null;
   name: string;
-  targetPosition: string;
   types: { type: string; sequence: number }[];
 }
 
@@ -22,36 +25,39 @@ export interface SectionResponse {
 interface TestPackageResponse {
   id: number;
   name: string;
-  target_position: string;
+  icon_path?: string | null;
   sections: SectionResponse[];
 }
 
-// Struktur response wrapper
+// Struktur response API
 interface ApiResponse<T> {
   data: T;
   status: string;
   message: string;
 }
 
-// Model untuk FE (dipakai di UI)
+// Model untuk FE
 export interface Test {
   id: string;
   name: string;
-  category: string;
+  icon_path?: string | null;
   types: string[];
   questions: number;
   duration: string;
 }
 
-// Struktur data yang disimpan di localStorage
+// LocalStorage helper
 export interface Step1StorageData {
   id: number;
   name: string;
-  target_position: string;
+  icon_path?: string | null;
   sections: SectionResponse[];
 }
 
-// Helper untuk localStorage
+/* =================================================================
+   💾 LOCAL STORAGE HELPERS
+================================================================= */
+
 const STORAGE_KEY = "createTestStep1";
 
 export function saveStep1ToStorage(payload: Step1StorageData) {
@@ -67,7 +73,10 @@ export function clearStep1Storage() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-// Mapping section type untuk API
+/* =================================================================
+   🗺️ TYPE MAPPING
+================================================================= */
+
 const sectionTypeMapping: Record<string, string> = {
   DISC: "DISC",
   CAAS: "CAAS",
@@ -75,43 +84,62 @@ const sectionTypeMapping: Record<string, string> = {
   teliti: "teliti",
 };
 
+/* =================================================================
+   ✨ UPDATE PAYLOAD TYPES
+================================================================= */
+
+export interface UpdateTestMetadataPayload {
+  name: string;
+  icon_path: string | null;
+}
+
+export interface UpdateTestStructurePayload {
+  name: string;
+  icon_path: string | null;
+  types: { type: string; sequence: number }[];
+  existingSections?: SectionResponse[];
+}
+
+/* =================================================================
+   🚀 CREATE SERVICE
+================================================================= */
+
 export const createPackageService = {
-  // Step 1: Buat paket test baru
   async createNewTestStep1(payload: CreateTestStep1Payload) {
     try {
-      // kalau sudah ada di storage, langsung pakai
       clearStep1Storage();
 
-      // Validasi awal
       if (!payload.name.trim()) throw "Nama test wajib diisi";
-      if (!payload.targetPosition.trim()) throw "Target posisi wajib diisi";
       if (payload.types.length === 0) throw "Minimal pilih 1 tipe test";
 
-      // Build sections
-      const sections = payload.types.map((t) => ({
+      // 🔹 Hilangkan duplikat tipe sebelum dikirim
+      const uniqueTypes = Array.from(
+        new Map(payload.types.map((t) => [t.type, t])).values()
+      );
+
+      const sections = uniqueTypes.map((t) => ({
         section_type: sectionTypeMapping[t.type] || t.type,
         duration_minutes: 0,
         question_count: 0,
         sequence: t.sequence,
       }));
 
-      // API call → bikin paket baru
       const res = await api.post<ApiResponse<TestPackageResponse>>(
         "/test-package",
         {
           name: payload.name,
-          target_position: payload.targetPosition,
+          icon_path: payload.icon_path,
           sections,
         }
       );
 
       const apiData = res.data.data;
 
-      // simpan ke localStorage
+      // Simpan versi bersih ke localStorage
       saveStep1ToStorage({
         id: apiData.id,
         name: apiData.name,
-        target_position: apiData.target_position,
+        icon_path: apiData.icon_path ?? payload.icon_path,
         sections: apiData.sections,
       });
 
@@ -128,17 +156,104 @@ export const createPackageService = {
       throw "Terjadi error tidak dikenal saat membuat test package";
     }
   },
-
   loadStep1FromStorage,
   clearStep1Storage,
 };
 
-// 🔹 Helper untuk mapping response ke model FE
+/* =================================================================
+   🧩 UPDATE SERVICE
+================================================================= */
+
+export const updatePackageService = {
+  /** Update metadata (nama & icon) tanpa ubah sections */
+  async updateTestMetadata(testId: number, payload: UpdateTestMetadataPayload) {
+    if (!testId) throw "ID test tidak valid";
+    if (!payload.name.trim()) throw "Nama test wajib diisi";
+
+    const res = await api.post<ApiResponse<TestPackageResponse>>(
+      `/test-package/${testId}`,
+      {
+        _method: "PUT",
+        name: payload.name,
+        icon_path: payload.icon_path,
+      }
+    );
+
+    const apiData = res.data.data;
+
+    saveStep1ToStorage({
+      id: apiData.id,
+      name: apiData.name,
+      icon_path: apiData.icon_path,
+      sections: apiData.sections,
+    });
+
+    return { test: mapToTest(apiData), raw: apiData };
+  },
+
+  /** Update struktur (tambah/hapus tipe test) */
+  async updateTestStructure(
+    testId: number,
+    payload: UpdateTestStructurePayload
+  ) {
+    if (!testId) throw "ID test tidak valid";
+    if (!payload.name.trim()) throw "Nama test wajib diisi";
+    if (!payload.types.length) throw "Minimal pilih 1 tipe test";
+
+    // Hilangkan duplikat tipe
+    const uniqueTypes = Array.from(
+      new Map(payload.types.map((t) => [t.type, t])).values()
+    );
+
+    // Build sections baru tapi pakai ID dan data lama dari existingSections
+    const sections = uniqueTypes.map((t, idx) => {
+      const existing = payload.existingSections?.find(
+        (s) => s.section_type === (sectionTypeMapping[t.type] || t.type)
+      );
+
+      // ✅ Type-safe: hanya kirim id jika ada
+      return {
+        ...(existing?.id && { id: existing.id }),
+        section_type: sectionTypeMapping[t.type] || t.type,
+        duration_minutes: existing?.duration_minutes ?? 0,
+        question_count: existing?.question_count ?? 0,
+        sequence: idx + 1, // urutan baru sesuai FE
+      };
+    });
+
+    const res = await api.post<ApiResponse<TestPackageResponse>>(
+      `/test-package/${testId}`,
+      {
+        _method: "PUT",
+        name: payload.name,
+        icon_path: payload.icon_path,
+        sections,
+      }
+    );
+
+    const apiData = res.data.data;
+
+    saveStep1ToStorage({
+      id: apiData.id,
+      name: apiData.name,
+      icon_path: apiData.icon_path,
+      sections: apiData.sections,
+    });
+
+    return { test: mapToTest(apiData), raw: apiData };
+  },
+};
+
+
+/* =================================================================
+   🔍 HELPER: MAP API RESPONSE KE MODEL FE
+================================================================= */
+
 function mapToTest(apiData: TestPackageResponse | Step1StorageData): Test {
   return {
     id: apiData.id.toString(),
     name: apiData.name,
-    category: apiData.target_position,
+    icon_path: apiData.icon_path ?? null,
     types: apiData.sections.map((s) => s.section_type),
     questions: apiData.sections.reduce(
       (sum, s) => sum + (s.question_count || 0),

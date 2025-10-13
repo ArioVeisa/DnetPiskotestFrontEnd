@@ -2,15 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  MoreVertical,
-  Briefcase,
-  UserCheck,
-  GraduationCap,
-  Heart,
-  Edit,
-  Trash2,
-} from "lucide-react";
+import { MoreVertical, Edit, Trash2, Briefcase } from "lucide-react";
 import { useTests } from "../hooks/use-test-package";
 import TableSkeleton from "./table-skeleton";
 import {
@@ -20,22 +12,26 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { ICON_MAP } from "@/lib/icon-mapping";
 
-const CATEGORY_ICON: Record<string, React.ReactNode> = {
-  Managerial: <Briefcase size={22} className="text-blue-400" />,
-  "All Candidates": <UserCheck size={22} className="text-green-400" />,
-  "Fresh Graduates": <GraduationCap size={22} className="text-yellow-400" />,
-  "HR Staff": <Heart size={22} className="text-red-400" />,
-};
-
+/* ======================================================================
+ * TYPE STYLE
+ * ====================================================================== */
 const TYPE_STYLE: Record<string, string> = {
   DISC: "bg-blue-100 text-blue-700",
   CAAS: "bg-yellow-100 text-yellow-800",
-  "teliti": "bg-green-100 text-green-700",
+  teliti: "bg-green-100 text-green-700",
 };
 
-export default function TestTable() {
- const { tests, loading, error, handleDelete } = useTests();
+/* ======================================================================
+ * COMPONENT
+ * ====================================================================== */
+export default function TestTable({
+  onEdit,
+}: {
+  onEdit: (testId: string) => void;
+}) {
+  const { tests, loading, error, handleDelete } = useTests();
 
   if (loading) return <TableSkeleton />;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -61,8 +57,8 @@ export default function TestTable() {
               <tr key={`desktop-${test.id ?? i}`} className="bg-white">
                 {/* Test Name */}
                 <td className="px-6 py-4 flex items-center gap-3 align-middle">
-                  <span className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow">
-                    {CATEGORY_ICON[test.category] ?? (
+                  <span className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow overflow-hidden">
+                    {ICON_MAP[test.icon_path as keyof typeof ICON_MAP] ?? (
                       <Briefcase size={25} className="text-gray-400" />
                     )}
                   </span>
@@ -70,7 +66,6 @@ export default function TestTable() {
                     <div className="font-semibold text-gray-900 truncate">
                       {test.name}
                     </div>
-                    <div className="text-xs text-gray-500">{test.category}</div>
                   </div>
                 </td>
 
@@ -117,7 +112,7 @@ export default function TestTable() {
                       align="end"
                       className="min-w-[160px] rounded-xl py-2 px-1 shadow-lg border border-gray-100"
                     >
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(test.id)}>
                         <Edit className="mr-2 h-4 w-4" /> Edit Package
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -144,8 +139,8 @@ export default function TestTable() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow">
-                  {CATEGORY_ICON[test.category] || (
+                <span className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow overflow-hidden">
+                  {ICON_MAP[test.icon_path as keyof typeof ICON_MAP] ?? (
                     <Briefcase size={20} className="text-gray-400" />
                   )}
                 </span>
@@ -153,7 +148,6 @@ export default function TestTable() {
                   <div className="font-semibold text-gray-900 truncate">
                     {test.name}
                   </div>
-                  <div className="text-xs text-gray-500">{test.category}</div>
                 </div>
               </div>
               <DropdownMenu>
@@ -166,10 +160,13 @@ export default function TestTable() {
                   align="end"
                   className="min-w-[120px] rounded-lg"
                 >
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit(test.id)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit Package
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-500">
+                  <DropdownMenuItem
+                    className="text-red-500"
+                    onClick={() => handleDelete(test.id)}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>

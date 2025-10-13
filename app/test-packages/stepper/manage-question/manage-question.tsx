@@ -11,7 +11,6 @@ import {
   Edit,
   Clock,
   ListOrdered,
-  BriefcaseBusiness,
   Trash,
 } from "lucide-react";
 
@@ -36,7 +35,6 @@ import { useManageQuestions } from "./hooks/use-manage-question";
 type ManageQuestionsProps = {
   testName: string;
   testIcon: keyof typeof ICON_MAP;
-  targetPosition: string;
   allowedTypes?: QuestionType[];
   onNext: () => void;
   onBack: () => void;
@@ -51,7 +49,6 @@ type ManageQuestionsProps = {
 export default function ManageQuestions({
   testName,
   testIcon,
-  targetPosition,
   allowedTypes = ["DISC", "CAAS", "teliti"],
   onNext,
   onBack,
@@ -161,12 +158,6 @@ export default function ManageQuestions({
             <h2 className="text-base sm:text-xl font-bold truncate">
               {testName}
             </h2>
-            <div className="flex items-center gap-3 mt-1 text-gray-500 text-xs sm:text-sm flex-wrap">
-              <span className="flex items-center gap-2 truncate">
-                <BriefcaseBusiness className="w-4 h-4" />
-                {targetPosition}
-              </span>
-            </div>
           </div>
         </div>
 
