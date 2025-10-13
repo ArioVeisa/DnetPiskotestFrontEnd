@@ -15,7 +15,6 @@ export interface Section {
 export interface TestPackage {
   id: number;
   name: string;
-  target_position: string;
   icon_path: string;
   sections: Section[];
 }
@@ -56,7 +55,6 @@ function normalizePackage(raw: unknown): TestPackage {
   return {
     id: Number(obj["id"] ?? 0),
     name: String(obj["name"] ?? ""),
-    target_position: String(obj["target_position"] ?? ""),
     icon_path: String(obj["icon_path"] ?? ""),
     sections,
   };
@@ -110,7 +108,7 @@ export const reviewPackageService = {
       // 3️⃣ build body full sesuai backend
       const body = {
         name: pkg.name,
-        target_position: pkg.target_position,
+        icon_path: pkg.icon_path, // ✅ tambahkan ini
         sections: updatedSections.map((s) => ({
           section_type: s.section_type,
           duration_minutes: s.duration_minutes,

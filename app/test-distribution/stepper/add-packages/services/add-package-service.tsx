@@ -7,7 +7,6 @@ export interface TestPackage {
   name: string;
   duration: string;
   questions: number;
-  target: string;
 }
 
 interface Section {
@@ -24,7 +23,6 @@ interface Section {
 interface TestPackageResponse {
   id: number;
   name: string;
-  target_position: string;
   icon_path: string | null;
   started_date: string | null;
   created_at: string;
@@ -60,7 +58,6 @@ export const packageService = {
           name: item.name,
           duration: `${totalDuration} menit`,
           questions: totalQuestions,
-          target: item.target_position,
         };
       });
     } catch (error) {

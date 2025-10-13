@@ -26,7 +26,6 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Clock,
   NotebookText,
-  BriefcaseBusiness,
   GripVertical,
   AlertCircle,
   CheckCircle2,
@@ -54,7 +53,6 @@ type PublishTestPageProps = {
   testId: number;
   testName: string;
   testIcon: keyof typeof ICON_MAP;
-  targetPosition: string;
   token?: string;
   onPublishSuccess: () => void;
   onBack: () => void;
@@ -152,7 +150,6 @@ export default function PublishTestPage({
   testId,
   testName,
   testIcon,
-  targetPosition,
   token,
   onPublishSuccess,
   onBack,
@@ -244,12 +241,6 @@ export default function PublishTestPage({
             <h2 className="text-lg sm:text-xl font-bold truncate">
               {testName}
             </h2>
-            <div className="flex items-center gap-4 mt-1 text-gray-500 text-xs sm:text-sm flex-wrap">
-              <span className="flex items-center gap-2 truncate">
-                <BriefcaseBusiness className="w-4 h-4 sm:w-4 sm:h-4" />
-                {targetPosition}
-              </span>
-            </div>
           </div>
         </div>
       </div>

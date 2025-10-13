@@ -1,17 +1,30 @@
 import { api } from "@services/api";
 import axios from "axios";
 
+/* ============================
+   FRONTEND MODEL
+============================ */
 export interface Test {
-  id: string;             // pakai string biar konsisten
+  id: string; // pakai string biar konsisten
   name: string;
-  category: string;       // dari target_position
-  types: string[];        // dari sections[].section_type
-  questions: number;      // total dari semua section.question_count
-  duration: string;       // total dari semua section.duration_minutes (jadi string: "xx min")
+  types: string[]; // dari sections[].section_type
+  questions: number; // total dari semua section.question_count
+  duration: string; // total dari semua section.duration_minutes (jadi string: "xx min")
+  icon_path?: string | null; // 🔥 ditambahkan
+  category?: string; // 🔥 opsional jika backend kirim kategori
+
+  // 🔥 Sekarang kita simpan juga sections agar bisa dipakai di Edit Mode
+  sections?: {
+    id: number;
+    section_type: string;
+    duration_minutes: number;
+    question_count: number;
+    sequence: number;
+  }[];
 }
 
 /* ============================
-   API Response Types
+   API RESPONSE TYPES
 ============================ */
 interface SectionResponse {
   id: number;
@@ -27,8 +40,8 @@ interface SectionResponse {
 interface TestResponse {
   id: number;
   name: string;
-  target_position: string;
   icon_path: string | null;
+  category?: string;
   started_date: string;
   access_type: string;
   created_at: string;
@@ -43,7 +56,7 @@ interface ApiResponse<T> {
 }
 
 /* ============================
-   Mapper Function
+   MAPPER FUNCTION
 ============================ */
 function mapApiToTest(apiData: TestResponse): Test {
   const totalQuestions = apiData.sections.reduce(
@@ -59,15 +72,25 @@ function mapApiToTest(apiData: TestResponse): Test {
   return {
     id: apiData.id.toString(),
     name: apiData.name,
-    category: apiData.target_position ?? "-",
     types: apiData.sections.map((s) => s.section_type),
     questions: totalQuestions,
     duration: `${totalDuration} min`,
+    icon_path: apiData.icon_path || null,
+    category: apiData.category || undefined,
+
+    // 🔥 Simpan sections ke model FE untuk edit mode
+    sections: apiData.sections.map((s) => ({
+      id: s.id,
+      section_type: s.section_type,
+      duration_minutes: s.duration_minutes,
+      question_count: s.question_count,
+      sequence: s.sequence,
+    })),
   };
 }
 
 /* ============================
-   Service Functions
+   SERVICE FUNCTIONS
 ============================ */
 export const testPackageService = {
   // Fetch all test packages

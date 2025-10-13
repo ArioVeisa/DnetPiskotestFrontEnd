@@ -14,21 +14,28 @@ import { QuestionType } from "./stepper/manage-question/service/manage-question-
 import {
   createPackageService,
   CreateTestStep1Payload,
+  updatePackageService,
 } from "./stepper/create-package/service/create-package-service";
+import { testPackageService } from "./services/test-package-service";
+
+type SectionData = {
+  section_id: number;
+  section_type: QuestionType;
+  duration_minutes: number;
+  question_count: number;
+  sequence: number;
+};
 
 type StepData = {
   testId: number;
   testName: string;
   icon: IconKey;
-  targetPosition: string;
   allowedTypes: QuestionType[];
-  sections: { section_id: number; section_type: QuestionType }[]; // ✅ pakai sections
+  sections: SectionData[];
   token: string;
 };
 
-function toSectionIds(
-  sections: { section_id: number; section_type: QuestionType }[]
-): Record<QuestionType, number> {
+function toSectionIds(sections: SectionData[]): Record<QuestionType, number> {
   return sections.reduce((acc, s) => {
     acc[s.section_type] = s.section_id;
     return acc;
@@ -38,22 +45,60 @@ function toSectionIds(
 export default function TestManagementPage() {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showStepper, setShowStepper] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [stepData, setStepData] = useState<StepData>({
     testId: 0,
     testName: "",
     icon: "square-code",
-    targetPosition: "",
     allowedTypes: ["DISC", "CAAS", "teliti"],
-    sections: [], // ✅ default kosong
+    sections: [],
     token: "",
   });
 
+  /** =====================
+   * CREATE MODE
+   ===================== */
   function handleAddNewTest() {
+    setIsEditMode(false);
     setActiveStep(0);
     setShowStepper(true);
   }
 
+  /** =====================
+   * EDIT MODE
+   ===================== */
+  async function handleEditTest(testId: string) {
+    try {
+      setIsEditMode(true);
+      setShowStepper(true);
+      setActiveStep(0);
+
+      const test = await testPackageService.fetchById(String(testId));
+
+      setStepData({
+        testId: Number(test.id),
+        testName: test.name,
+        icon: (test.icon_path as IconKey) ?? "square-code",
+        allowedTypes: test.types as QuestionType[],
+        sections: (test.sections ?? []).map((s) => ({
+          section_id: s.id,
+          section_type: s.section_type as QuestionType,
+          duration_minutes: s.duration_minutes ?? 0,
+          question_count: s.question_count ?? 0,
+          sequence: s.sequence ?? 0,
+        })),
+        token: localStorage.getItem("token") || "",
+      });
+    } catch (err) {
+      console.error("Gagal load data edit:", err);
+      setShowStepper(false);
+    }
+  }
+
+  /** =====================
+   * NAVIGATION
+   ===================== */
   function handleNext() {
     setActiveStep((prev) => (prev !== null ? prev + 1 : 1));
   }
@@ -62,16 +107,19 @@ export default function TestManagementPage() {
     if (activeStep === 0 || activeStep === null) {
       setShowStepper(false);
       setActiveStep(null);
+      setIsEditMode(false);
     } else {
       setActiveStep((prev) => (prev ? prev - 1 : 0));
     }
   }
 
+  /** =====================
+   * RENDER
+   ===================== */
   return (
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex flex-col flex-1 bg-white">
-        {/* ✅ Jadikan Topbar sticky */}
         <div className="sticky top-0 z-50 bg-white shadow-sm">
           <Topbar />
         </div>
@@ -84,16 +132,70 @@ export default function TestManagementPage() {
               {/* Step 1 */}
               {activeStep === 0 && (
                 <CreateNewTest
+                  isEditMode={isEditMode}
+                  defaultValues={
+                    isEditMode
+                      ? {
+                          icon: stepData.icon,
+                          testName: stepData.testName,
+                          selectedTypes: stepData.allowedTypes,
+                        }
+                      : undefined
+                  }
                   onNext={async (data) => {
                     try {
+                      const payloadTypes = data.selectedTypes.map((t, idx) => ({
+                        type: t,
+                        sequence: idx + 1,
+                      }));
+
+                      if (isEditMode) {
+                        // Selalu pakai updateTestStructure
+                        await updatePackageService.updateTestStructure(
+                          stepData.testId,
+                          {
+                            name: data.testName,
+                            icon_path: data.icon,
+                            types: payloadTypes,
+                            existingSections: stepData.sections.map((s) => ({
+                              id: s.section_id,
+                              section_type: s.section_type,
+                              duration_minutes: s.duration_minutes,
+                              question_count: s.question_count,
+                              sequence: s.sequence,
+                            })),
+                          }
+                        );
+
+                        // Fetch data terbaru
+                        const updated = await testPackageService.fetchById(
+                          String(stepData.testId)
+                        );
+
+                        setStepData({
+                          testId: Number(updated.id),
+                          testName: updated.name,
+                          icon: (updated.icon_path as IconKey) ?? data.icon,
+                          allowedTypes: updated.types as QuestionType[],
+                          sections: (updated.sections ?? []).map((s) => ({
+                            section_id: s.id,
+                            section_type: s.section_type as QuestionType,
+                            duration_minutes: s.duration_minutes,
+                            question_count: s.question_count,
+                            sequence: s.sequence,
+                          })),
+                          token: localStorage.getItem("token") || "",
+                        });
+
+                        handleNext();
+                        return;
+                      }
+
+                      // 🆕 Create Mode
                       const payload: CreateTestStep1Payload = {
-                        icon: data.icon,
+                        icon_path: data.icon,
                         name: data.testName,
-                        targetPosition: data.targetPosition,
-                        types: data.selectedTypes.map((t, idx) => ({
-                          type: t,
-                          sequence: idx + 1,
-                        })),
+                        types: payloadTypes,
                       };
 
                       const { test: newTest, raw } =
@@ -103,18 +205,20 @@ export default function TestManagementPage() {
                         testId: Number(newTest.id),
                         testName: newTest.name,
                         icon: data.icon,
-                        targetPosition: data.targetPosition,
                         allowedTypes: data.selectedTypes as QuestionType[],
                         sections: (raw?.sections ?? []).map((s) => ({
                           section_id: s.id,
                           section_type: s.section_type as QuestionType,
+                          duration_minutes: s.duration_minutes,
+                          question_count: s.question_count,
+                          sequence: s.sequence,
                         })),
                         token: localStorage.getItem("token") || "",
                       });
 
                       handleNext();
                     } catch (err) {
-                      console.error("Create test step1 failed:", err);
+                      console.error("Gagal create/update test:", err);
                     }
                   }}
                 />
@@ -126,7 +230,6 @@ export default function TestManagementPage() {
                   testId={stepData.testId}
                   testName={stepData.testName}
                   testIcon={stepData.icon}
-                  targetPosition={stepData.targetPosition}
                   allowedTypes={stepData.allowedTypes}
                   sectionIds={toSectionIds(stepData.sections)}
                   token={stepData.token}
@@ -141,7 +244,6 @@ export default function TestManagementPage() {
                   testId={stepData.testId}
                   testName={stepData.testName}
                   testIcon={stepData.icon}
-                  targetPosition={stepData.targetPosition}
                   onBack={handleBack}
                   onPublishSuccess={() => {
                     setShowStepper(false);
@@ -149,12 +251,12 @@ export default function TestManagementPage() {
                     setStepData({
                       testId: 0,
                       testName: "",
-                      icon: "square-code",
-                      targetPosition: "",
+                      icon: "graduation-cap",
                       allowedTypes: ["DISC", "CAAS", "teliti"],
                       sections: [],
                       token: "",
                     });
+                    setIsEditMode(false);
                   }}
                 />
               )}
@@ -162,7 +264,7 @@ export default function TestManagementPage() {
           ) : (
             <>
               <TitleBar onAddTest={handleAddNewTest} />
-              <TestTable />
+              <TestTable onEdit={handleEditTest} />
             </>
           )}
         </main>

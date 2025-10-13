@@ -37,7 +37,6 @@ export const updatePackageService = {
 
       const body = {
         name: saved.name,
-        target_position: saved.target_position,
         sections: updatedSections,
       };
 
@@ -85,7 +84,6 @@ export const updatePackageService = {
 
       const body = {
         name: saved.name,
-        target_position: saved.target_position,
         sections: updatedSections,
       };
 
