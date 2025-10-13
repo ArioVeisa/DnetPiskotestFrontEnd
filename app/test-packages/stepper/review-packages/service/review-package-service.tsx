@@ -108,8 +108,9 @@ export const reviewPackageService = {
       // 3️⃣ build body full sesuai backend
       const body = {
         name: pkg.name,
-        icon_path: pkg.icon_path, // ✅ tambahkan ini
+        icon_path: pkg.icon_path,
         sections: updatedSections.map((s) => ({
+          id: s.id, // ✅ penting supaya backend tahu ini section lama
           section_type: s.section_type,
           duration_minutes: s.duration_minutes,
           question_count: s.question_count,
