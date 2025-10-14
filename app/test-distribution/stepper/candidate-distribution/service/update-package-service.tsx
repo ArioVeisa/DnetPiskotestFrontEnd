@@ -28,6 +28,7 @@ export interface UpdateTestPackagePayload {
   ended_date?: string;
   sections: TestSection[];
   access_type?: string;
+  target_position?: string;
   token: string;
 }
 
@@ -68,8 +69,12 @@ export const testPackageService = {
     if (!id) throw new Error("❌ update dipanggil tanpa id");
 
     try {
-      console.log("[testPackageService.update] PUT /test-package/" + id, payload);
-      const res = await api.put(`/test-package/${id}`, payload);
+      const payloadWithTargetPosition = {
+        ...payload,
+        target_position: payload.target_position || "Staff", // Default position
+      };
+      console.log("[testPackageService.update] PUT /test-package/" + id, payloadWithTargetPosition);
+      const res = await api.put(`/test-package/${id}`, payloadWithTargetPosition);
       console.log("[testPackageService.update] response:", res.data);
       return res.data.data ?? res.data;
     } catch (error) {

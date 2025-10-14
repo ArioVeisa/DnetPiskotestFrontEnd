@@ -129,6 +129,7 @@ export const createPackageService = {
         {
           name: payload.name,
           icon_path: payload.icon_path,
+          target_position: "Staff", // Default position, bisa disesuaikan sesuai kebutuhan
           sections,
         }
       );
@@ -227,6 +228,7 @@ export const updatePackageService = {
         _method: "PUT",
         name: payload.name,
         icon_path: payload.icon_path,
+        target_position: "Staff", // Default position untuk update juga
         sections,
       }
     );

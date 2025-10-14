@@ -109,6 +109,7 @@ export const reviewPackageService = {
       const body = {
         name: pkg.name,
         icon_path: pkg.icon_path, // ✅ tambahkan ini
+        target_position: "Staff", // Default position untuk review package
         sections: updatedSections.map((s) => ({
           section_type: s.section_type,
           duration_minutes: s.duration_minutes,
