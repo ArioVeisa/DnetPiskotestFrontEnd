@@ -22,6 +22,7 @@ import AddQuestionDialog from "./dialogs/add-question-dialog";
 import EditQuestionDialog from "./dialogs/edit-question-dialog";
 import ImportCsvDialog from "./dialogs/import-csv-dialog";
 import { useCaasQuestions } from "./hooks/use-teliti-question"; // Import hook
+import { importQuestionsFromXlsx } from "./services/teliti-question-service";
 
 // ✅ definisi props biar jelas - props simplified karena logic dipindah ke hook
 interface CaasQuestionsStepProps {
@@ -108,58 +109,24 @@ export default function CaasQuestionsStep({
     }
   };
 
-  const parseCsv = async (file: File): Promise<StepQuestion[]> => {
-    const raw = await file.text();
-    const lines = raw
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-
-    if (lines.length === 0) return [];
-
-    const headerCols = lines[0].split(/[,;]\s*/);
-    const headerLooksLike =
-      headerCols.some((h) => /^text$/i.test(h)) ||
-      /(^|,|\|)text($|,|\|)/i.test(lines[0]);
-
-    const rows = headerLooksLike ? lines.slice(1) : lines;
-
-    const out: StepQuestion[] = [];
-    for (const row of rows) {
-      const cols = row
-        .split(/[,;](?=(?:[^"]*"[^"]*")*[^"]*$)/)
-        .map((c) => c.replace(/^"|"$/g, "").trim());
-
-      const [text] = cols;
-      if (!text) continue;
-    }
-    return out;
-  };
-
   const handleUploadCSV = async (file: File) => {
     setUploadError(null);
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      if (ext !== "csv") {
-        throw new Error("Hanya mendukung .csv untuk saat ini.");
-      }
-      const qs = await parseCsv(file);
-      if (qs.length === 0) {
-        throw new Error(
-          "CSV kosong atau tidak valid. Minimal kolom `text` harus ada."
-        );
-      }
+      // kirim langsung ke backend
+      const res = await importQuestionsFromXlsx(file);
+      console.log("[Import] Success:", res);
 
-      // ✅ Batch import menggunakan hook
-      for (const q of qs) {
-        const { ...questionData } = q; // Remove temporary ID
-        await addOne(questionData);
-      }
+      // refresh daftar pertanyaan setelah upload
+      await done();
 
+      // tutup dialog
       setImportOpen(false);
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Unknown error");
+      console.error("[Import] Error:", error);
+      setUploadError(
+        error instanceof Error ? error.message : "Gagal mengimpor file."
+      );
     } finally {
       setUploading(false);
     }

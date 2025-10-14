@@ -111,6 +111,7 @@ export const reviewPackageService = {
         icon_path: pkg.icon_path, // ✅ tambahkan ini
         target_position: "Staff", // Default position untuk review package
         sections: updatedSections.map((s) => ({
+          id: s.id, // ✅ penting supaya backend tahu ini section lama
           section_type: s.section_type,
           duration_minutes: s.duration_minutes,
           question_count: s.question_count,

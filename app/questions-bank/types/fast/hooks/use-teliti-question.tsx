@@ -126,11 +126,13 @@ export function useCaasQuestions() {
   }
 
   // Save Halaman
-  function done() {
-    console.log("[useCaasQuestions] done() called, closing…");
+  async function done() {
+    console.log("[useCaasQuestions] done() called, closing and refreshing…");
     setOpen(false);
     setActiveId(null);
-    setItems([]);
+
+    // Tunggu refresh selesai
+    await refresh();
   }
 
   // Load semua pertanyaan pertama kali

@@ -103,13 +103,15 @@ function normalizeQuestion(q: ApiQuestion): Question {
 
 /* ========== READ ALL ========== */
 export async function fetchQuestions(): Promise<Question[]> {
-  const res = await api.get<ApiResponse<ApiQuestion[]>>("/test/teliti-questions");
+  const res = await api.get<ApiResponse<ApiQuestion[]>>("/teliti-questions");
   return res.data.data.map(normalizeQuestion);
 }
 
 /* ========== GET BY ID ========== */
 export async function fetchQuestionById(id: string): Promise<Question> {
-  const res = await api.get<ApiResponse<ApiQuestion>>(`/teliti-questions/${id}`);
+  const res = await api.get<ApiResponse<ApiQuestion>>(
+    `/teliti-questions/${id}`
+  );
   return normalizeQuestion(res.data.data);
 }
 
@@ -209,4 +211,42 @@ export async function updateQuestion(
 /* ========== DELETE ========== */
 export async function deleteQuestion(id: string): Promise<void> {
   await api.delete(`/teliti-questions/${id}`);
+}
+
+/* ========== IMPORT FROM XLSX ========== */
+export async function importQuestionsFromXlsx(
+  file: File
+): Promise<{ message: string }> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // 🔹 Authorization otomatis sudah diset di @services/api (kalau token diset di interceptor)
+    const res = await api.post<{ message: string }>(
+      "/teliti-questions/import",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    console.log("[importQuestionsFromXlsx] success:", res.data);
+    return res.data;
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      console.error(
+        "[importQuestionsFromXlsx] error:",
+        err.response?.status,
+        err.response?.data
+      );
+      throw new Error(
+        err.response?.data?.message || "Gagal mengimpor file pertanyaan."
+      );
+    } else {
+      console.error("[importQuestionsFromXlsx] unknown error:", err);
+      throw err;
+    }
+  }
 }

@@ -240,3 +240,41 @@ export async function updateQuestion(
 export async function deleteQuestion(id: string): Promise<void> {
   await api.delete(`/disc-questions/${id}`);
 }
+
+/* ========== IMPORT FROM XLSX ========== */
+export async function importQuestionsFromXlsx(
+  file: File
+): Promise<{ message: string }> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // 🔹 Authorization otomatis sudah diset di @services/api (kalau token diset di interceptor)
+    const res = await api.post<{ message: string }>(
+      "/disc-questions/import",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    console.log("[importQuestionsFromXlsx] success:", res.data);
+    return res.data;
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      console.error(
+        "[importQuestionsFromXlsx] error:",
+        err.response?.status,
+        err.response?.data
+      );
+      throw new Error(
+        err.response?.data?.message || "Gagal mengimpor file pertanyaan."
+      );
+    } else {
+      console.error("[importQuestionsFromXlsx] unknown error:", err);
+      throw err;
+    }
+  }
+}
