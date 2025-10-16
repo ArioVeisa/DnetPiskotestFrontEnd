@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   UserPlus,
-  User,
   MoreVertical,
   Eye,
   Trash2,
@@ -247,7 +246,7 @@ export default function CandidatesDistributions({
                 Belum ada kandidat untuk test ini
               </div>
               <div className="space-y-2">
-                <p>• Klik <strong>"Add Candidate"</strong> untuk menambahkan kandidat baru</p>
+                <p>• Klik <strong>Add Candidate</strong> untuk menambahkan kandidat baru</p>
                 <p>• Setiap kandidat harus dibuat khusus untuk test ini</p>
               </div>
             </div>
