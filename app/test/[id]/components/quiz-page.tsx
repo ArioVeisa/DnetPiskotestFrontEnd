@@ -64,7 +64,6 @@ interface QuizPageProps {
 /* ---------------- Main Component ---------------- */
 export function QuizPage({
   questions,
-  test,
   timer,
   onFinish,
   onExpire,

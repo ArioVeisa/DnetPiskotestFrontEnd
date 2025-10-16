@@ -128,7 +128,7 @@ export function SectionAnnouncement({
                 <ul className="space-y-1 text-xs">
                   <li>• Baca setiap pertanyaan dengan teliti</li>
                   <li>• Pilih jawaban yang paling sesuai dengan diri Anda</li>
-                  <li>• Anda dapat menggunakan tombol "Mark for Review" untuk menandai pertanyaan</li>
+                  <li>• Anda dapat menggunakan tombol Mark for Review untuk menandai pertanyaan</li>
                   <li>• Pastikan semua pertanyaan terjawab sebelum waktu habis</li>
                 </ul>
               </div>

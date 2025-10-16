@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import {
   Dialog,
@@ -8,6 +9,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 
+/* ==============================
+   TYPE DEFINITIONS
+============================== */
+export interface TestSection {
+  id: string;
+  title: string;
+  questionCount: number;
+}
+
 export interface Test {
   id: string;
   name: string;
@@ -15,7 +25,7 @@ export interface Test {
   duration: number;
   index: number;
   total: number;
-  sections?: any[];
+  sections?: TestSection[];
 }
 
 interface FinishedDialogProps {
@@ -24,6 +34,9 @@ interface FinishedDialogProps {
   isLast: boolean;
 }
 
+/* ==============================
+   COMPONENT
+============================== */
 export function FinishedDialog({
   test,
   onNext,
@@ -32,25 +45,28 @@ export function FinishedDialog({
   return (
     <Dialog open>
       <DialogContent className="max-w-md flex flex-col items-center py-10 px-6">
-        {/* Ini untuk aksesibilitas, invisible di UI */}
+        {/* Aksesibilitas */}
         <DialogTitle className="sr-only">
           {isLast ? "All Tests Completed" : `${test.name} Completed`}
         </DialogTitle>
 
-        {/* Icon centang hijau besar */}
+        {/* Icon centang hijau */}
         <div className="bg-green-100 rounded-full p-4 mb-4 flex items-center justify-center">
           <CheckCircle className="w-16 h-16 text-green-500" />
         </div>
+
         {/* Judul besar */}
         <div className="text-2xl font-bold text-green-600 mb-2">
           {isLast ? "All Tests Completed" : `${test.name} Completed`}
         </div>
-        {/* Penjelasan */}
+
+        {/* Deskripsi */}
         <div className="text-gray-500 mb-6 text-center">
           {isLast
             ? "You have finished all tests."
             : "Thank you for completing this test!"}
         </div>
+
         {/* Tombol */}
         <Button
           onClick={onNext}

@@ -22,7 +22,6 @@ export default function CandidateTestPage() {
     tests,
     currentTest,
     currentSection,
-    currentSectionIndex,
     questions,
     timer,
     completedAt,
@@ -30,7 +29,6 @@ export default function CandidateTestPage() {
     startQuiz,
     startSectionQuiz,
     finishSection,
-    finishTest,
     nextTest,
     validateNik,
     fetchCandidate, // ambil dari hook

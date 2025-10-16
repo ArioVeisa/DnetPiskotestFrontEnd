@@ -1,23 +1,33 @@
-// src/app/users/[id]/hooks/useCandidate.ts
 import { useState } from "react";
 import {
   candidateService,
   Candidate,
   TestInfo,
+  TestSection,
+  BackendQuestion,
 } from "../services/candidate-service";
 import quizService from "../services/quiz-service";
 import { Question } from "../components/question-card";
 import { Test } from "../components/finished-dialog";
 
+/**
+ * Hook utama untuk mengelola alur tes kandidat (login → reminder → quiz → selesai)
+ */
 export function useCandidateTest(token: string) {
   const [step, setStep] = useState<
-    "login" | "reminder" | "section-announcement" | "quiz" | "finished" | "completed" | "test-completed"
+    | "login"
+    | "reminder"
+    | "section-announcement"
+    | "quiz"
+    | "finished"
+    | "completed"
+    | "test-completed"
   >("login");
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [tests, setTests] = useState<TestInfo[]>([]);
   const [currentTest, setCurrentTest] = useState<Test | null>(null);
-  const [currentSection, setCurrentSection] = useState<any>(null);
+  const [currentSection, setCurrentSection] = useState<TestSection | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState<number>(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [timer, setTimer] = useState<number>(0);
@@ -31,7 +41,7 @@ export function useCandidateTest(token: string) {
       console.warn("Token belum ada, skip fetchCandidate");
       return;
     }
-    
+
     try {
       const data = await candidateService.fetchCandidateByToken(token);
       if (data) {
@@ -39,50 +49,59 @@ export function useCandidateTest(token: string) {
         setTests(data.tests ?? []);
       }
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('TEST_COMPLETED:')) {
-        const completedDate = error.message.replace('TEST_COMPLETED:', '');
+      if (error instanceof Error && error.message.startsWith("TEST_COMPLETED:")) {
+        const completedDate = error.message.replace("TEST_COMPLETED:", "");
         setCompletedAt(completedDate);
         setStep("test-completed");
       } else {
         console.error("Error fetching candidate:", error);
-        // Handle other errors as needed
       }
     }
   };
 
-  const verify = () => {
-    setStep("reminder");
-  };
+  /**
+   * Verifikasi kandidat setelah input NIK valid
+   */
+  const verify = () => setStep("reminder");
 
   /**
    * Validasi input NIK dari user dengan data kandidat.
    */
-  const validateNik = (inputNik: string): boolean => {
-    return candidateService.validateNik(inputNik, candidate);
-  };
+  const validateNik = (inputNik: string): boolean =>
+    candidateService.validateNik(inputNik, candidate);
 
   /**
    * Mulai quiz pertama (setelah validasi berhasil).
    */
   const startQuiz = async () => {
     if (tests.length === 0 || !token) return;
-    const first = tests[0];
+
+    const firstTest = tests[0];
     const initTest: Test = {
-      ...first,
+      id: firstTest.id,
+      name: firstTest.name,
+      questionCount: firstTest.questionCount,
+      duration: firstTest.duration,
       index: 0,
       total: tests.length,
+      sections: firstTest.sections?.map((s) => ({
+        id: String(s.section_id),
+        title: s.section_type,
+        questionCount: s.question_count,
+      })),
     };
+
     setCurrentTest(initTest);
-    
-    // Mulai dari section pertama
-    if (first.sections && first.sections.length > 0) {
+
+    // Kalau test punya sections
+    if (firstTest.sections && firstTest.sections.length > 0) {
       setCurrentSectionIndex(0);
-      setCurrentSection(first.sections[0]);
+      setCurrentSection(firstTest.sections[0]);
       setStep("section-announcement");
     } else {
-      // Fallback ke logic lama jika tidak ada sections
+      // Tanpa sections — fallback ke quiz langsung
       setQuestions(await quizService.getQuestions(token));
-      setTimer(first.duration * 60);
+      setTimer(firstTest.duration * 60);
       setStep("quiz");
     }
   };
@@ -91,14 +110,22 @@ export function useCandidateTest(token: string) {
    * Mulai quiz untuk section yang sedang aktif.
    */
   const startSectionQuiz = async () => {
-    if (!currentSection || !token) return;
-    
-    // Map questions dari section ini langsung
-    setQuestions(currentSection.questions.map((q: any) => ({
-      text: q.question_detail?.question_text || `Question ${q.question_id}`,
-      options: q.question_detail?.options?.map((opt: any) => opt.option_text) || ["Option A", "Option B", "Option C", "Option D"]
-    })));
-    
+    if (!currentSection) return;
+
+    const mappedQuestions: Question[] = currentSection.questions.map(
+      (q: BackendQuestion) => ({
+        text: q.question_detail?.question_text || `Question ${q.question_id}`,
+        options:
+          q.question_detail?.options?.map((opt) => opt.option_text) || [
+            "Option A",
+            "Option B",
+            "Option C",
+            "Option D",
+          ],
+      })
+    );
+
+    setQuestions(mappedQuestions);
     setTimer(currentSection.duration_minutes * 60);
     setStep("quiz");
   };
@@ -113,48 +140,67 @@ export function useCandidateTest(token: string) {
     }
 
     const nextSectionIndex = currentSectionIndex + 1;
-    
     if (nextSectionIndex < currentTest.sections.length) {
-      // Ada section berikutnya
-      setCurrentSectionIndex(nextSectionIndex);
-      setCurrentSection(currentTest.sections[nextSectionIndex]);
-      setStep("section-announcement");
+      const nextSection = tests[0]?.sections?.[nextSectionIndex];
+      if (nextSection) {
+        setCurrentSectionIndex(nextSectionIndex);
+        setCurrentSection(nextSection);
+        setStep("section-announcement");
+      }
     } else {
-      // Semua section selesai
       setStep("finished");
     }
   };
 
-  const finishTest = () => {
-    setStep("finished");
-  };
+  /**
+   * Tandai test sudah selesai
+   */
+  const finishTest = () => setStep("finished");
 
+  /**
+   * Pindah ke test berikutnya
+   */
   const nextTest = async () => {
     if (!currentTest) return;
+
     const nextIndex = currentTest.index + 1;
     if (nextIndex < tests.length) {
-      const info = tests[nextIndex];
-      const next: Test = {
-        ...info,
+      const nextTestInfo = tests[nextIndex];
+      const nextTest: Test = {
+        id: nextTestInfo.id,
+        name: nextTestInfo.name,
+        questionCount: nextTestInfo.questionCount,
+        duration: nextTestInfo.duration,
         index: nextIndex,
         total: tests.length,
+        sections: nextTestInfo.sections?.map((s) => ({
+          id: String(s.section_id),
+          title: s.section_type,
+          questionCount: s.question_count,
+        })),
       };
-      setCurrentTest(next);
-      setQuestions(await quizService.getQuestions(next.id));
-      setTimer(info.duration * 60);
+
+      setCurrentTest(nextTest);
+      setQuestions(await quizService.getQuestions(nextTest.id));
+      setTimer(nextTestInfo.duration * 60);
       setStep("quiz");
     } else {
       setStep("completed");
     }
   };
 
+  /**
+   * Reset semua state ke kondisi awal
+   */
   const reset = () => {
     setStep("login");
     setCandidate(null);
     setTests([]);
     setCurrentTest(null);
+    setCurrentSection(null);
     setQuestions([]);
     setTimer(0);
+    setCompletedAt("");
   };
 
   return {
@@ -168,11 +214,11 @@ export function useCandidateTest(token: string) {
     timer,
     completedAt,
     fetchCandidate,
-    validateNik, // cek input NIK
-    verify, // ubah step kalo valid
+    validateNik,
+    verify,
     startQuiz,
-    startSectionQuiz, // mulai quiz untuk section aktif
-    finishSection, // selesaikan section dan pindah ke berikutnya
+    startSectionQuiz,
+    finishSection,
     finishTest,
     nextTest,
     reset,
