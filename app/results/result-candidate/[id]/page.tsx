@@ -13,7 +13,6 @@ import { AlertCircle, ArrowUpRight } from "lucide-react";
 import { Chart, ChartConfiguration } from "chart.js/auto";
 import { Download } from "lucide-react";
 
-
 export default function ResultCandidatePage() {
   const params = useParams();
   const id = params.id as string;
@@ -155,31 +154,21 @@ export default function ResultCandidatePage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Profile Header */}
       <Card className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex gap-4">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold">
+        <div className="flex items-center justify-between">
+          {/* Profile + Info */}
+          <div className="flex items-center gap-6">
+            {/* Avatar */}
+            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-black text-3xl font-bold shadow-inner">
               {getInitials(data.name)}
             </div>
+
+            {/* Text info */}
             <div className="space-y-2">
-              <div className="space-y-1">
-                <h1 className="text-2xl font-bold">{data.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  👤 {data.position}
-                </p>
-              </div>
-              <button className="flex items-center gap-1 text-sm text-primary hover:underline">
-                More Info
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
+              <h1 className="text-3xl font-bold leading-tight">{data.name}</h1>
+              <p className="text-lg text-muted-foreground font-medium tracking-wide">
+                {data.position}
+              </p>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <button className="text-sm text-muted-foreground hover:text-foreground">
-              Job Match
-            </button>
-            <button className="text-sm text-muted-foreground hover:text-foreground">
-              Show more
-            </button>
           </div>
         </div>
       </Card>
@@ -199,7 +188,9 @@ export default function ResultCandidatePage() {
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-3xl font-bold">{data.caas}</div>
-                <p className="text-xs text-muted-foreground mt-1">Assessment</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Adaptability
+                </p>
               </div>
               <button className="p-2 hover:bg-accent rounded-md">
                 <ArrowUpRight className="w-5 h-5" />
@@ -221,7 +212,10 @@ export default function ResultCandidatePage() {
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-3xl font-bold">
-                  {data.adaptability.score.toFixed(3)}
+                  {data.adaptability.score} /{" "}
+                  <span className=" text-gray-400">
+                    {data.adaptability.totalQuestions}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Correct Answers
@@ -249,7 +243,6 @@ export default function ResultCandidatePage() {
                 <div className="text-3xl font-bold">
                   {data.adaptability.totalQuestions}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Overall</p>
               </div>
               <button className="p-2 hover:bg-accent rounded-md">
                 <ArrowUpRight className="w-5 h-5" />
@@ -330,12 +323,6 @@ export default function ResultCandidatePage() {
                 </div>
               </div>
             ))}
-            <Button
-              variant="link"
-              className="w-full text-primary p-0 h-auto text-xs"
-            >
-              Show more
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -348,11 +335,12 @@ export default function ResultCandidatePage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* User Public Self */}
               <div className="space-y-3">
                 <div className="space-y-1">
                   <h3 className="text-sm font-medium">User Public Self</h3>
-                  <p className="text-xs text-muted-foreground">
-                    PEACEMAKER, RESPECTFUL & ACCURATE
+                  <p className="text-xs text-muted-foreground uppercase">
+                    {data.characteristics.userPublic.join(", ")}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -365,11 +353,12 @@ export default function ResultCandidatePage() {
                 </div>
               </div>
 
+              {/* Teammate Perspective */}
               <div className="space-y-3">
                 <div className="space-y-1">
                   <h3 className="text-sm font-medium">Teammate Perspective</h3>
-                  <p className="text-xs text-muted-foreground">
-                    PEACEMAKER, RESPECTFUL & ACCURATE
+                  <p className="text-xs text-muted-foreground uppercase">
+                    {data.characteristics.teammate.join(", ")}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -382,12 +371,15 @@ export default function ResultCandidatePage() {
                 </div>
               </div>
 
+              {/* Intimate Partners Self */}
               <div className="space-y-3">
                 <div className="space-y-1">
                   <h3 className="text-sm font-medium">
                     Intimate Partners Self
                   </h3>
-                  <p className="text-xs text-muted-foreground">PERFECTIONIST</p>
+                  <p className="text-xs text-muted-foreground uppercase">
+                    {data.characteristics.intimate.join(", ")}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   {data.characteristics.intimate.map((item, index) => (
