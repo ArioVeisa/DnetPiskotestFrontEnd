@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   MoreVertical,
@@ -11,6 +11,8 @@ import {
   Trash2,
   User,
   Edit,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTestDistributions } from "../hooks/use-test-distribution";
 import TableSkeleton from "./table-skeleton";
@@ -46,6 +48,16 @@ const STATUS_STYLE: Record<string, string> = {
 export default function DistributionTable() {
   const { distributions, loading, error } = useTestDistributions();
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const totalPages = Math.ceil(distributions.length / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const paginatedData = distributions.slice(startIndex, startIndex + pageSize);
+
+  const handlePrev = () => setPage((p) => Math.max(p - 1, 1));
+  const handleNext = () => setPage((p) => Math.min(p + 1, totalPages));
+
   if (loading) return <TableSkeleton />;
   if (error) return <div className="text-red-500">{error}</div>;
 
@@ -70,8 +82,8 @@ export default function DistributionTable() {
             </tr>
           </thead>
           <tbody>
-            {distributions.map((d, i) => (
-              <tr key={`desktop-${d.id ?? i}`} className="bg-white">
+            {paginatedData.map((d, i) => (
+              <tr key={`desktop-${d.id ?? i}`}>
                 {/* Test Name */}
                 <td className="px-6 py-4 flex items-center gap-3">
                   <span className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow">
@@ -92,7 +104,8 @@ export default function DistributionTable() {
 
                 {/* Candidates */}
                 <td className="px-6 py-4 text-gray-700 font-medium flex items-center gap-2">
-                   <User className="w-4 h-4"></User>{d.candidatesTotal}
+                  <User className="w-4 h-4" />
+                  {d.candidatesTotal}
                 </td>
 
                 {/* Status */}
@@ -140,7 +153,7 @@ export default function DistributionTable() {
 
       {/* MOBILE CARD */}
       <div className="md:hidden space-y-6">
-        {distributions.map((d, i) => (
+        {paginatedData.map((d, i) => (
           <div
             key={`mobile-${d.id ?? i}`}
             className="bg-white rounded-lg shadow-sm p-4 space-y-6"
@@ -205,6 +218,53 @@ export default function DistributionTable() {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-8 text-sm text-gray-600">
+          <div className="flex items-center gap-2 mx-auto md:mx-0">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1}
+              onClick={handlePrev}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" /> Prev
+            </Button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+              <Button
+                key={num}
+                size="sm"
+                variant={page === num ? "default" : "outline"}
+                onClick={() => setPage(num)}
+                className={cn(
+                  "w-8 h-8",
+                  page === num && "bg-blue-500 hover:bg-blue-600 text-white"
+                )}
+              >
+                {num}
+              </Button>
+            ))}
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === totalPages}
+              onClick={handleNext}
+              className="flex items-center gap-1"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="hidden md:block">
+            Showing <span className="font-semibold">{page}</span> of{" "}
+            <span className="font-semibold">{totalPages}</span> Pages
+          </div>
+        </div>
+      )}
     </>
   );
 }

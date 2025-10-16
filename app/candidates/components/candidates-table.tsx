@@ -1,4 +1,3 @@
-// components/CandidateTable.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -17,7 +16,9 @@ import { ConfirmDialog } from "./confirm-dialog";
 import { useCandidates } from "../hooks/use-candidates";
 import TableSkeleton from "./table-skeleton";
 
-// warna badge posisi
+/* =======================================
+   STYLE DEFINITIONS
+======================================= */
 const POSITION_STYLE: Record<string, string> = {
   "UI/UX Designer": "bg-blue-100 text-blue-700",
   "Quality Assurance": "bg-yellow-100 text-yellow-800",
@@ -25,12 +26,14 @@ const POSITION_STYLE: Record<string, string> = {
   "Frontend Dev": "bg-red-100 text-red-700",
 };
 
-// status
 const STATUS_STYLE: Record<"Active" | "Inactive", string> = {
   Active: "bg-green-100 text-green-700",
   Inactive: "bg-gray-100 text-gray-500",
 };
 
+/* =======================================
+   MAIN COMPONENT
+======================================= */
 export function CandidateTable() {
   const {
     candidates,
@@ -42,15 +45,25 @@ export function CandidateTable() {
   const [editCandidate, setEditCandidate] = useState<
     (Candidate & { phone: string }) | null
   >(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<Candidate | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<Candidate | null>(
+    null
+  );
 
-  // 🔄 Loading
+  // PAGINATION
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const totalPages = Math.ceil(candidates.length / pageSize);
+  const displayedCandidates = candidates.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  /* ===========================
+     STATES
+  =========================== */
   if (loading) return <TableSkeleton />;
-
-  // ⚠️ Error
   if (error) return <div className="text-red-500 mt-4">{error}</div>;
 
-  // 📭 Empty state
   if (candidates.length === 0) {
     return (
       <div className="text-center text-gray-500 mt-8">
@@ -58,6 +71,7 @@ export function CandidateTable() {
       </div>
     );
   }
+
   return (
     <div>
       {/* DESKTOP TABLE */}
@@ -65,17 +79,15 @@ export function CandidateTable() {
         <table className="min-w-[900px] w-full table-auto">
           <thead>
             <tr className="text-gray-400 text-[15px] font-semibold">
-              {["Candidates", "NIK", "Position", "Actions"].map(
-                (h) => (
-                  <th key={h} className="px-4 pb-2 text-left">
-                    {h}
-                  </th>
-                )
-              )}
+              {["Candidates", "NIK", "Position", "Actions"].map((h) => (
+                <th key={h} className="px-4 pb-2 text-left">
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {candidates.map((c) => (
+            {displayedCandidates.map((c) => (
               <tr key={c.id} className="bg-white">
                 {/* Candidates */}
                 <td className="px-6 py-4 flex items-center gap-3 align-middle">
@@ -89,8 +101,10 @@ export function CandidateTable() {
                     <div className="text-xs text-gray-500">{c.email}</div>
                   </div>
                 </td>
+
                 {/* NIK */}
                 <td className="px-6 py-4 text-[13px] text-gray-800">{c.nik}</td>
+
                 {/* Position */}
                 <td className="px-6 py-4 align-middle">
                   <span
@@ -102,6 +116,7 @@ export function CandidateTable() {
                     {c.position}
                   </span>
                 </td>
+
                 {/* Actions */}
                 <td className="px-6 py-4 flex items-center gap-4 align-middle">
                   <DropdownMenu>
@@ -140,83 +155,104 @@ export function CandidateTable() {
 
       {/* MOBILE CARD */}
       <div className="md:hidden space-y-4">
-        {candidates.map((c) => {
-          return (
-            <div
-              key={c.id}
-              className="bg-white rounded-lg shadow-sm p-4 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-semibold">
-                    {c.name.charAt(0).toUpperCase()}
-                  </span>
-                  <div>
-                    <div className="font-semibold text-gray-900">{c.name}</div>
-                    <div className="text-xs text-gray-500">{c.email}</div>
-                  </div>
+        {displayedCandidates.map((c) => (
+          <div
+            key={c.id}
+            className="bg-white rounded-lg shadow-sm p-4 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-semibold">
+                  {c.name.charAt(0).toUpperCase()}
+                </span>
+                <div>
+                  <div className="font-semibold text-gray-900">{c.name}</div>
+                  <div className="text-xs text-gray-500">{c.email}</div>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-2 rounded hover:bg-gray-100">
-                      <MoreVertical className="h-5 w-5 text-gray-600" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="min-w-[120px] bg-white rounded-md shadow-md"
-                  >
-                    <DropdownMenuItem
-                      onSelect={() => setEditCandidate({ ...c, phone: "" })}
-                    >
-                      <Edit className="mr-2 h-4 w-4" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-500"
-                      onSelect={() => setDeleteCandidate(c)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
-              <div className="mt-3 space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">NIK</span>
-                  <span className="font-medium text-gray-900">{c.nik}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Position</span>
-                  <span
-                    className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-semibold",
-                      POSITION_STYLE[c.position] ?? "bg-gray-100 text-gray-500"
-                    )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-2 rounded hover:bg-gray-100">
+                    <MoreVertical className="h-5 w-5 text-gray-600" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="min-w-[120px] bg-white rounded-md shadow-md"
+                >
+                  <DropdownMenuItem
+                    onSelect={() => setEditCandidate({ ...c, phone: "" })}
                   >
-                    {c.position}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Period</span>
-                  {/* <span className="font-medium text-gray-900">{periodLabel}</span> */}
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500">Status</span>
-                  <span
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-semibold",
-                      STATUS_STYLE[
-                        c.status === "Active" ? "Active" : "Inactive"
-                      ]
-                    )}
+                    <Edit className="mr-2 h-4 w-4" /> Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-red-500"
+                    onSelect={() => setDeleteCandidate(c)}
                   >
-                    {c.status}
-                  </span>
-                </div>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="mt-3 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">NIK</span>
+                <span className="font-medium text-gray-900">{c.nik}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Position</span>
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-xs font-semibold",
+                    POSITION_STYLE[c.position] ?? "bg-gray-100 text-gray-500"
+                  )}
+                >
+                  {c.position}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Status</span>
+                <span
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-semibold",
+                    STATUS_STYLE[c.status === "Active" ? "Active" : "Inactive"]
+                  )}
+                >
+                  {c.status}
+                </span>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
+      </div>
+
+      {/* PAGINATION FOOTER */}
+      <div className="flex items-center justify-between mt-6 text-sm text-gray-600">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="text-sm rounded-lg"
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="text-sm rounded-lg"
+          >
+            Next
+          </Button>
+        </div>
+        <div className="hidden md:block">
+          Showing page <span className="font-semibold">{page}</span> of{" "}
+          <span className="font-semibold">{totalPages}</span> candidates
+        </div>
       </div>
 
       {/* Edit Dialog */}
@@ -228,7 +264,6 @@ export function CandidateTable() {
             if (!open) setEditCandidate(null);
           }}
           onSave={(updated) => {
-            // Sementara, integrasi dengan backend di sini
             console.log("Updated candidate:", updated);
             setEditCandidate(null);
           }}
@@ -246,7 +281,7 @@ export function CandidateTable() {
           if (!deleteCandidate) return;
           try {
             await deleteCandidateFn(deleteCandidate.id);
-            window.location.reload(); // refresh full page
+            window.location.reload();
           } catch (err) {
             console.error(err);
           } finally {

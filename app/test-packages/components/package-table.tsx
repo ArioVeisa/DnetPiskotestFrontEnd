@@ -1,8 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Edit, Trash2, Briefcase } from "lucide-react";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Briefcase,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useTests } from "../hooks/use-test-package";
 import TableSkeleton from "./table-skeleton";
 import {
@@ -33,6 +40,16 @@ export default function TestTable({
 }) {
   const { tests, loading, error, handleDelete } = useTests();
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const totalPages = Math.ceil(tests.length / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const paginatedTests = tests.slice(startIndex, startIndex + pageSize);
+
+  const handlePrev = () => setPage((p) => Math.max(p - 1, 1));
+  const handleNext = () => setPage((p) => Math.min(p + 1, totalPages));
+
   if (loading) return <TableSkeleton />;
   if (error) return <div className="text-red-500">{error}</div>;
 
@@ -53,8 +70,8 @@ export default function TestTable({
             </tr>
           </thead>
           <tbody>
-            {tests.map((test, i) => (
-              <tr key={`desktop-${test.id ?? i}`} className="bg-white">
+            {paginatedTests.map((test, i) => (
+              <tr key={`desktop-${test.id ?? i}`}>
                 {/* Test Name */}
                 <td className="px-6 py-4 flex items-center gap-3 align-middle">
                   <span className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow overflow-hidden">
@@ -76,7 +93,7 @@ export default function TestTable({
                       <span
                         key={`desktop-${type}-${idx}`}
                         className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap",
+                          "inline-block px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap",
                           TYPE_STYLE[type] || "bg-gray-100 text-gray-500"
                         )}
                       >
@@ -87,12 +104,12 @@ export default function TestTable({
                 </td>
 
                 {/* Questions */}
-                <td className="px-6 py-4 text-[15px] text-gray-900 font-medium align-middle">
+                <td className="px-6 py-4 text-sm text-gray-900 font-medium align-middle">
                   {test.questions}
                 </td>
 
                 {/* Duration */}
-                <td className="px-6 py-4 text-[15px] text-gray-900 font-medium align-middle">
+                <td className="px-6 py-4 text-sm text-gray-900 font-medium align-middle">
                   {test.duration}
                 </td>
 
@@ -132,7 +149,7 @@ export default function TestTable({
 
       {/* MOBILE CARD */}
       <div className="md:hidden space-y-6">
-        {tests.map((test, i) => (
+        {paginatedTests.map((test, i) => (
           <div
             key={`mobile-${test.id ?? i}`}
             className="bg-white rounded-lg shadow-sm p-4 space-y-6"
@@ -208,6 +225,53 @@ export default function TestTable({
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-8 text-sm text-gray-600">
+          <div className="flex items-center gap-2 mx-auto md:mx-0">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1}
+              onClick={handlePrev}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" /> Prev
+            </Button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+              <Button
+                key={num}
+                size="sm"
+                variant={page === num ? "default" : "outline"}
+                onClick={() => setPage(num)}
+                className={cn(
+                  "w-8 h-8",
+                  page === num && "bg-blue-500 hover:bg-blue-600 text-white"
+                )}
+              >
+                {num}
+              </Button>
+            ))}
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === totalPages}
+              onClick={handleNext}
+              className="flex items-center gap-1"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="hidden md:block">
+            Showing <span className="font-semibold">{page}</span> of{" "}
+            <span className="font-semibold">{totalPages}</span> Pages
+          </div>
+        </div>
+      )}
     </>
   );
 }
