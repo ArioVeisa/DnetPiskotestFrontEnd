@@ -25,13 +25,21 @@ export function useCandidates(testId?: number) {
   const normalizeCandidates = (data: Candidate[]): CandidateWithStatus[] =>
     data.map((c) => ({ ...c, localStatus: "Pending" }));
 
-  /** Refresh kandidat yang tersedia (belum pernah test) */
+  /** Refresh kandidat dari test distribution candidates table */
   const refreshCandidates = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await candidateService.fetchAvailableCandidates(testId);
-      setCandidates(normalizeCandidates(data));
+      if (testId) {
+        // Load candidates from test_distribution_candidates table
+        const data = await candidateService.getTestDistributionCandidates(testId);
+        setCandidates(normalizeCandidates(data));
+        console.log(`✅ Loaded ${data.length} candidates from test distribution for test ${testId}`);
+      } else {
+        // No testId, set empty array
+        setCandidates([]);
+        console.log('ℹ️ No testId provided, setting empty candidates list');
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -64,9 +72,19 @@ export function useCandidates(testId?: number) {
     setError(null);
     setFieldErrors({});
     try {
-      const created = await candidateService.create(payload);
+      if (!testId) {
+        throw new Error('Test ID is required to add candidate');
+      }
+
+      console.log(`➕ Adding candidate to test distribution ${testId}:`, payload);
+      const created = await candidateService.addToTestDistribution({
+        ...payload,
+        test_id: testId,
+      });
+      
       const withStatus: CandidateWithStatus = { ...created, localStatus: "Pending" };
-      setCandidates((prev) => [...prev, withStatus]);
+      setCandidates((prev) => [withStatus, ...prev]); // Add to beginning of list
+      console.log(`✅ Candidate added to test distribution and UI updated`);
       return withStatus;
     } catch (err) {
       if (err instanceof AxiosError) {
@@ -94,7 +112,7 @@ export function useCandidates(testId?: number) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [testId]);
 
   /** Refresh kandidat setelah menambahkan kandidat baru */
   const refreshAfterAdd = useCallback(async () => {
@@ -107,18 +125,32 @@ export function useCandidates(testId?: number) {
       setLoading(true);
       setError(null);
       try {
+        console.log(`✏️ Updating candidate with ID: ${payload.id}`, payload);
         const updated = await candidateService.update(payload.id, payload);
+        
+        // Get current status before updating
+        const currentCandidate = candidates.find((c) => c.id === payload.id);
         const withStatus: CandidateWithStatus = {
           ...updated,
-          localStatus:
-            candidates.find((c) => c.id === payload.id)?.localStatus || "Pending",
+          localStatus: currentCandidate?.localStatus || "Pending",
         };
-        setCandidates((prev) =>
-          prev.map((c) => (c.id === payload.id ? withStatus : c))
-        );
-        if (selected?.id === payload.id) setSelected(withStatus);
+        
+        // Update candidates list
+        setCandidates((prev) => {
+          const updatedList = prev.map((c) => (c.id === payload.id ? withStatus : c));
+          console.log(`✅ Candidate updated in UI`, updatedList.find(c => c.id === payload.id));
+          return updatedList;
+        });
+        
+        // Update selected if it's the same candidate
+        if (selected?.id === payload.id) {
+          setSelected(withStatus);
+        }
+        
+        console.log(`✅ Candidate ${payload.id} successfully updated`);
         return withStatus;
       } catch (err) {
+        console.error('❌ Error updating candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
         setError(msg);
         throw err;
@@ -126,7 +158,7 @@ export function useCandidates(testId?: number) {
         setLoading(false);
       }
     },
-    [selected, candidates]
+    [selected?.id, candidates.length]
   );
 
   /** Hapus kandidat */
@@ -135,10 +167,17 @@ export function useCandidates(testId?: number) {
       setLoading(true);
       setError(null);
       try {
+        console.log(`🗑️ Removing candidate with ID: ${id}`);
         await candidateService.remove(id);
-        setCandidates((prev) => prev.filter((c) => c.id !== id));
+        setCandidates((prev) => {
+          const filtered = prev.filter((c) => c.id !== id);
+          console.log(`✅ Candidate removed. Remaining: ${filtered.length}`);
+          return filtered;
+        });
         if (selected?.id === id) setSelected(null);
+        console.log(`✅ Candidate ${id} successfully removed from UI`);
       } catch (err) {
+        console.error('❌ Error removing candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
         setError(msg);
         throw err;
@@ -146,7 +185,7 @@ export function useCandidates(testId?: number) {
         setLoading(false);
       }
     },
-    [selected]
+    [selected?.id]
   );
 
   /** Update status lokal kandidat */
@@ -159,13 +198,17 @@ export function useCandidates(testId?: number) {
         setSelected({ ...selected, localStatus: status });
       }
     },
-    [selected]
+    [selected?.id]
   );
 
-  /** Auto load awal */
+
+  /** Auto load candidates yang sudah di-add untuk test ini */
   useEffect(() => {
-    refreshCandidates();
-  }, [refreshCandidates]);
+    if (testId) {
+      console.log(`🔄 Auto-loading candidates for test ${testId}`);
+      refreshCandidates();
+    }
+  }, [testId, refreshCandidates]);
 
   return {
     candidates,

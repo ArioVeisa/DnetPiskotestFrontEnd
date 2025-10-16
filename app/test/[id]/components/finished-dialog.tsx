@@ -15,6 +15,7 @@ export interface Test {
   duration: number;
   index: number;
   total: number;
+  sections?: any[];
 }
 
 interface FinishedDialogProps {

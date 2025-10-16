@@ -11,24 +11,34 @@ export interface InvitePayload {
 
 export interface InvitedCandidate {
   id: number;
-  name: string;
-  email: string;
-  status: "Invited" | "Failed";
+  candidate_id: number;
+  test_id: number;
+  unique_token: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface InviteResponse {
-  success: boolean;
   message: string;
   data?: InvitedCandidate[];
+  duplicate?: any[];
 }
 
 export const emailInviteService = {
   async sendInvite(payload: InvitePayload): Promise<InviteResponse> {
     try {
+      console.log('📧 Email invite payload:', payload);
+      
       const res = await api.post<InviteResponse>("/candidate-tests/invite", payload);
+      
+      console.log('✅ Email invite response:', res.data);
       return res.data;
     } catch (error) {
+      console.error('❌ Email invite error:', error);
       if (axios.isAxiosError(error)) {
+        console.error('❌ Response data:', error.response?.data);
+        console.error('❌ Response status:', error.response?.status);
         throw error.response?.data?.message || "Gagal mengirim undangan email";
       }
       throw "Terjadi error tidak dikenal";

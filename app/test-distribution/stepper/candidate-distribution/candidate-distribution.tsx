@@ -1,10 +1,11 @@
 // app/test-distribution/stepper/candidate-distribution/candidate-distribution.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   UserPlus,
+  User,
   MoreVertical,
   Eye,
   Trash2,
@@ -75,6 +76,40 @@ export default function CandidatesDistributions({
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<Candidate | null>(null);
 
+  // Load session settings from localStorage on mount
+  useEffect(() => {
+    const savedStart = localStorage.getItem(`session_start_${testPackageId}`);
+    const savedEnd = localStorage.getItem(`session_end_${testPackageId}`);
+    const savedSentAll = localStorage.getItem(`sent_all_${testPackageId}`);
+    
+    if (savedStart) {
+      setSessionStart(new Date(savedStart));
+    }
+    if (savedEnd) {
+      setSessionEnd(new Date(savedEnd));
+    }
+    if (savedSentAll === 'true') {
+      setSentAll(true);
+    }
+  }, [testPackageId]);
+
+  // Save session settings to localStorage when changed
+  useEffect(() => {
+    if (sessionStart) {
+      localStorage.setItem(`session_start_${testPackageId}`, sessionStart.toISOString());
+    }
+  }, [sessionStart, testPackageId]);
+
+  useEffect(() => {
+    if (sessionEnd) {
+      localStorage.setItem(`session_end_${testPackageId}`, sessionEnd.toISOString());
+    }
+  }, [sessionEnd, testPackageId]);
+
+  useEffect(() => {
+    localStorage.setItem(`sent_all_${testPackageId}`, sentAll.toString());
+  }, [sentAll, testPackageId]);
+
   // hooks for candidates management
   const {
     candidates,
@@ -138,15 +173,19 @@ export default function CandidatesDistributions({
       });
 
       const candidateIds = candidates.map((c) => c.id);
+      console.log('📧 Sending invitations to candidates:', candidateIds);
+      
       await sendInvite({
         candidate_ids: candidateIds,
         test_id: testPackageId,
         custom_message: "Anda diundang untuk mengikuti tes psikotes.",
-        token: "test-token",
+        token: localStorage.getItem('token') || '',
       });
 
       setSentAll(true); // ✅ cukup ini
-      // ❌ jangan langsung onNext()
+      
+      // Trigger refresh di parent component setelah berhasil send all
+      // Parent akan menangani refresh data dan kembali ke halaman utama
     } catch {
       // Error sudah ditangani di hook
     }
@@ -161,9 +200,14 @@ export default function CandidatesDistributions({
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
         <div>
           <h2 className="font-bold text-2xl mb-1">Manage Candidates</h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-gray-500 text-sm mb-2">
             Add candidates and manage test distribution
           </p>
+          {candidates.length > 0 && (
+            <p className="text-xs text-blue-600 mb-4">
+              {candidates.length} candidate{candidates.length > 1 ? 's' : ''} added to this test
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
@@ -175,7 +219,7 @@ export default function CandidatesDistributions({
             className="bg-blue-500 hover:bg-blue-600 text-white"
           >
             <UserPlus className="w-4 h-4 mr-2" />
-            Add Candidates
+            Add Candidate
           </Button>
         </div>
       </div>
@@ -196,11 +240,19 @@ export default function CandidatesDistributions({
       )}
 
       {/* ===== LIST ===== */}
-      {!candidateLoading && candidates.length === 0 ? (
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-400 text-sm">
-          Belum ada kandidat. Tambahkan kandidat terlebih dahulu.
-        </div>
-      ) : (
+        {!candidateLoading && candidates.length === 0 ? (
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-400 text-sm">
+            <div className="space-y-3">
+              <div className="text-lg font-medium text-gray-600">
+                Belum ada kandidat untuk test ini
+              </div>
+              <div className="space-y-2">
+                <p>• Klik <strong>"Add Candidate"</strong> untuk menambahkan kandidat baru</p>
+                <p>• Setiap kandidat harus dibuat khusus untuk test ini</p>
+              </div>
+            </div>
+          </div>
+        ) : (
         !candidateLoading && (
           <div className="flex flex-col space-y-3 mb-10">
             {candidates.map((c) => {
@@ -224,52 +276,62 @@ export default function CandidatesDistributions({
                           size="icon"
                           variant="ghost"
                           className="w-8 h-8 p-0"
-                          disabled={sentAll}
+                          disabled={sentAll || candidateLoading}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="w-5 h-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelected(c);
                             setDetailOpen(true);
                           }}
-                          disabled={sentAll}
+                          disabled={sentAll || candidateLoading}
                         >
                           <Eye className="w-4 h-4 mr-2" /> View / Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               await sendInvite({
                                 candidate_ids: [c.id],
                                 test_id: testPackageId,
                                 custom_message:
                                   "Pengiriman ulang undangan tes psikotes.",
-                                token: "test-token",
+                                token: localStorage.getItem('token') || '',
                               });
                               alert("Undangan berhasil dikirim ulang!");
                             } catch {
                               alert("Gagal mengirim ulang undangan");
                             }
                           }}
-                          disabled={inviteLoading}
+                          disabled={inviteLoading || candidateLoading}
                         >
                           <Mail className="w-4 h-4 mr-2" />
                           {inviteLoading ? "Sending..." : "Send Invite"}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (
                               confirm("Yakin ingin menghapus kandidat ini?")
                             ) {
-                              removeCandidate(c.id);
+                              try {
+                                await removeCandidate(c.id);
+                                console.log(`✅ Kandidat ${c.name} berhasil dihapus`);
+                              } catch (error) {
+                                console.error('❌ Error deleting candidate:', error);
+                                alert('Gagal menghapus kandidat');
+                              }
                             }
                           }}
                           className="text-red-600"
-                          disabled={sentAll}
+                          disabled={sentAll || candidateLoading}
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Remove
                         </DropdownMenuItem>
@@ -344,19 +406,11 @@ export default function CandidatesDistributions({
           {inviteResult.data && (
             <div className="mt-2">
               <p className="text-sm text-green-600">
-                Successfully invited:{" "}
-                {inviteResult.data.filter((d) => d.status === "Invited").length}{" "}
-                candidates
+                Successfully invited: {inviteResult.data.length} candidates
               </p>
-              {inviteResult.data.filter((d) => d.status === "Failed").length >
-                0 && (
-                <p className="text-sm text-red-600">
-                  Failed:{" "}
-                  {
-                    inviteResult.data.filter((d) => d.status === "Failed")
-                      .length
-                  }{" "}
-                  candidates
+              {inviteResult.duplicate && inviteResult.duplicate.length > 0 && (
+                <p className="text-sm text-yellow-600">
+                  Skipped: {inviteResult.duplicate.length} candidates (already invited)
                 </p>
               )}
             </div>
@@ -423,13 +477,20 @@ export default function CandidatesDistributions({
 
       <CandidateDetailDialog
         open={detailOpen}
-        onOpenChange={setDetailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setSelected(null);
+            setError(null); // Clear error when dialog closes
+          }
+        }}
         candidate={selected}
         onSave={async (payload: CreateCandidatePayload) => {
           // pastikan selected ada (harus ada karena dialog dibuka untuk kandidat tertentu)
           if (!selected) return;
 
           try {
+            console.log('💾 Updating candidate:', selected.id, payload);
             await updateCandidate({
               id: selected.id, // id diambil dari selected (backend butuh id)
               name: payload.name,
@@ -440,11 +501,14 @@ export default function CandidatesDistributions({
               birth_date: payload.birth_date,
               gender: payload.gender as "male" | "female",
             });
+            console.log('✅ Candidate updated successfully');
             setDetailOpen(false);
             setSelected(null);
+            setError(null); // Clear any errors
           } catch (err) {
-            // tangani error sesuai kebijakan (atau biarkan hook/handler global menangani)
-            console.error(err);
+            console.error('❌ Error updating candidate:', err);
+            setError(err instanceof Error ? err.message : String(err));
+            // Don't close dialog on error, let user see the error
           }
         }}
         saving={candidateLoading}

@@ -3,9 +3,11 @@
 import React, { useEffect } from "react";
 import { VerificationDialog } from "./verification-dialog";
 import { ReminderPage } from "./reminder-page";
+import { SectionAnnouncement } from "./section-announcement";
 import { QuizPage } from "./quiz-page";
 import { FinishedDialog } from "./finished-dialog";
 import { CompletionDialog } from "./completion-dialog";
+import { TestCompletedPage } from "./test-completed-page";
 import { TopBarTest } from "./top-bar";
 import { useCandidateTest } from "../hooks/use-candidate-test";
 import { useParams } from "next/navigation";
@@ -19,10 +21,15 @@ export default function CandidateTestPage() {
     candidate,
     tests,
     currentTest,
+    currentSection,
+    currentSectionIndex,
     questions,
     timer,
+    completedAt,
     verify,
     startQuiz,
+    startSectionQuiz,
+    finishSection,
     finishTest,
     nextTest,
     validateNik,
@@ -80,8 +87,25 @@ export default function CandidateTestPage() {
         />
       )}
 
+      {step === "test-completed" && (
+        <TestCompletedPage
+          completedAt={completedAt}
+          onContactHRD={handleContactHRD}
+          onDownloadCertificate={handleDownload}
+        />
+      )}
+
       {step === "reminder" && candidate && (
         <ReminderPage candidate={candidate} tests={tests} onStart={startQuiz} />
+      )}
+
+      {step === "section-announcement" && currentSection && (
+        <SectionAnnouncement
+          sectionType={currentSection.section_type}
+          duration={currentSection.duration_minutes}
+          questionCount={currentSection.question_count}
+          onStart={startSectionQuiz}
+        />
       )}
 
       {step === "quiz" && currentTest && (
@@ -89,7 +113,7 @@ export default function CandidateTestPage() {
           questions={questions}
           test={currentTest}
           timer={timer}
-          onFinish={finishTest}
+          onFinish={finishSection}
           onExpire={nextTest}
         />
       )}

@@ -76,7 +76,11 @@ export default function AddCandidateDialog({
     form.nik.trim() !== "" &&
     form.name.trim() !== "" &&
     form.email.trim() !== "" &&
-    form.phone_number.trim() !== "";
+    form.phone_number.trim() !== "" &&
+    form.position.trim() !== "" &&
+    form.department.trim() !== "" &&
+    form.birth_date.trim() !== "" &&
+    form.gender.trim() !== "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -183,6 +187,7 @@ export default function AddCandidateDialog({
                       setForm((f) => ({ ...f, position: e.target.value }))
                     }
                     placeholder="Staff / Manager"
+                    required
                     className={`text-sm ${fieldErrors.position ? 'border-red-500' : ''}`}
                   />
                   <FieldError field="position" />
@@ -197,6 +202,7 @@ export default function AddCandidateDialog({
                       setForm((f) => ({ ...f, department: e.target.value }))
                     }
                     placeholder="HRD / IT"
+                    required
                     className={`text-sm ${fieldErrors.department ? 'border-red-500' : ''}`}
                   />
                   <FieldError field="department" />
@@ -215,6 +221,7 @@ export default function AddCandidateDialog({
                     onChange={(e) =>
                       setForm((f) => ({ ...f, birth_date: e.target.value }))
                     }
+                    required
                     className={`text-sm ${fieldErrors.birth_date ? 'border-red-500' : ''}`}
                   />
                   <FieldError field="birth_date" />
