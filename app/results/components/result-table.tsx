@@ -5,23 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Result } from "../services/result-service";
+import { resultsService } from "../services/result-service";
 
 export interface ResultTableProps {
   results: Result[];
   onView: (candidateId: string) => void;
-  onDownload: (candidateId: string) => void;
-  pageSize?: number; // optional default 5
+  onDownload: (candidateId: string) => Promise<void>; // ✅ tambahkan ini
+  pageSize?: number;
 }
 
 export function ResultTable({
   results,
   onView,
-  onDownload,
   pageSize = 5,
 }: ResultTableProps) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(results.length / pageSize);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  const totalPages = Math.ceil(results.length / pageSize);
   const paginatedResults = results.slice(
     (page - 1) * pageSize,
     page * pageSize
@@ -29,6 +30,17 @@ export function ResultTable({
 
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
+  const handleDownload = async (candidateId: string) => {
+    try {
+      setDownloadingId(candidateId);
+      await resultsService.downloadResult(candidateId);
+    } catch (error) {
+      alert(error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <>
@@ -110,10 +122,15 @@ export function ResultTable({
                     </Button>
                     <Button
                       size="sm"
+                      disabled={downloadingId === r.candidateId}
                       className="bg-blue-500 text-white hover:bg-blue-600"
-                      onClick={() => onDownload(r.candidateId)}
+                      onClick={() => handleDownload(r.candidateId)}
                     >
-                      <Download className="h-4 w-4" />
+                      <Download
+                        className={cn("h-4 w-4", {
+                          "animate-pulse": downloadingId === r.candidateId,
+                        })}
+                      />
                     </Button>
                   </td>
                 </tr>
@@ -196,9 +213,14 @@ export function ResultTable({
                   <Button
                     size="sm"
                     className="flex-1 bg-blue-500 text-white hover:bg-blue-600"
-                    onClick={() => onDownload(r.candidateId)}
+                    disabled={downloadingId === r.candidateId}
+                    onClick={() => handleDownload(r.candidateId)}
                   >
-                    <Download className="h-4 w-4" />
+                    <Download
+                      className={cn("h-4 w-4", {
+                        "animate-pulse": downloadingId === r.candidateId,
+                      })}
+                    />
                   </Button>
                 </div>
               </div>
