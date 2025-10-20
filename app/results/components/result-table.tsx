@@ -10,7 +10,7 @@ import { resultsService } from "../services/result-service";
 export interface ResultTableProps {
   results: Result[];
   onView: (candidateId: string) => void;
-  onDownload: (candidateId: string) => Promise<void>; // ✅ tambahkan ini
+  onDownload: (candidateId: string) => Promise<void>;
   pageSize?: number;
 }
 

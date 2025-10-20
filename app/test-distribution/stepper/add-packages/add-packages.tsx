@@ -17,13 +17,6 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
   const { packageId, setPackageId, setTestName } = useMakeSession();
 
   const [selected, setSelected] = useState<number | null>(packageId ?? null);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 100);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   if (loading) return <div>Loading packages...</div>;
   if (error) return <div className="text-red-500">Gagal load: {error}</div>;
@@ -44,7 +37,7 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
       </p>
 
       {/* LIST PACKAGE */}
-      <div className="space-y-4 pb-24"> {/* ada padding bawah supaya tidak ketutup sticky footer */}
+      <div className="space-y-4 pb-20"> {/* ada padding bawah supaya tidak ketutup sticky footer */}
         {packages.map((p) => (
           <Card
             key={p.id}
@@ -91,14 +84,8 @@ export default function AddPackageStep({ onNext, onCancel }: Props) {
         ))}
       </div>
 
-      {/* FOOTER STICKY */}
-      <div
-        className={`border-t bg-white py-3 px-6 md:px-8 flex justify-end gap-2 transition-all duration-300 ${
-          isScrolled
-            ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
-            : "relative mt-8"
-        }`}
-      >
+      {/* FOOTER STICKY - Always Fixed */}
+      <div className="fixed bottom-0 left-0 right-0 md:left-[260px] border-t bg-white py-3 px-6 md:px-8 flex justify-end gap-2 shadow-lg z-50">
         <Button variant="outline" onClick={onCancel}>
           Back
         </Button>

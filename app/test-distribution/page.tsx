@@ -27,6 +27,16 @@ export default function TestDistributionPage() {
 
   // mulai bikin session baru
   function handleCreate() {
+    // Clear localStorage untuk distribusi baru
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('session_start_') || key.startsWith('session_end_') || key.startsWith('sent_all_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
     setShowStepper(true);
     setActiveStep(0);
   }

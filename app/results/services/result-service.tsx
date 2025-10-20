@@ -59,8 +59,8 @@ export const resultsService = {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await api.get<{ success: boolean; data: CandidateTest[] }>(
-        "/candidate-tests",
+      const res = await api.get<{ success: boolean; data: unknown[] }>(
+        "/test-results",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -68,18 +68,13 @@ export const resultsService = {
 
       const data = res.data.data || [];
 
-      // 🔥 Filter hanya yang sudah selesai (status === 'completed')
-      const completedOnly = data.filter(
-        (item) => item.status?.toLowerCase() === "completed"
-      );
-
-      return completedOnly.map((item) => ({
-        candidateId: item.candidate?.id?.toString() || "-",
-        name: item.candidate?.name || "-",
-        email: item.candidate?.email || "-",
-        position: item.candidate?.position || "-",
-        types: [item.test?.name || "Unknown Test"],
-        period: new Date(item.created_at).toLocaleDateString("id-ID", {
+      return data.map((item) => ({
+        candidateId: item.id?.toString() || "-",
+        name: item.candidate_name || "-",
+        email: item.candidate_email || "-",
+        position: item.position || "-",
+        types: [item.test_name || "Unknown Test"],
+        period: new Date(item.completed_at).toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "short",
           year: "numeric",

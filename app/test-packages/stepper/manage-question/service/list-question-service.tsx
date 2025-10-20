@@ -113,7 +113,7 @@ export const listQuestionService = {
   ): Promise<SectionQuestionData> {
     try {
       const res = await api.get<TestWithSectionsResponse>(
-        `/tests/${testId}/with-sections`
+        `/tests-public/${testId}/with-sections`
       );
 
       const section = res.data.data.sections.find(

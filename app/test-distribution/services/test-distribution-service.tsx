@@ -45,10 +45,34 @@ export async function fetchDistributions(): Promise<Distribution[]> {
     console.log('📋 Fetching test distributions...');
     
     // Ambil data dari backend API menggunakan axios instance
-    const response = await api.get('/test-distributions');
+    const response = await api.get('/test-distributions-public');
     
     console.log('✅ Fetched distributions:', response.data);
-    return response.data.data || [];
+    
+    // Transform backend data to frontend format
+    const transformedData = (response.data.data || []).map((item: unknown) => {
+      const data = item as {
+        id: number;
+        name: string;
+        target_position?: string;
+        started_date: string;
+        candidates_count: number;
+        status: string;
+      };
+      return {
+        id: data.id,
+        testName: data.name,
+        category: data.target_position || 'Managerial',
+        startDate: data.started_date,
+        endDate: null, // Backend doesn't provide end_date
+        candidatesTotal: data.candidates_count,
+        status: data.status === 'Completed' ? 'Completed' : 
+                data.status === 'In Progress' ? 'Ongoing' : 
+                data.status === 'Scheduled' ? 'Scheduled' : 'Draft'
+      };
+    });
+    
+    return transformedData;
   } catch (error) {
     console.error('❌ Error fetching distributions:', error);
     // Return empty array jika API gagal - tidak ada fallback ke dummy data
@@ -97,9 +121,10 @@ export async function deleteDistribution(id: number): Promise<void> {
     console.log('🗑️ Deleting test distribution with ID:', id);
     
     // Use the existing api helper
-    const response = await api.delete(`/test-distributions/${id}`);
+    const response = await api.delete(`/test-distributions-public/${id}`);
     
     console.log('✅ Delete response:', response.data);
+    console.log('✅ Response status:', response.status);
 
     // Also remove from local storage as backup
     const saved = loadDistributions();
@@ -109,6 +134,12 @@ export async function deleteDistribution(id: number): Promise<void> {
     console.log('✅ Distribution deleted successfully');
   } catch (error) {
     console.error('❌ Error deleting distribution:', error);
+    console.error('❌ Error details:', {
+      message: error?.message,
+      response: error?.response?.data,
+      status: error?.response?.status,
+      config: error?.config
+    });
     throw error;
   }
 }

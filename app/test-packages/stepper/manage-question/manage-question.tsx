@@ -132,7 +132,15 @@ export default function ManageQuestions({
         <div className="text-red-600 text-center">
           Error: {error}
           <Button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setError(null);
+              // Retry by calling the hook's reload function
+              if (reload) {
+                reload();
+              } else {
+                window.location.reload();
+              }
+            }}
             variant="outline"
             className="ml-2"
           >

@@ -52,11 +52,19 @@ export default function DistributionTable() {
   const handleDelete = async (id: number) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus test distribution ini?')) {
       try {
+        console.log('🗑️ Attempting to delete distribution with ID:', id);
         await remove(id);
+        console.log('✅ Distribution deleted successfully, refreshing data...');
         await refresh(); // Refresh data setelah delete
+        console.log('✅ Data refreshed successfully');
       } catch (error) {
-        console.error('Error deleting distribution:', error);
-        alert('Gagal menghapus test distribution');
+        console.error('❌ Error deleting distribution:', error);
+        console.error('❌ Error details:', {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status
+        });
+        alert(`Gagal menghapus test distribution: ${error?.message || 'Unknown error'}`);
       }
     }
   };
@@ -72,7 +80,23 @@ export default function DistributionTable() {
   const handleNext = () => setPage((p) => Math.min(p + 1, totalPages));
 
   if (loading) return <TableSkeleton />;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (error) return (
+    <div className="bg-red-50 border border-red-200 rounded-md p-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-red-800">Error loading distributions</h3>
+          <div className="mt-2 text-sm text-red-700">
+            <p>{error}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>

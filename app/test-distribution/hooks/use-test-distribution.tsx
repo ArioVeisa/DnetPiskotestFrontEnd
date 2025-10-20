@@ -70,10 +70,15 @@ export function useTestDistributions() {
   // 🔹 Delete distribution
   async function remove(id: number) {
     try {
+      console.log('🗑️ Hook: Attempting to delete distribution with ID:', id);
       await deleteDistribution(id);
+      console.log('✅ Hook: Distribution deleted successfully, updating state...');
       setDistributions((prev) => prev.filter((t) => t.id !== id));
-    } catch {
-      setError("Failed to delete distribution");
+      console.log('✅ Hook: State updated successfully');
+    } catch (error) {
+      console.error('❌ Hook: Error deleting distribution:', error);
+      setError(`Failed to delete distribution: ${error?.message || 'Unknown error'}`);
+      throw error; // Re-throw to let component handle it
     }
   }
 

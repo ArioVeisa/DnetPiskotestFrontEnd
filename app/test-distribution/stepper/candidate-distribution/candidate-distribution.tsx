@@ -27,6 +27,7 @@ import type { CandidateWithStatus } from "./hooks/use-candidate";
 import { useCandidates } from "./hooks/use-candidate";
 import { useInviteEmail } from "./hooks/use-invite-email";
 import { useUpdatePackage } from "./hooks/use-update-package";
+import { useCreateDistribution } from "./hooks/use-create-distribution";
 import type {
   Candidate,
   CreateCandidatePayload,
@@ -79,16 +80,12 @@ export default function CandidatesDistributions({
   useEffect(() => {
     const savedStart = localStorage.getItem(`session_start_${testPackageId}`);
     const savedEnd = localStorage.getItem(`session_end_${testPackageId}`);
-    const savedSentAll = localStorage.getItem(`sent_all_${testPackageId}`);
     
     if (savedStart) {
       setSessionStart(new Date(savedStart));
     }
     if (savedEnd) {
       setSessionEnd(new Date(savedEnd));
-    }
-    if (savedSentAll === 'true') {
-      setSentAll(true);
     }
   }, [testPackageId]);
 
@@ -137,6 +134,33 @@ export default function CandidatesDistributions({
     updatePackage,
   } = useUpdatePackage();
 
+  // hooks for creating new distribution
+  const {
+    loading: createLoading,
+    error: createError,
+    createDistribution,
+  } = useCreateDistribution();
+
+  // Load sentAll state from localStorage after candidates are loaded
+  useEffect(() => {
+    const savedSentAll = localStorage.getItem(`sent_all_${testPackageId}`);
+    
+    // Only set sentAll to true if there are actually candidates and invitations were sent
+    // For new distributions, always start with sentAll = false
+    if (savedSentAll === 'true' && candidates.length > 0) {
+      setSentAll(true);
+    } else {
+      setSentAll(false);
+    }
+  }, [testPackageId, candidates.length]);
+
+  // Reset sentAll if no candidates
+  useEffect(() => {
+    if (candidates.length === 0 && sentAll) {
+      setSentAll(false);
+    }
+  }, [candidates.length, sentAll]);
+
   // status style
   const STATUS_STYLE: Record<string, string> = {
     Pending: "border-blue-200 bg-blue-50 text-blue-600",
@@ -166,17 +190,25 @@ export default function CandidatesDistributions({
     }
 
     try {
-      await updatePackage(testPackageId, {
-        started_date: formatDate(sessionStart),
-        ended_date: formatDate(sessionEnd),
+      // 1. Create new test distribution from package
+      console.log('🚀 Creating new distribution from package:', testPackageId);
+      const distributionResult = await createDistribution({
+        test_id: testPackageId,
+        session_name: 'Test Distribution Session', // Backend will generate name with date
+        start_date: formatDate(sessionStart)!,
+        end_date: formatDate(sessionEnd)!,
       });
 
+      const newDistributionId = distributionResult.data.id;
+      console.log('✅ New distribution created with ID:', newDistributionId);
+
+      // 2. Send invitations to candidates using the new distribution ID
       const candidateIds = candidates.map((c) => c.id);
       console.log('📧 Sending invitations to candidates:', candidateIds);
       
       await sendInvite({
         candidate_ids: candidateIds,
-        test_id: testPackageId,
+        test_id: newDistributionId, // Use new distribution ID instead of package ID
         custom_message: "Anda diundang untuk mengikuti tes psikotes.",
         token: localStorage.getItem('token') || '',
       });
@@ -185,7 +217,8 @@ export default function CandidatesDistributions({
       
       // Trigger refresh di parent component setelah berhasil send all
       // Parent akan menangani refresh data dan kembali ke halaman utama
-    } catch {
+    } catch (error) {
+      console.error('❌ Error in handleSendAll:', error);
       // Error sudah ditangani di hook
     }
   }
@@ -194,7 +227,7 @@ export default function CandidatesDistributions({
      RENDER
      ============================= */
   return (
-    <div className="w-full px-4 sm:px-6 md:px-8 py-8">
+    <div className="w-full px-4 sm:px-6 md:px-8 py-8 pb-20"> {/* Added pb-20 for sticky footer space */}
       {/* ===== HEADER ===== */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
         <div>
@@ -417,8 +450,8 @@ export default function CandidatesDistributions({
         </div>
       )}
 
-      {/* ===== NAV ===== */}
-      <div className="flex justify-between gap-3 pt-8">
+      {/* ===== NAV STICKY ===== */}
+      <div className="fixed bottom-0 left-0 right-0 md:left-[260px] border-t bg-white py-3 px-6 md:px-8 flex justify-between gap-3 shadow-lg z-50">
         <Button variant="outline" type="button" onClick={onBack}>
           Back
         </Button>
@@ -431,16 +464,17 @@ export default function CandidatesDistributions({
               disabled={
                 packageLoading ||
                 inviteLoading ||
+                createLoading ||
                 !sessionStart ||
                 !sessionEnd ||
                 candidates.length === 0
               }
               className="bg-blue-500 text-white"
             >
-              {packageLoading || inviteLoading ? (
+              {packageLoading || inviteLoading || createLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              {packageLoading || inviteLoading ? "Sending..." : "Send All"}
+              {packageLoading || inviteLoading || createLoading ? "Sending..." : "Send All"}
             </Button>
           )}
 
