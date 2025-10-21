@@ -80,10 +80,10 @@ export const candidateService = {
     }
   },
 
-  async getTestDistributionCandidates(testId: number): Promise<Candidate[]> {
+  async getTestDistributionCandidates(distributionId: number): Promise<Candidate[]> {
     try {
-      console.log(`📋 Loading test distribution candidates for test ${testId}`);
-      const res = await api.get(`/candidates/test-distribution-candidates?test_id=${testId}`);
+      console.log(`📋 Loading test distribution candidates for distribution ${distributionId}`);
+      const res = await api.get(`/candidates/test-distribution-candidates?test_distribution_id=${distributionId}`);
       console.log(`✅ Test distribution candidates loaded:`, res.data.data);
       return res.data.data ?? res.data;
     } catch (error) {
@@ -95,7 +95,7 @@ export const candidateService = {
     }
   },
 
-  async addToTestDistribution(payload: CreateCandidatePayload & { test_id: number }): Promise<Candidate> {
+  async addToTestDistribution(payload: CreateCandidatePayload & { test_distribution_id: number }): Promise<Candidate> {
     try {
       console.log(`➕ Adding candidate to test distribution:`, payload);
       const res = await api.post(`/candidates/add-to-test-distribution`, payload);

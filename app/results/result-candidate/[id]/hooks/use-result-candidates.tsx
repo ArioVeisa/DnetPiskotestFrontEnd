@@ -12,12 +12,14 @@ export const useResultCandidates = (id: string) => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const result = await resultCandidatesService.getCandidateById(id);
         setData(result);
-        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-        setData(null);
+        console.error("Error in useResultCandidates:", err);
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan saat memuat data kandidat");
+        // Tetap set data dummy sebagai fallback
+        setData(resultCandidatesService.getDummyCandidateData(id));
       } finally {
         setLoading(false);
       }

@@ -7,7 +7,7 @@ import { api } from "@services/api";
 ============================== */
 export interface InvitePayload {
   candidate_ids: number[];
-  test_id: number;
+  test_distribution_id: number;
   custom_message?: string;
   token: string;
 }

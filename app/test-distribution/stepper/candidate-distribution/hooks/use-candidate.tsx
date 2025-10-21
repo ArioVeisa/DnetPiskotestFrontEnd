@@ -12,9 +12,10 @@ import { AxiosError } from "axios";
 /** Kandidat dengan status tambahan di frontend */
 export interface CandidateWithStatus extends Candidate {
   localStatus: "Pending" | "Invited";
+  isDraft?: boolean;
 }
 
-export function useCandidates(testId?: number) {
+export function useCandidates(testId?: number, options?: { autoLoad?: boolean }) {
   const [candidates, setCandidates] = useState<CandidateWithStatus[]>([]);
   const [selected, setSelected] = useState<CandidateWithStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,44 @@ export function useCandidates(testId?: number) {
 
   /** Helper: tambahkan default status "Pending" */
   const normalizeCandidates = (data: Candidate[]): CandidateWithStatus[] =>
-    data.map((c) => ({ ...c, localStatus: "Pending" }));
+    data.map((c) => ({ ...c, localStatus: "Pending", isDraft: false }));
+
+  const storageKey = testId ? `draft_candidates_${testId}` : undefined;
+
+  const readDrafts = (): CandidateWithStatus[] => {
+    if (!storageKey) return [];
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const arr: any[] = raw ? JSON.parse(raw) : [];
+      return arr.map((c) => ({
+        id: -Date.now() + Math.floor(Math.random() * 1000),
+        ...c,
+        localStatus: "Pending",
+        isDraft: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })) as CandidateWithStatus[];
+    } catch {
+      return [];
+    }
+  };
+
+  const writeDrafts = (items: CandidateWithStatus[]) => {
+    if (!storageKey) return;
+    const payload = items
+      .filter((c) => c.isDraft)
+      .map((c) => ({
+        nik: c.nik,
+        name: c.name,
+        phone_number: c.phone_number,
+        email: c.email,
+        position: c.position,
+        birth_date: c.birth_date,
+        gender: (c.gender as "male" | "female") ?? "male",
+        department: c.department,
+      }));
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+  };
 
   /** Refresh kandidat dari test distribution candidates table */
   const refreshCandidates = useCallback(async () => {
@@ -54,7 +92,7 @@ export function useCandidates(testId?: number) {
     setError(null);
     try {
       const data = await candidateService.fetchById(id);
-      const withStatus: CandidateWithStatus = { ...data, localStatus: "Pending" };
+      const withStatus: CandidateWithStatus = { ...data, localStatus: "Pending" } as CandidateWithStatus;
       setSelected(withStatus);
       return withStatus;
     } catch (err) {
@@ -66,7 +104,7 @@ export function useCandidates(testId?: number) {
     }
   }, []);
 
-  /** Tambah kandidat */
+  /** Tambah kandidat sebagai draft (belum simpan DB) */
   const addCandidate = useCallback(async (payload: CreateCandidatePayload) => {
     setLoading(true);
     setError(null);
@@ -76,28 +114,35 @@ export function useCandidates(testId?: number) {
         throw new Error('Test ID is required to add candidate');
       }
 
-      console.log(`➕ Adding candidate to test distribution ${testId}:`, payload);
-      const created = await candidateService.addToTestDistribution({
+      const draft: CandidateWithStatus = {
+        id: -Date.now(),
+        localStatus: "Pending",
+        isDraft: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         ...payload,
-        test_id: testId,
+      } as unknown as CandidateWithStatus;
+
+      setCandidates((prev) => {
+        const next = [draft, ...prev];
+        writeDrafts(next);
+        return next;
       });
-      
-      const withStatus: CandidateWithStatus = { ...created, localStatus: "Pending" };
-      setCandidates((prev) => [withStatus, ...prev]); // Add to beginning of list
-      console.log(`✅ Candidate added to test distribution and UI updated`);
-      return withStatus;
+
+      console.log(`✅ Candidate saved as draft`);
+      return draft;
     } catch (err) {
       if (err instanceof AxiosError) {
-        if (err.response?.status === 422 && err.response.data?.errors) {
-          const errors: Record<string, string[]> = err.response.data.errors;
+        if (err.response?.status === 422 && (err.response.data as any)?.errors) {
+          const errors: Record<string, string[]> = (err.response?.data as any).errors;
           const fieldErrors: Record<string, string> = {};
           Object.entries(errors).forEach(([field, msgs]) => {
-            if (msgs.length > 0) fieldErrors[field] = msgs[0];
+            if ((msgs as string[]).length > 0) fieldErrors[field] = (msgs as string[])[0];
           });
           setFieldErrors(fieldErrors);
           setError(null);
-        } else if (err.response?.data?.message) {
-          setError(err.response.data.message);
+        } else if ((err.response?.data as any)?.message) {
+          setError((err.response?.data as any).message);
           setFieldErrors({});
         } else {
           setError(err.message);
@@ -125,30 +170,24 @@ export function useCandidates(testId?: number) {
       setLoading(true);
       setError(null);
       try {
-        console.log(`✏️ Updating candidate with ID: ${payload.id}`, payload);
-        const updated = await candidateService.update(payload.id, payload);
-        
-        // Get current status before updating
-        const currentCandidate = candidates.find((c) => c.id === payload.id);
-        const withStatus: CandidateWithStatus = {
-          ...updated,
-          localStatus: currentCandidate?.localStatus || "Pending",
-        };
-        
-        // Update candidates list
-        setCandidates((prev) => {
-          const updatedList = prev.map((c) => (c.id === payload.id ? withStatus : c));
-          console.log(`✅ Candidate updated in UI`, updatedList.find(c => c.id === payload.id));
-          return updatedList;
-        });
-        
-        // Update selected if it's the same candidate
-        if (selected?.id === payload.id) {
-          setSelected(withStatus);
+        const current = candidates.find((c) => c.id === payload.id);
+        if (current?.isDraft) {
+          const next = candidates.map((c) => (c.id === payload.id ? { ...c, ...payload } as CandidateWithStatus : c));
+          setCandidates(next);
+          writeDrafts(next);
+          return next.find((c) => c.id === payload.id)!;
+        } else {
+          console.log(`✏️ Updating candidate with ID: ${payload.id}`, payload);
+          const updated = await candidateService.update(payload.id, payload);
+          const withStatus: CandidateWithStatus = {
+            ...updated,
+            localStatus: current?.localStatus || "Pending",
+            isDraft: false,
+          } as CandidateWithStatus;
+          setCandidates((prev) => prev.map((c) => (c.id === payload.id ? withStatus : c)));
+          if (selected?.id === payload.id) setSelected(withStatus);
+          return withStatus;
         }
-        
-        console.log(`✅ Candidate ${payload.id} successfully updated`);
-        return withStatus;
       } catch (err) {
         console.error('❌ Error updating candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
@@ -158,7 +197,7 @@ export function useCandidates(testId?: number) {
         setLoading(false);
       }
     },
-    [selected?.id, candidates.length]
+    [selected?.id, candidates]
   );
 
   /** Hapus kandidat */
@@ -167,15 +206,17 @@ export function useCandidates(testId?: number) {
       setLoading(true);
       setError(null);
       try {
-        console.log(`🗑️ Removing candidate with ID: ${id}`);
-        await candidateService.remove(id);
-        setCandidates((prev) => {
-          const filtered = prev.filter((c) => c.id !== id);
-          console.log(`✅ Candidate removed. Remaining: ${filtered.length}`);
-          return filtered;
-        });
+        const current = candidates.find((c) => c.id === id);
+        if (current?.isDraft) {
+          const filtered = candidates.filter((c) => c.id !== id);
+          setCandidates(filtered);
+          writeDrafts(filtered);
+        } else {
+          console.log(`🗑️ Removing candidate with ID: ${id}`);
+          await candidateService.remove(id);
+          setCandidates((prev) => prev.filter((c) => c.id !== id));
+        }
         if (selected?.id === id) setSelected(null);
-        console.log(`✅ Candidate ${id} successfully removed from UI`);
       } catch (err) {
         console.error('❌ Error removing candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
@@ -185,7 +226,7 @@ export function useCandidates(testId?: number) {
         setLoading(false);
       }
     },
-    [selected?.id]
+    [selected?.id, candidates]
   );
 
   /** Update status lokal kandidat */
@@ -201,14 +242,18 @@ export function useCandidates(testId?: number) {
     [selected?.id]
   );
 
-
-  /** Auto load candidates yang sudah di-add untuk test ini */
+  /** Auto load candidates yang sudah di-add untuk test ini (bisa dimatikan) */
   useEffect(() => {
-    if (testId) {
+    const shouldAutoLoad = options?.autoLoad !== false;
+    if (shouldAutoLoad && testId) {
       console.log(`🔄 Auto-loading candidates for test ${testId}`);
       refreshCandidates();
+    } else if (!shouldAutoLoad) {
+      const drafts = readDrafts();
+      setCandidates(drafts);
+      console.log(`ℹ️ Auto-load disabled, loaded ${drafts.length} drafts from storage`);
     }
-  }, [testId, refreshCandidates]);
+  }, [testId, refreshCandidates, options?.autoLoad]);
 
   return {
     candidates,
@@ -224,5 +269,46 @@ export function useCandidates(testId?: number) {
     updateCandidate,
     removeCandidate,
     updateCandidateStatus,
+    /** Simpan seluruh draft ke backend untuk distribution tertentu dan kembalikan daftar ID final */
+    saveDraftsTo: async (distributionId: number): Promise<number[]> => {
+      const drafts = candidates.filter((c) => c.isDraft);
+      console.log(`💾 Saving ${drafts.length} drafts to distribution ${distributionId}`);
+      
+      if (drafts.length === 0) {
+        // Tidak ada draft, ambil ID dari backend agar akurat
+        const backendNow = await candidateService.getTestDistributionCandidates(distributionId);
+        const ids = backendNow.map((c) => c.id);
+        console.log(`📋 No drafts, returning existing IDs:`, ids);
+        setCandidates(normalizeCandidates(backendNow));
+        return ids;
+      }
+      
+      const createdIds: number[] = [];
+      for (const d of drafts) {
+        console.log(`➕ Saving draft:`, d.name, d.email);
+        const created = await candidateService.addToTestDistribution({
+          test_distribution_id: distributionId,
+          nik: d.nik,
+          name: d.name,
+          email: d.email,
+          phone_number: d.phone_number,
+          position: d.position,
+          birth_date: d.birth_date,
+          gender: (d.gender as "male" | "female") ?? "male",
+          department: d.department,
+        });
+        console.log(`✅ Created candidate:`, created);
+        createdIds.push(created.id);
+      }
+      
+      const backend = await candidateService.getTestDistributionCandidates(distributionId);
+      const list = normalizeCandidates(backend);
+      setCandidates(list);
+      if (storageKey) localStorage.removeItem(storageKey);
+      
+      const finalIds = backend.map((c) => c.id);
+      console.log(`🎯 Final candidate IDs for distribution ${distributionId}:`, finalIds);
+      return finalIds;
+    },
   };
 }

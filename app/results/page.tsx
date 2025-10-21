@@ -28,6 +28,7 @@ export default function ResultsPage() {
       console.log(`✅ PDF hasil kandidat ${candidateId} berhasil diunduh`);
     } catch (error) {
       console.error("❌ Gagal mengunduh hasil kandidat:", error);
+      alert(`Gagal mengunduh hasil tes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

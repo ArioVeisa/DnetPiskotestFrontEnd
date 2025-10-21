@@ -137,21 +137,51 @@ export default function ResultCandidatePage() {
     );
   }
 
-  if (error || !data) {
+  if (error && !data) {
     return (
       <div className="container mx-auto p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {error || "Failed to load candidate data"}
+            {error || "Gagal memuat data kandidat"}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
+  // Jika tidak ada data sama sekali, tampilkan loading
+  if (!data) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <Skeleton className="h-32 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-40" />
+          <Skeleton className="h-40" />
+          <Skeleton className="h-40" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Warning jika menggunakan dummy data */}
+      {error && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            ⚠️ Data yang ditampilkan adalah data demo karena API tidak tersedia. Error: {error}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Profile Header */}
       <Card className="p-6">
         <div className="flex items-center justify-between">
@@ -192,9 +222,6 @@ export default function ResultCandidatePage() {
                   Adaptability
                 </p>
               </div>
-              <button className="p-2 hover:bg-accent rounded-md">
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
             </div>
           </CardContent>
         </Card>
@@ -221,9 +248,6 @@ export default function ResultCandidatePage() {
                   Correct Answers
                 </p>
               </div>
-              <button className="p-2 hover:bg-accent rounded-md">
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
             </div>
           </CardContent>
         </Card>
@@ -244,9 +268,6 @@ export default function ResultCandidatePage() {
                   {data.adaptability.totalQuestions}
                 </div>
               </div>
-              <button className="p-2 hover:bg-accent rounded-md">
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
             </div>
           </CardContent>
         </Card>

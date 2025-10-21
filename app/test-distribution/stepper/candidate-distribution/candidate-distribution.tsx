@@ -117,7 +117,8 @@ export default function CandidatesDistributions({
     updateCandidate,
     removeCandidate,
     refreshAfterAdd,
-  } = useCandidates(testPackageId);
+    saveDraftsTo,
+  } = useCandidates(testPackageId, { autoLoad: false });
 
   // hooks for email invitation
   const {
@@ -175,7 +176,11 @@ export default function CandidatesDistributions({
 
   function formatDate(date: Date | null): string | undefined {
     if (!date) return undefined;
-    return date.toISOString().split("T")[0];
+    // Bangun string tanggal lokal (YYYY-MM-DD) tanpa konversi timezone ke UTC
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   /* =========== actions =========== */
@@ -202,13 +207,13 @@ export default function CandidatesDistributions({
       const newDistributionId = distributionResult.data.id;
       console.log('✅ New distribution created with ID:', newDistributionId);
 
-      // 2. Send invitations to candidates using the new distribution ID
-      const candidateIds = candidates.map((c) => c.id);
+      // 2. Persist drafts then send invitations using finalized IDs from backend
+      const candidateIds = await saveDraftsTo(newDistributionId);
       console.log('📧 Sending invitations to candidates:', candidateIds);
       
       await sendInvite({
         candidate_ids: candidateIds,
-        test_id: newDistributionId, // Use new distribution ID instead of package ID
+        test_distribution_id: newDistributionId, // kirim ID distribusi sesuai backend
         custom_message: "Anda diundang untuk mengikuti tes psikotes.",
         token: localStorage.getItem('token') || '',
       });
@@ -331,7 +336,7 @@ export default function CandidatesDistributions({
                             try {
                               await sendInvite({
                                 candidate_ids: [c.id],
-                                test_id: testPackageId,
+                                test_distribution_id: testPackageId, // ini mungkin salah jika packageId bukan distributionId
                                 custom_message:
                                   "Pengiriman ulang undangan tes psikotes.",
                                 token: localStorage.getItem('token') || '',
@@ -497,7 +502,6 @@ export default function CandidatesDistributions({
         onSave={async (formData: CreateCandidatePayload) => {
           try {
             await addCandidate(formData);
-            await refreshAfterAdd(); // Refresh daftar kandidat setelah menambah
             setAddOpen(false);
           } catch {
             // Error sudah ditangani di hook

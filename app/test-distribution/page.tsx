@@ -28,10 +28,17 @@ export default function TestDistributionPage() {
   // mulai bikin session baru
   function handleCreate() {
     // Clear localStorage untuk distribusi baru
-    const keysToRemove = [];
+    const keysToRemove = [] as string[];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith('session_start_') || key.startsWith('session_end_') || key.startsWith('sent_all_'))) {
+      if (
+        key && (
+          key.startsWith('session_start_') ||
+          key.startsWith('session_end_') ||
+          key.startsWith('sent_all_') ||
+          key.startsWith('draft_candidates_')
+        )
+      ) {
         keysToRemove.push(key);
       }
     }

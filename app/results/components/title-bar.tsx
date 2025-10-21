@@ -1,28 +1,32 @@
-// components/TitleBar.tsx
-"use client";
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
-export interface TitleBarProps {
+interface TitleBarProps {
   title: string;
   subtitle: string;
-  onExportAll: () => void;
+  onExportAll?: () => void;
 }
 
-export function TitleBar({ onExportAll }: TitleBarProps) {
+export function TitleBar({ title, subtitle, onExportAll }: TitleBarProps) {
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6 mt-8">
-      <div>
-        <h1 className="text-2xl font-bold">Test Results</h1>
-        <p className="text-muted-foreground text-sm">
-          View and analyze psychometric test results{" "}
-        </p>
+    <div className="mb-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <p className="text-gray-600 mt-1">{subtitle}</p>
+        </div>
+        {onExportAll && (
+          <Button
+            onClick={onExportAll}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export All
+          </Button>
+        )}
       </div>
-      <Button onClick={onExportAll} size="lg" className="w-full md:w-auto">
-        <Download /> Export All
-      </Button>
     </div>
   );
 }

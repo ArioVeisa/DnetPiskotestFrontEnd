@@ -10,13 +10,14 @@ import { resultsService } from "../services/result-service";
 export interface ResultTableProps {
   results: Result[];
   onView: (candidateId: string) => void;
-  onDownload: (candidateId: string) => Promise<void>;
+  onDownload: (candidateId: string) => Promise<void>; // ✅ tambahkan ini
   pageSize?: number;
 }
 
 export function ResultTable({
   results,
   onView,
+  onDownload,
   pageSize = 5,
 }: ResultTableProps) {
   const [page, setPage] = useState(1);
@@ -34,9 +35,10 @@ export function ResultTable({
   const handleDownload = async (candidateId: string) => {
     try {
       setDownloadingId(candidateId);
-      await resultsService.downloadResult(candidateId);
+      await onDownload(candidateId);
     } catch (error) {
-      alert(error);
+      console.error("Error downloading result:", error);
+      alert("Gagal mengunduh hasil tes. Silakan coba lagi.");
     } finally {
       setDownloadingId(null);
     }
@@ -49,7 +51,7 @@ export function ResultTable({
         <table className="min-w-[900px] w-full table-auto">
           <thead>
             <tr className="text-gray-400 text-[15px] font-semibold">
-              {["Candidates", "Position", "Period", "Status", "Actions"].map(
+              {["Candidates", "Position", "Period", "Status", "Score", "Actions"].map(
                 (h) => (
                   <th key={h} className="px-4 pb-3 text-left">
                     {h}
@@ -105,11 +107,23 @@ export function ResultTable({
                         "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
                         r.status === "Completed"
                           ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-800"
+                          : r.status === "Ongoing"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700"
                       )}
                     >
                       {r.status}
                     </span>
+                  </td>
+
+                  <td className="px-6 py-4 align-middle">
+                    {r.status === "Completed" && r.score ? (
+                      <span className="text-sm font-semibold text-gray-900">
+                        {r.score}/100
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400">-</span>
+                    )}
                   </td>
 
                   <td className="px-6 py-4 flex items-center gap-3 align-middle">
@@ -195,12 +209,22 @@ export function ResultTable({
                       "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
                       r.status === "Completed"
                         ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-800"
+                        : r.status === "Ongoing"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700"
                     )}
                   >
                     {r.status}
                   </span>
                 </div>
+                {r.status === "Completed" && r.score && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Score</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {r.score}/100
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between space-x-3">
                   <Button
                     size="sm"
