@@ -23,6 +23,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import EditSessionDialog from "./edit-session-dialog";
+import { Distribution } from "../services/test-distribution-service";
 
 /* ==========================
    ICONS UNTUK CATEGORY
@@ -47,7 +49,13 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function DistributionTable() {
-  const { distributions, loading, error, remove, refresh } = useTestDistributions();
+  const { distributions, loading, error, remove, refresh, update } = useTestDistributions();
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Distribution | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus test distribution ini?')) {
@@ -66,6 +74,28 @@ export default function DistributionTable() {
         });
         alert(`Gagal menghapus test distribution: ${error?.message || 'Unknown error'}`);
       }
+    }
+  };
+
+  const handleEdit = (session: Distribution) => {
+    setSelectedSession(session);
+    setEditDialogOpen(true);
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async (id: number, data: Partial<Distribution>) => {
+    try {
+      setSaving(true);
+      setEditError(null);
+      await update(id, data);
+      await refresh(); // Refresh data after update
+      setEditDialogOpen(false);
+      setSelectedSession(null);
+    } catch (error) {
+      console.error('❌ Error updating distribution:', error);
+      setEditError(error?.message || 'Failed to update session');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -173,7 +203,7 @@ export default function DistributionTable() {
                       align="end"
                       className="min-w-[160px] rounded-xl py-2 px-1 shadow-lg border border-gray-100"
                     >
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(d)}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem 
@@ -220,7 +250,7 @@ export default function DistributionTable() {
                   align="end"
                   className="min-w-[120px] rounded-lg"
                 >
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleEdit(d)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
                   <DropdownMenuItem 
@@ -308,6 +338,16 @@ export default function DistributionTable() {
           </div>
         </div>
       )}
+
+      {/* Edit Session Dialog */}
+      <EditSessionDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        session={selectedSession}
+        onSave={handleSaveEdit}
+        saving={saving}
+        error={editError}
+      />
     </>
   );
 }

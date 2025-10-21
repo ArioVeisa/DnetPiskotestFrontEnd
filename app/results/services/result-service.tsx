@@ -229,137 +229,150 @@ export const resultsService = {
         <meta charset="UTF-8">
         <title>Psychotest Report - ${result.name}</title>
         <style>
-          body {
-            font-family: 'Arial', sans-serif;
+          /* Reset all styles to prevent global CSS interference */
+          * {
             margin: 0;
-            padding: 20px;
-            background: white;
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: Arial, sans-serif !important;
+            margin: 0 !important;
+            padding: 20px !important;
+            background: #ffffff !important;
+            color: #333333 !important;
+            font-size: 14px !important;
+            line-height: 1.4 !important;
           }
           .header {
-            text-align: center;
-            border-bottom: 3px solid #3b82f6;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            text-align: center !important;
+            border-bottom: 3px solid #2563eb !important;
+            padding-bottom: 20px !important;
+            margin-bottom: 30px !important;
           }
           .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #3b82f6;
-            margin-bottom: 10px;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            color: #2563eb !important;
+            margin-bottom: 10px !important;
           }
           .title {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 28px !important;
+            font-weight: bold !important;
+            margin-bottom: 10px !important;
+            color: #1f2937 !important;
           }
           .subtitle {
-            font-size: 16px;
-            color: #666;
+            font-size: 16px !important;
+            color: #6b7280 !important;
           }
           .candidate-info {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
+            background: #f9fafb !important;
+            padding: 20px !important;
+            border-radius: 8px !important;
+            margin-bottom: 30px !important;
+            border: 1px solid #e5e7eb !important;
           }
           .candidate-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            margin-bottom: 10px !important;
+            color: #1f2937 !important;
           }
           .candidate-details {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 20px;
+            display: flex !important;
+            gap: 30px !important;
+            margin-bottom: 20px !important;
           }
           .detail-item {
-            flex: 1;
+            flex: 1 !important;
           }
           .detail-label {
-            font-weight: bold;
-            color: #666;
-            margin-bottom: 5px;
+            font-weight: bold !important;
+            color: #6b7280 !important;
+            margin-bottom: 5px !important;
           }
           .detail-value {
-            font-size: 16px;
+            font-size: 16px !important;
+            color: #374151 !important;
           }
           .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
+            display: inline-block !important;
+            padding: 4px 12px !important;
+            border-radius: 20px !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            text-transform: uppercase !important;
           }
           .status-completed {
-            background: #dcfce7;
-            color: #166534;
+            background: #dcfce7 !important;
+            color: #166534 !important;
           }
           .status-ongoing {
-            background: #dbeafe;
-            color: #1e40af;
+            background: #dbeafe !important;
+            color: #1e40af !important;
           }
           .status-not-started {
-            background: #f3f4f6;
-            color: #374151;
+            background: #f3f4f6 !important;
+            color: #374151 !important;
           }
           .scores-section {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
+            display: flex !important;
+            gap: 20px !important;
+            margin-bottom: 30px !important;
           }
           .score-card {
-            flex: 1;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
+            flex: 1 !important;
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            padding: 20px !important;
+            text-align: center !important;
           }
           .score-title {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
+            font-size: 14px !important;
+            color: #6b7280 !important;
+            margin-bottom: 10px !important;
           }
           .score-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #3b82f6;
+            font-size: 32px !important;
+            font-weight: bold !important;
+            color: #2563eb !important;
           }
           .score-subtitle {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            margin-top: 5px !important;
           }
           .test-types {
-            margin-bottom: 30px;
+            margin-bottom: 30px !important;
           }
           .test-types h3 {
-            font-size: 18px;
-            margin-bottom: 15px;
-            color: #333;
+            font-size: 18px !important;
+            margin-bottom: 15px !important;
+            color: #1f2937 !important;
           }
           .test-badges {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            display: flex !important;
+            gap: 10px !important;
+            flex-wrap: wrap !important;
           }
           .test-badge {
-            background: #3b82f6;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+            background: #2563eb !important;
+            color: #ffffff !important;
+            padding: 6px 12px !important;
+            border-radius: 20px !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
           }
           .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 20px;
+            margin-top: 40px !important;
+            text-align: center !important;
+            color: #6b7280 !important;
+            font-size: 12px !important;
+            border-top: 1px solid #e5e7eb !important;
+            padding-top: 20px !important;
           }
         </style>
       </head>
@@ -438,11 +451,28 @@ export const resultsService = {
     const html2pdf = (await import('html2pdf.js')).default;
     
     const opt = {
-      margin: 1,
+      margin: [0.5, 0.5, 0.5, 0.5],
       filename: `${candidateName.replace(/\s+/g, '_')}_psychotest_report.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      html2canvas: { 
+        scale: 2,
+        useCORS: false,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        ignoreElements: (element: Element) => {
+          // Ignore any elements that might have global CSS
+          return element.classList.contains('global-css') || 
+                 element.tagName === 'LINK' || 
+                 element.tagName === 'STYLE' && !element.textContent?.includes('!important');
+        }
+      },
+      jsPDF: { 
+        unit: 'in', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compress: true
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     await html2pdf().set(opt).from(htmlContent).save();
