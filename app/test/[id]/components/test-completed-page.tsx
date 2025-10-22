@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Mail, Download, Clock, Calendar } from "lucide-react";
+import { CheckCircle, Mail, Clock, Calendar } from "lucide-react";
 
 interface TestCompletedPageProps {
   completedAt: string;
@@ -87,21 +87,13 @@ export function TestCompletedPage({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 justify-center">
+          <div className="flex justify-center">
             <Button
               onClick={onContactHRD}
-              variant="outline"
               className="flex items-center gap-2"
             >
               <Mail className="h-4 w-4" />
               Hubungi HRD
-            </Button>
-            <Button
-              onClick={onDownloadCertificate}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Unduh Sertifikat
             </Button>
           </div>
 

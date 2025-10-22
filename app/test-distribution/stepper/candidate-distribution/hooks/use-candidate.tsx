@@ -7,6 +7,7 @@ import {
   CreateCandidatePayload,
   UpdateCandidatePayload,
 } from "../service/candidate-service";
+import { importCandidatesFromXlsx, downloadCandidateTemplate } from "../services/candidate-import-service";
 import { AxiosError } from "axios";
 
 /** Kandidat dengan status tambahan di frontend */
@@ -32,10 +33,10 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     if (!storageKey) return [];
     try {
       const raw = localStorage.getItem(storageKey);
-      const arr: any[] = raw ? JSON.parse(raw) : [];
+      const arr: unknown[] = raw ? JSON.parse(raw) : [];
       return arr.map((c) => ({
         id: -Date.now() + Math.floor(Math.random() * 1000),
-        ...c,
+        ...(typeof c === 'object' && c !== null ? c : {}),
         localStatus: "Pending",
         isDraft: true,
         created_at: new Date().toISOString(),
@@ -133,16 +134,17 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
       return draft;
     } catch (err) {
       if (err instanceof AxiosError) {
-        if (err.response?.status === 422 && (err.response.data as any)?.errors) {
-          const errors: Record<string, string[]> = (err.response?.data as any).errors;
+        const errorData = err.response?.data as { errors?: Record<string, string[]>; message?: string };
+        if (err.response?.status === 422 && errorData?.errors) {
+          const errors: Record<string, string[]> = errorData.errors;
           const fieldErrors: Record<string, string> = {};
           Object.entries(errors).forEach(([field, msgs]) => {
             if ((msgs as string[]).length > 0) fieldErrors[field] = (msgs as string[])[0];
           });
           setFieldErrors(fieldErrors);
           setError(null);
-        } else if ((err.response?.data as any)?.message) {
-          setError((err.response?.data as any).message);
+        } else if (errorData?.message) {
+          setError(errorData.message);
           setFieldErrors({});
         } else {
           setError(err.message);
@@ -309,6 +311,41 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
       const finalIds = backend.map((c) => c.id);
       console.log(`🎯 Final candidate IDs for distribution ${distributionId}:`, finalIds);
       return finalIds;
+    },
+
+    /** Import candidates dari Excel */
+    importFromExcel: async (file: File, token: string) => {
+      if (!testId) {
+        throw new Error('Test ID is required for import');
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await importCandidatesFromXlsx(file, testId, token);
+        
+        // Refresh candidates setelah import
+        await refreshCandidates();
+        
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Gagal mengimpor kandidat';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+
+    /** Download template Excel */
+    downloadTemplate: async () => {
+      try {
+        await downloadCandidateTemplate();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Gagal mendownload template';
+        setError(errorMessage);
+        throw err;
+      }
     },
   };
 }

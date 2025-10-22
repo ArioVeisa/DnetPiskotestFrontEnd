@@ -26,11 +26,19 @@ export interface Candidate {
   status: string;
 }
 
+export interface TestSection {
+  section_id: number;
+  section_type: string;
+  duration_minutes: number;
+  question_count: number;
+}
+
 export interface TestInfo {
   id: string;
   name: string;
   questionCount: number;
   duration: number; // menit
+  sections?: TestSection[];
 }
 
 interface ReminderPageProps {
@@ -41,7 +49,7 @@ interface ReminderPageProps {
 
 export function ReminderPage({
   candidate,
-  // tests,
+  tests,
   onStart,
 }: ReminderPageProps) {
   return (
@@ -133,59 +141,98 @@ export function ReminderPage({
         </CardContent>
       </Card>
 
-      {/* Test Details
-      <Card className="rounded-lg border">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <ClipboardList className="w-5 h-5 text-green-500" />
-            <CardTitle>Test Details</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tests.map((t) => {
-            const isDisc = t.id === "disc";
-            const isCaas = t.id === "caas";
-            const bgColor = isDisc
-              ? "bg-blue-50"
-              : isCaas
-              ? "bg-yellow-50"
-              : "bg-green-50";
-            const iconColor = isDisc
-              ? "text-blue-500"
-              : isCaas
-              ? "text-yellow-500"
-              : "text-green-500";
+      {/* Test Details */}
+      {tests.length > 0 && (
+        <Card className="rounded-lg border">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <ClockIcon className="w-5 h-5 text-green-500" />
+              <CardTitle>Jenis Tes yang Akan Dikerjakan</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {tests.map((test, testIndex) => (
+              <div key={`test-${test.id}-${testIndex}`} className="mb-6 last:mb-0">
+                <h3 className="font-semibold text-lg mb-3">{test.name}</h3>
+                
+                {test.sections && test.sections.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {test.sections.map((section, sectionIndex) => {
+                      const getSectionInfo = (type: string) => {
+                        switch (type.toLowerCase()) {
+                          case 'caas':
+                            return {
+                              title: 'Tes CAAS',
+                              description: 'Career Assessment and Analysis System',
+                              icon: '🎯',
+                              color: 'bg-blue-50 border-blue-200 text-blue-800'
+                            };
+                          case 'teliti':
+                            return {
+                              title: 'Tes Ketelitian',
+                              description: 'Mengukur tingkat ketelitian dan akurasi',
+                              icon: '🔍',
+                              color: 'bg-green-50 border-green-200 text-green-800'
+                            };
+                          case 'disc':
+                            return {
+                              title: 'Tes DISC',
+                              description: 'Mengukur kepribadian dan gaya komunikasi',
+                              icon: '👤',
+                              color: 'bg-purple-50 border-purple-200 text-purple-800'
+                            };
+                          default:
+                            return {
+                              title: `Tes ${type}`,
+                              description: 'Tes psikologi',
+                              icon: '📝',
+                              color: 'bg-gray-50 border-gray-200 text-gray-800'
+                            };
+                        }
+                      };
 
-            return (
-              <div
-                key={t.id}
-                className="flex flex-col p-4 bg-white rounded-lg border space-y-3 items-center"
-              >
-                <div
-                  className={`${bgColor} p-2 rounded-full flex items-center justify-center`}
-                >
-                  {isDisc && <User className={`w-6 h-6 ${iconColor}`} />}
-                  {isCaas && (
-                    <ClipboardList className={`w-6 h-6 ${iconColor}`} />
-                  )}
-                  {!isDisc && !isCaas && (
-                    <ClockIcon className={`w-6 h-6 ${iconColor}`} />
-                  )}
-                </div>
-                <p className="font-semibold text-center">{t.name}</p>
-                <div className="flex flex-col space-y-2">
-                  <span className="inline-flex items-center px-2 py-1 text-blue-600 rounded">
-                    <ClipboardList className="w-4 h-4 mr-1" /> {t.questionCount} Questions
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 text-blue-600 rounded">
-                    <ClockIcon className="w-4 h-4 mr-1" /> {t.duration} min
-                  </span>
-                </div>
+                      const sectionInfo = getSectionInfo(section.section_type);
+                      
+                      return (
+                        <div
+                          key={`${test.id}-section-${section.section_id}-${sectionIndex}`}
+                          className={`p-4 rounded-lg border ${sectionInfo.color}`}
+                        >
+                          <div className="text-center mb-3">
+                            <div className="text-3xl mb-2">{sectionInfo.icon}</div>
+                            <h4 className="font-semibold">{sectionInfo.title}</h4>
+                            <p className="text-xs opacity-75">{sectionInfo.description}</p>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span>Durasi:</span>
+                              <span className="font-medium">{section.duration_minutes} menit</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Soal:</span>
+                              <span className="font-medium">{section.question_count} pertanyaan</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                    <div className="text-2xl mb-2">📝</div>
+                    <p className="font-medium">Tes Psikologi</p>
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>Durasi: {test.duration} menit</p>
+                      <p>Soal: {test.questionCount} pertanyaan</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            );
-          })}
-        </CardContent>
-      </Card> */}
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Start Test Button */}
       <div className="pt-4">

@@ -11,6 +11,7 @@ import {
   Loader2,
   Check,
   Mail,
+  Upload,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ import type {
 // dialogs
 import AddCandidateDialog from "./dialogs/add-candidates-dialog";
 import CandidateDetailDialog from "./dialogs/candidate-detail-dialog";
+import ImportCandidatesDialog from "./dialogs/import-candidates-dialog";
 
 /* =============================
    helpers
@@ -74,6 +76,7 @@ export default function CandidatesDistributions({
   const [sentAll, setSentAll] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Candidate | null>(null);
 
   // Load session settings from localStorage on mount
@@ -118,6 +121,8 @@ export default function CandidatesDistributions({
     removeCandidate,
     refreshAfterAdd,
     saveDraftsTo,
+    importFromExcel,
+    downloadTemplate,
   } = useCandidates(testPackageId, { autoLoad: false });
 
   // hooks for email invitation
@@ -184,6 +189,17 @@ export default function CandidatesDistributions({
   }
 
   /* =========== actions =========== */
+  const handleImportExcel = async (file: File) => {
+    try {
+      const token = localStorage.getItem('token') || '';
+      await importFromExcel(file, token);
+      setImportOpen(false);
+    } catch (error) {
+      // Error sudah ditangani di hook
+      console.error('Import failed:', error);
+    }
+  };
+
   async function handleSendAll() {
     if (!sessionStart || !sessionEnd) {
       alert("Pilih start & end date dulu.");
@@ -247,6 +263,15 @@ export default function CandidatesDistributions({
           )}
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={() => setImportOpen(true)}
+            disabled={sentAll || candidateLoading}
+            variant="outline"
+            className="border-green-500 text-green-600 hover:bg-green-50"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Import Excel
+          </Button>
           <Button
             onClick={() => {
               setAddOpen(true);
@@ -549,6 +574,14 @@ export default function CandidatesDistributions({
           }
         }}
         saving={candidateLoading}
+        error={candidateError}
+      />
+
+      <ImportCandidatesDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onUploadExcel={handleImportExcel}
+        uploading={candidateLoading}
         error={candidateError}
       />
     </div>

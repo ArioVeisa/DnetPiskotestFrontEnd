@@ -1,5 +1,6 @@
 // services/test-distribution-service.ts
 
+import axios from "axios";
 import { api } from "@services/api";
 
 export type DistributionStatus =
@@ -132,13 +133,13 @@ export async function deleteDistribution(id: number): Promise<void> {
     persistDistributions(filtered);
     
     console.log('✅ Distribution deleted successfully');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error deleting distribution:', error);
     console.error('❌ Error details:', {
-      message: error?.message,
-      response: error?.response?.data,
-      status: error?.response?.status,
-      config: error?.config
+      message: error instanceof Error ? error.message : 'Unknown error',
+      response: axios.isAxiosError(error) ? error.response?.data : undefined,
+      status: axios.isAxiosError(error) ? error.response?.status : undefined,
+      config: axios.isAxiosError(error) ? error.config : undefined
     });
     throw error;
   }

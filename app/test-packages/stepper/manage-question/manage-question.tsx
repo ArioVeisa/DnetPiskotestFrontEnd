@@ -74,6 +74,7 @@ export default function ManageQuestions({
     setDuration,
     questionCount,
     handleAdd,
+    handleBulkAdd, // ✅ BARU!
     syncAllSections, // 👈 tambahin
   } = useManageQuestions(
     activeType,
@@ -133,13 +134,7 @@ export default function ManageQuestions({
           Error: {error}
           <Button
             onClick={() => {
-              setError(null);
-              // Retry by calling the hook's reload function
-              if (reload) {
-                reload();
-              } else {
-                window.location.reload();
-              }
+              window.location.reload();
             }}
             variant="outline"
             className="ml-2"
@@ -348,7 +343,8 @@ export default function ManageQuestions({
         onOpenChange={setShowAddModal}
         activeType={activeType}
         token={token}
-        onSave={(id) => handleAdd(id, activeType)} // 👈 fix disini
+        onSave={(id) => handleAdd(id, activeType)} // 👈 single add (fallback)
+        onBulkSave={(ids) => handleBulkAdd(ids, activeType)} // ✅ BULK ADD!
         existingIds={existingIds}
       />
     </div>

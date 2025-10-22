@@ -1,3 +1,4 @@
+import axios from "axios";
 import { api } from "@services/api";
 
 export interface CreateDistributionPayload {
@@ -45,10 +46,10 @@ export const createDistributionService = {
       
       console.log("✅ Distribution created successfully:", response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error creating distribution:", error);
       
-      if (error.response?.data?.message) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
       

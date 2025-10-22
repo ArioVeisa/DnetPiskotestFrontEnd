@@ -46,9 +46,6 @@ export default function CandidateTestPage() {
   function handleContactHRD() {
     alert("Hubungi HRD diklik. (Ganti dengan aksi asli)");
   }
-  function handleDownload() {
-    alert("Unduh Sertifikat diklik. (Ganti dengan aksi asli)");
-  }
 
   const lastTest = tests[tests.length - 1];
   const testId = lastTest ? lastTest.id : "-";
@@ -89,7 +86,6 @@ export default function CandidateTestPage() {
         <TestCompletedPage
           completedAt={completedAt}
           onContactHRD={handleContactHRD}
-          onDownloadCertificate={handleDownload}
         />
       )}
 
@@ -127,7 +123,6 @@ export default function CandidateTestPage() {
       {step === "completed" && (
         <CompletionDialog
           onContact={handleContactHRD}
-          onDownload={handleDownload}
           testId={testId}
           date={dateStr}
         />

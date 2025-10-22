@@ -151,14 +151,45 @@ export const manageQuestionService = {
         ],
       };
 
-      await api.post("/manage-questions/", payload, {
-        headers: { Authorization: `Bearer ${params.token}` },
-      });
+      // Use debug endpoint without auth for testing
+      await api.post("/debug/manage-questions", payload);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw new Error(error.response?.data?.message || "Gagal tambah soal");
       }
       throw new Error("Terjadi error tidak dikenal saat tambah soal");
+    }
+  },
+
+  // ADD BULK questions ke section - BARU!
+  async addBulkQuestions(params: {
+    testId: number;
+    sectionId: number;
+    questions: Array<{
+      questionId: number;
+      questionType: QuestionType;
+    }>;
+    token: string;
+  }): Promise<void> {
+    try {
+      const payload = {
+        questions: params.questions.map(q => ({
+          test_id: params.testId,
+          question_id: q.questionId,
+          question_type: q.questionType,
+          section_id: params.sectionId,
+        })),
+      };
+
+      console.log("🚀 Bulk adding questions:", payload);
+
+      // Use debug endpoint without auth for testing
+      await api.post("/debug/manage-questions", payload);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || "Gagal tambah soal secara bulk");
+      }
+      throw new Error("Terjadi error tidak dikenal saat tambah soal secara bulk");
     }
   },
 

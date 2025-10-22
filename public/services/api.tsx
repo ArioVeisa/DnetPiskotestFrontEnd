@@ -48,8 +48,13 @@ api.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      // trigger universal dialog
-      window.dispatchEvent(new Event("session-expired"));
+      // ❌ DISABLED: Tidak perlu dialog session expired yang mengganggu
+      // window.dispatchEvent(new Event("session-expired"));
+      
+      // ✅ Langsung redirect ke login tanpa dialog
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
 
     return Promise.reject(error);

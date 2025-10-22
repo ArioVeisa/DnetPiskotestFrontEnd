@@ -1,17 +1,15 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Mail, Download } from "lucide-react";
+import { CheckCircle, Mail } from "lucide-react";
 
 interface CompletionCardProps {
   onContact: () => void;
-  onDownload: () => void;
   testId: string;
   date: string;
 }
 
 export function CompletionDialog({
   onContact,
-  onDownload,
   testId,
   date,
 }: CompletionCardProps) {
@@ -48,24 +46,14 @@ export function CompletionDialog({
         </div>
 
         {/* BUTTON */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full justify-center mb-5">
+        <div className="flex justify-center w-full mb-5">
           <Button
-            variant="outline"
-            className="flex-1 border px-3 py-2"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 font-semibold"
             onClick={onContact}
           >
-            <span className="inline-flex items-center gap-2 text-blue-500 font-semibold">
+            <span className="inline-flex items-center gap-2">
               <Mail className="w-5 h-5" />
               Hubungi HRD
-            </span>
-          </Button>
-          <Button
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 font-semibold"
-            onClick={onDownload}
-          >
-            <span className="inline-flex items-center gap-2">
-              <Download className="w-5 h-5" />
-              Unduh Sertifikat
             </span>
           </Button>
         </div>

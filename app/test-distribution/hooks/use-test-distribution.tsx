@@ -75,9 +75,9 @@ export function useTestDistributions() {
       console.log('✅ Hook: Distribution deleted successfully, updating state...');
       setDistributions((prev) => prev.filter((t) => t.id !== id));
       console.log('✅ Hook: State updated successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Hook: Error deleting distribution:', error);
-      setError(`Failed to delete distribution: ${error?.message || 'Unknown error'}`);
+      setError(`Failed to delete distribution: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw error; // Re-throw to let component handle it
     }
   }

@@ -23,6 +23,7 @@ type AddQuestionDialogProps = {
   activeType: ShowQuestionType;
   token: string;
   onSave: (questionId: number, questionType: ShowQuestionType) => Promise<void>;
+  onBulkSave?: (questionIds: number[], questionType: ShowQuestionType) => Promise<void>; // ✅ BARU!
   existingIds: number[];
 };
 
@@ -32,6 +33,7 @@ export default function AddQuestionDialog({
   activeType,
   token,
   onSave,
+  onBulkSave, // ✅ BARU!
   existingIds,
 }: AddQuestionDialogProps) {
   const [questions, setQuestions] = useState<ShowQuestion[]>([]);
@@ -91,9 +93,16 @@ export default function AddQuestionDialog({
     setLocalError(null);
 
     try {
-      // Tambahkan semua soal yang dipilih
-      for (const questionId of selectedIds) {
-        await onSave(questionId, activeType);
+      // ✅ GUNAKAN BULK ADD jika tersedia, fallback ke satu-satu
+      if (onBulkSave && selectedIds.length > 1) {
+        console.log("🚀 Using bulk add for", selectedIds.length, "questions");
+        await onBulkSave(selectedIds, activeType);
+      } else {
+        // Fallback: tambahkan satu per satu (untuk backward compatibility)
+        console.log("📝 Using single add for", selectedIds.length, "questions");
+        for (const questionId of selectedIds) {
+          await onSave(questionId, activeType);
+        }
       }
       onOpenChange(false); // close dialog setelah sukses
     } catch (error) {

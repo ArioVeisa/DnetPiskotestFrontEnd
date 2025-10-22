@@ -42,7 +42,7 @@ export default function EditSessionDialog({
     testName: "",
     startDate: "",
     endDate: "",
-    status: "Draft" as "Draft" | "Scheduled" | "Ongoing" | "Completed",
+    status: "Draft" as "Draft" | "Scheduled" | "Ongoing" | "Completed" | "Expired",
   });
 
   // Populate form when session changes
@@ -165,7 +165,7 @@ export default function EditSessionDialog({
             <select
               id="status"
               value={form.status}
-              onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value as any }))}
+              onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value as "Draft" | "Scheduled" | "Ongoing" | "Completed" | "Expired" }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="Draft">Draft</option>

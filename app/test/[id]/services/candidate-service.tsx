@@ -34,7 +34,8 @@ export interface TestSection {
   section_type: string;
   duration_minutes: number;
   question_count: number;
-  questions: BackendQuestion[];
+  questions?: BackendQuestion[]; // Legacy field for backward compatibility
+  test_questions?: BackendQuestion[]; // New field from backend response
 }
 
 /** Struktur test keseluruhan */
@@ -70,11 +71,11 @@ interface BackendTest {
 }
 
 interface BackendSection {
-  section_id: number;
+  id: number;
   section_type: string;
   duration_minutes: number;
   question_count: number;
-  questions: BackendQuestion[];
+  test_questions: BackendQuestion[];
 }
 
 interface BackendCandidate {
@@ -130,11 +131,12 @@ export const candidateService = {
                 ) ?? data.test.duration_minutes ?? 0,
               sections:
                 data.sections?.map((section) => ({
-                  section_id: section.section_id,
+                  section_id: section.id,
                   section_type: section.section_type,
                   duration_minutes: section.duration_minutes,
                   question_count: section.question_count,
-                  questions: section.questions,
+                  questions: section.test_questions, // Legacy field for backward compatibility
+                  test_questions: section.test_questions, // New field from backend response
                 })) ?? [],
             },
           ]

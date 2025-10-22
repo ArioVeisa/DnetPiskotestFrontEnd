@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import axios, { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import {
   MoreVertical,
@@ -65,14 +66,14 @@ export default function DistributionTable() {
         console.log('✅ Distribution deleted successfully, refreshing data...');
         await refresh(); // Refresh data setelah delete
         console.log('✅ Data refreshed successfully');
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Error deleting distribution:', error);
         console.error('❌ Error details:', {
-          message: error?.message,
-          response: error?.response?.data,
-          status: error?.response?.status
+          message: error instanceof Error ? error.message : 'Unknown error',
+          response: axios.isAxiosError(error) ? error.response?.data : undefined,
+          status: axios.isAxiosError(error) ? error.response?.status : undefined
         });
-        alert(`Gagal menghapus test distribution: ${error?.message || 'Unknown error'}`);
+        alert(`Gagal menghapus test distribution: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };
@@ -91,9 +92,9 @@ export default function DistributionTable() {
       await refresh(); // Refresh data after update
       setEditDialogOpen(false);
       setSelectedSession(null);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error updating distribution:', error);
-      setEditError(error?.message || 'Failed to update session');
+      setEditError(error instanceof Error ? error.message : 'Failed to update session');
     } finally {
       setSaving(false);
     }

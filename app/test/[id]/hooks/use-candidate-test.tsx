@@ -112,7 +112,10 @@ export function useCandidateTest(token: string) {
   const startSectionQuiz = async () => {
     if (!currentSection) return;
 
-    const mappedQuestions: Question[] = currentSection.questions.map(
+    // Use test_questions instead of questions (based on backend response)
+    const questionsData = currentSection.test_questions || currentSection.questions || [];
+    
+    const mappedQuestions: Question[] = questionsData.map(
       (q: BackendQuestion) => ({
         text: q.question_detail?.question_text || `Question ${q.question_id}`,
         options:
@@ -125,6 +128,9 @@ export function useCandidateTest(token: string) {
       })
     );
 
+    console.log("🔍 Section questions data:", questionsData);
+    console.log("🔍 Mapped questions:", mappedQuestions);
+
     setQuestions(mappedQuestions);
     setTimer(currentSection.duration_minutes * 60);
     setStep("quiz");
@@ -134,20 +140,29 @@ export function useCandidateTest(token: string) {
    * Selesaikan section dan pindah ke section berikutnya atau selesai.
    */
   const finishSection = () => {
-    if (!currentTest || !currentTest.sections) {
+    if (!currentTest) {
+      setStep("finished");
+      return;
+    }
+
+    // Cari test info yang sesuai dengan currentTest
+    const currentTestInfo = tests.find(t => t.id === currentTest.id);
+    
+    if (!currentTestInfo?.sections || currentTestInfo.sections.length === 0) {
       setStep("finished");
       return;
     }
 
     const nextSectionIndex = currentSectionIndex + 1;
-    if (nextSectionIndex < currentTest.sections.length) {
-      const nextSection = tests[0]?.sections?.[nextSectionIndex];
+    if (nextSectionIndex < currentTestInfo.sections.length) {
+      const nextSection = currentTestInfo.sections[nextSectionIndex];
       if (nextSection) {
         setCurrentSectionIndex(nextSectionIndex);
         setCurrentSection(nextSection);
         setStep("section-announcement");
       }
     } else {
+      // Semua section dalam test ini sudah selesai
       setStep("finished");
     }
   };
@@ -181,9 +196,18 @@ export function useCandidateTest(token: string) {
       };
 
       setCurrentTest(nextTest);
-      setQuestions(await quizService.getQuestions(nextTest.id));
-      setTimer(nextTestInfo.duration * 60);
-      setStep("quiz");
+      
+      // Kalau test punya sections, mulai dari section pertama
+      if (nextTestInfo.sections && nextTestInfo.sections.length > 0) {
+        setCurrentSectionIndex(0);
+        setCurrentSection(nextTestInfo.sections[0]);
+        setStep("section-announcement");
+      } else {
+        // Tanpa sections — fallback ke quiz langsung
+        setQuestions(await quizService.getQuestions(token));
+        setTimer(nextTestInfo.duration * 60);
+        setStep("quiz");
+      }
     } else {
       setStep("completed");
     }

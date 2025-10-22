@@ -14,7 +14,13 @@ export type CreateNewTestResult = {
   testName: string;
   icon_path: IconKey;
   selectedTypes: QuestionType[];
-  sections: { section_id: number; section_type: QuestionType }[];
+  sections: { 
+    section_id: number; 
+    section_type: QuestionType;
+    duration_minutes?: number;
+    question_count?: number;
+    sequence?: number;
+  }[];
 };
 
 export const TEST_TYPES = [
@@ -139,8 +145,8 @@ export function useCreateNewTestForm() {
         existingSections: createdTest.sections.map((s, idx) => ({
           id: s.section_id,
           section_type: s.section_type,
-          duration_minutes: 0,
-          question_count: 0,
+          duration_minutes: s.duration_minutes ?? 0,
+          question_count: s.question_count ?? 0,
           sequence: idx + 1,
         })),
       };
@@ -150,6 +156,9 @@ export function useCreateNewTestForm() {
       const sections = (raw?.sections ?? []).map((s) => ({
         section_id: s.id,
         section_type: s.section_type as QuestionType,
+        duration_minutes: s.duration_minutes ?? 0,
+        question_count: s.question_count ?? 0,
+        sequence: s.sequence ?? 0,
       }));
 
       const result: CreateNewTestResult = {

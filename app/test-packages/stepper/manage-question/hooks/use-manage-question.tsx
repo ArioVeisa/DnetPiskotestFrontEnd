@@ -131,6 +131,41 @@ export function useManageQuestions(
     }
   };
 
+  // BULK ADD - BARU!
+  const handleBulkAdd = async (
+    questionIds: (number | string)[],
+    questionType: QuestionType
+  ): Promise<void> => {
+    if (!testId || !sectionId || !token) return;
+    if (questionIds.length === 0) return;
+
+    // Filter out existing questions
+    const existingIds = questions.map(q => parseQuestionId(q.id));
+    const newQuestionIds = questionIds
+      .map(id => parseQuestionId(id))
+      .filter(id => !existingIds.includes(id));
+
+    if (newQuestionIds.length === 0) {
+      setError("Semua soal sudah ditambahkan");
+      return;
+    }
+
+    try {
+      await manageQuestionService.addBulkQuestions({
+        testId,
+        sectionId,
+        questions: newQuestionIds.map(id => ({
+          questionId: id,
+          questionType,
+        })),
+        token,
+      });
+      await fetchQuestions();
+    } catch (err) {
+      handleAxiosError("handleBulkAdd", err, setError);
+    }
+  };
+
   const handleUpdate = async (
     questionId: number | string,
     questionType: QuestionType = selectedType
@@ -310,6 +345,7 @@ export function useManageQuestions(
     questionCount: questions.length.toString(),
 
     handleAdd,
+    handleBulkAdd, // ✅ BARU!
     handleUpdate,
     handleDelete,
 
