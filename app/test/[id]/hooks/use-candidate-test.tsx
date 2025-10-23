@@ -32,7 +32,7 @@ export function useCandidateTest(token: string) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [timer, setTimer] = useState<number>(0);
   const [completedAt, setCompletedAt] = useState<string>("");
-  const [allAnswers, setAllAnswers] = useState<Record<number, any>>({});
+  const [allAnswers, setAllAnswers] = useState<Record<number, unknown>>({});
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -184,7 +184,7 @@ export function useCandidateTest(token: string) {
   /**
    * Simpan jawaban untuk section yang sedang aktif
    */
-  const saveAnswers = (answers: Record<number, any>) => {
+  const saveAnswers = (answers: Record<number, unknown>) => {
     setAllAnswers(prev => ({ ...prev, ...answers }));
   };
 
@@ -210,6 +210,7 @@ export function useCandidateTest(token: string) {
         const sectionQuestions = section.test_questions || section.questions || [];
         // console.log("🔍 Array questions in section:", sectionQuestions); // Debug logging removed
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sectionQuestions.forEach((question: any) => {
           // console.log("🔍 Processing question:", question); // Debug logging removed
           const answerKey = question.id; // Use test_question id as key
@@ -225,12 +226,12 @@ export function useCandidateTest(token: string) {
             // Handle different question types
             if (section.section_type.toLowerCase() === 'disc') {
               // For DISC questions, we need most_option_id and least_option_id
-              if (answer.most && answer.least) {
+              if (answer && typeof answer === 'object' && 'most' in answer && 'least' in answer) {
                 // Find the option IDs from the question detail
                 const questionDetail = question.question_detail;
                 if (questionDetail?.options) {
-                  const mostOption = questionDetail.options.find((opt: any) => opt.id.toString() === answer.most);
-                  const leastOption = questionDetail.options.find((opt: any) => opt.id.toString() === answer.least);
+                  const mostOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.most);
+                  const leastOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.least);
                   
                   if (mostOption && leastOption) {
                     submitAnswer.most_option_id = mostOption.id;
@@ -251,7 +252,7 @@ export function useCandidateTest(token: string) {
               if (typeof answer === 'string') {
                 const questionDetail = question.question_detail;
                 if (questionDetail?.options) {
-                  const selectedOption = questionDetail.options.find((opt: any) => opt.id.toString() === answer);
+                  const selectedOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer);
                   if (selectedOption) {
                     submitAnswer.selected_option_id = selectedOption.id;
                     submitAnswers.push(submitAnswer);
@@ -292,7 +293,7 @@ export function useCandidateTest(token: string) {
   /**
    * Selesaikan section dan pindah ke section berikutnya atau selesai.
    */
-  const finishSection = async (answers?: Record<number, any>) => {
+  const finishSection = async (answers?: Record<number, unknown>) => {
     if (answers) {
       saveAnswers(answers);
     }

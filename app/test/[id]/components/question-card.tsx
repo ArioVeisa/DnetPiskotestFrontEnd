@@ -65,7 +65,7 @@ export function QuestionCard({
         <h3 className="font-medium mb-4">{q.text}</h3>
 
         <RadioGroup
-          value={answers[current] || ""}
+          value={typeof answers[current] === 'string' ? answers[current] : ""}
           onValueChange={(v) => onAnswer(current, v)}
           className="space-y-2"
         >

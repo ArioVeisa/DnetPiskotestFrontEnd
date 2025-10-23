@@ -114,7 +114,7 @@ export function DiscQuestionCard({
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleMostSelect(option.id)}
-                      disabled={answer?.most && answer?.least} // Disable once both are selected
+                      disabled={!!(answer?.most && answer?.least)} // Disable once both are selected
                       className={`
                         w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
                         ${isMostSelected(option.id)
@@ -140,7 +140,7 @@ export function DiscQuestionCard({
                         }
                         ${answer?.most === option.id || (answer?.most && answer?.least) ? "opacity-50 cursor-not-allowed" : ""}
                       `}
-                      disabled={answer?.most === option.id || (answer?.most && answer?.least)}
+                      disabled={!!(answer?.most === option.id || (answer?.most && answer?.least))}
                     >
                       {isLeastSelected(option.id) && (
                         <span className="w-2 h-2 rounded-full bg-white" />

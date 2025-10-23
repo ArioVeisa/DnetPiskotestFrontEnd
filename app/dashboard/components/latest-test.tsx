@@ -28,9 +28,9 @@ export function LatestTests({ activities }: LatestTestsProps) {
               <span
                 className={cn(
                   "px-2 py-0.5 rounded-full text-xs font-semibold",
-                  act.status === "Completed"
+                  act.status === "Selesai"
                     ? "bg-green-100 text-green-700"
-                    : act.status === "In Progress"
+                    : act.status === "Berlangsung"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-500"
                 )}

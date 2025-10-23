@@ -61,29 +61,29 @@ export const resultsService = {
   async getAll(): Promise<Result[]> {
     try {
       // Gunakan API real untuk mendapatkan data dari backend
-      const res = await api.get<{ success: boolean; data: any[] }>(
+      const res = await api.get<{ success: boolean; data: Record<string, unknown>[] }>(
         "/results-public"
       );
 
       const data = res.data.data || [];
 
       // Tampilkan semua status (completed, ongoing, not_started)
-      return data.map((item) => {
+      return data.map((item: Record<string, unknown>, index: number) => {
         let status: "Completed" | "Ongoing" | "Not Started" = "Not Started";
         
-        if (item.status?.toLowerCase() === "completed") {
+        if (typeof item.status === 'string' && item.status.toLowerCase() === "completed") {
           status = "Completed";
-        } else if (item.status?.toLowerCase() === "in_progress") {
+        } else if (typeof item.status === 'string' && item.status.toLowerCase() === "in_progress") {
           status = "Ongoing";
         }
 
         return {
-          candidateId: item.id?.toString() || `unknown-${index}`,
-          name: item.candidate_name || "Unknown Candidate",
-          email: item.candidate_email || "unknown@example.com",
-          position: item.position || "Unknown Position",
-          types: [item.test_name || "Unknown Test"],
-          period: item.completed_at ? new Date(item.completed_at).toLocaleDateString("id-ID", {
+          candidateId: (item.id as string)?.toString() || `unknown-${index}`,
+          name: (item.candidate_name as string) || "Unknown Candidate",
+          email: (item.candidate_email as string) || "unknown@example.com",
+          position: (item.position as string) || "Unknown Position",
+          types: [(item.test_name as string) || "Unknown Test"],
+          period: item.completed_at ? new Date(item.completed_at as string).toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "short",
             year: "numeric",
@@ -93,9 +93,9 @@ export const resultsService = {
             year: "numeric",
           }),
           status,
-          score: item.score || undefined,
-          completedAt: item.completed_at || undefined,
-          testDistributionId: item.id,
+          score: typeof item.score === 'number' ? item.score : 0,
+          completedAt: (item.completed_at as string) || undefined,
+          testDistributionId: typeof item.id === 'number' ? item.id : undefined,
         };
       });
     } catch (error) {

@@ -14,7 +14,7 @@ interface LogsTableProps {
   logs: ActivityLog[];
   loading: boolean;
   onRefresh: () => void;
-  onFiltersChange: (filters: any) => void;
+  onFiltersChange: (filters: Record<string, unknown>) => void;
 }
 
 export function LogsTable({ logs, loading, onRefresh, onFiltersChange }: LogsTableProps) {

@@ -58,7 +58,7 @@ interface QuizPageProps {
   questions: Question[];
   test: Test;
   timer: number; // detik
-  onFinish: (answers?: Record<number, any>) => void;
+  onFinish: (answers?: Record<number, unknown>) => void;
   onExpire: () => void;
 }
 
@@ -143,7 +143,7 @@ export function QuizPage({
   const handleFinishClick = () => {
     const hasUnanswered = questions.some((question, i) => {
       const answerKey = question.id;
-      const answer = answers[answerKey];
+      const answer = answerKey ? answers[answerKey] : undefined;
       if (question.questionType === 'DISC') {
         // Untuk DISC, pastikan most dan least sudah dipilih
         return !answer || typeof answer === 'string' || !answer.most || !answer.least;
@@ -197,14 +197,14 @@ export function QuizPage({
             }}
             answer={(() => {
               const answerKey = currentQuestion.id;
-              const answer = answers[answerKey];
+              const answer = answerKey ? answers[answerKey] : undefined;
               return typeof answer === 'object' ? answer as DiscAnswer : null;
             })()}
             onAnswer={(answer) => handleAnswer(safeIndex, answer)}
             onToggleFlag={() => toggleFlag(safeIndex)}
             isFlagged={(() => {
               const flagKey = currentQuestion.id;
-              return flags[flagKey] || false;
+              return flagKey ? flags[flagKey] || false : false;
             })()}
             questionNumber={safeIndex + 1}
             totalQuestions={questions.length}
@@ -224,7 +224,7 @@ export function QuizPage({
             <div className="space-y-3 mb-6">
               {currentQuestion.options.map((opt, i) => {
                 const answerKey = currentQuestion.id;
-                const currentAnswer = answers[answerKey];
+                const currentAnswer = answerKey ? answers[answerKey] : undefined;
                 return (
                   <button
                     key={i}
@@ -263,22 +263,22 @@ export function QuizPage({
         {currentQuestion.questionType !== 'DISC' && (
           <div className="flex flex-wrap gap-2 mt-6">
             <Button
-              variant={flags[currentQuestion.id] ? undefined : "outline"}
+              variant={currentQuestion.id && flags[currentQuestion.id] ? undefined : "outline"}
               size="sm"
               onClick={() => toggleFlag(safeIndex)}
               className={[
                 "flex items-center gap-2",
-                flags[currentQuestion.id]
+                currentQuestion.id && flags[currentQuestion.id]
                   ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
                   : "",
               ].join(" ")}
             >
               <Flag
                 className={`w-4 h-4 ${
-                  flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
+                  currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
                 }`}
               />
-              <span className={flags[currentQuestion.id] ? "text-white" : ""}>
+              <span className={currentQuestion.id && flags[currentQuestion.id] ? "text-white" : ""}>
                 Mark for Review
               </span>
             </Button>
@@ -326,7 +326,7 @@ export function QuizPage({
                 "w-8 h-8 rounded flex items-center justify-center border cursor-pointer transition";
               if (i === safeIndex)
                 style += " bg-blue-500 text-white font-bold border-blue-500";
-              else if (answers[question.id]) {
+              else if (question.id && answers[question.id]) {
                 // Check if answer is complete based on question type
                 const answer = answers[question.id];
                 const isComplete = question.questionType === 'DISC' 
@@ -339,7 +339,7 @@ export function QuizPage({
                 } else {
                   style += " bg-orange-400 text-white border-orange-400";
                 }
-              } else if (flags[question.id])
+              } else if (question.id && flags[question.id])
                 style += " bg-yellow-400 text-white border-yellow-400";
               else style += " bg-gray-100 text-gray-500 border-gray-200";
 

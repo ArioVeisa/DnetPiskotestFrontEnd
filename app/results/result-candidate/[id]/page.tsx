@@ -112,8 +112,7 @@ export default function ResultCandidatePage() {
           },
           y: {
             grid: { 
-              color: "#f3f4f6",
-              drawBorder: false
+              color: "#f3f4f6"
             },
             border: { display: true, color: '#e5e7eb' },
             ticks: { 

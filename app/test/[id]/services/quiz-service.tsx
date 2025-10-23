@@ -100,8 +100,10 @@ const quizService = {
           const discOptions = q.question_detail.options.map(opt => ({
             id: opt.id?.toString() || Math.random().toString(),
             text: opt.option_text,
-            dimensionMost: opt.dimension_most || '*',
-            dimensionLeast: opt.dimension_least || '*'
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            dimensionMost: (opt as any).dimension_most || '*',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            dimensionLeast: (opt as any).dimension_least || '*'
           }));
           
           // console.log("🔍 Mapped DISC options:", discOptions); // Debug logging removed
@@ -129,10 +131,10 @@ const quizService = {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         // console.error("❌ Fetch questions error:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
+        //   status: error.response?.status,
+        //   data: error.response?.data,
+        //   message: error.message,
+        // });
         
         throw new Error(
           (error.response?.data as { message?: string })?.message ||
@@ -165,10 +167,10 @@ const quizService = {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         // console.error("❌ Submit test error:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
+        //   status: error.response?.status,
+        //   data: error.response?.data,
+        //   message: error.message,
+        // });
         
         // Handle specific error cases gracefully
         const errorMessage = (error.response?.data as { message?: string })?.message;

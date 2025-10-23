@@ -64,10 +64,10 @@ export const emailInviteService = {
         console.error("❌ Response status:", error.response?.status);
 
         // Jangan tampilkan error SQL ke user
-        const responseData = error.response?.data as any;
+        const responseData = error.response?.data as Record<string, unknown>;
         let message = "Gagal mengirim undangan email";
         
-        if (responseData?.message) {
+        if (responseData?.message && typeof responseData.message === 'string') {
           // Jika ada message yang user-friendly, gunakan itu
           message = responseData.message;
         } else if (error.response?.status === 500) {

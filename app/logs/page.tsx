@@ -13,7 +13,7 @@ export default function LogsPage() {
   const [filters, setFilters] = useState<LogsFilters>({});
   const { logs, loading, error, refreshLogs } = useLogs(filters);
 
-  const handleFiltersChange = (newFilters: any) => {
+  const handleFiltersChange = (newFilters: LogsFilters) => {
     setFilters(newFilters);
   };
 
