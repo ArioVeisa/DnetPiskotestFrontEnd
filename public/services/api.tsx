@@ -1,7 +1,7 @@
 // services/api.ts
 import axios, { AxiosError } from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL_LOCAL || "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL_LOCAL || "https://dnetpsikotest-production.up.railway.app/api";
 
 export const api = axios.create({
   baseURL: API_URL,
