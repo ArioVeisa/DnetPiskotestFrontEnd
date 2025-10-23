@@ -54,7 +54,7 @@ export function ReminderPage({
 }: ReminderPageProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-8 p-6">
-      {/* Judul */}
+      {/* Title */}
       <div className="text-center space-y-1">
         <h1 className="text-2xl font-bold">
           Get Ready for Your Psychological Assessment
@@ -147,7 +147,7 @@ export function ReminderPage({
           <CardHeader>
             <div className="flex items-center space-x-2">
               <ClockIcon className="w-5 h-5 text-green-500" />
-              <CardTitle>Jenis Tes yang Akan Dikerjakan</CardTitle>
+              <CardTitle>Test Types to be Completed</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -162,29 +162,29 @@ export function ReminderPage({
                         switch (type.toLowerCase()) {
                           case 'caas':
                             return {
-                              title: 'Tes CAAS',
+                              title: 'CAAS Test',
                               description: 'Career Assessment and Analysis System',
                               icon: '🎯',
                               color: 'bg-blue-50 border-blue-200 text-blue-800'
                             };
                           case 'teliti':
                             return {
-                              title: 'Tes Ketelitian',
-                              description: 'Mengukur tingkat ketelitian dan akurasi',
+                              title: 'Fast Accuracy Test',
+                              description: 'Measures accuracy and speed in task completion',
                               icon: '🔍',
                               color: 'bg-green-50 border-green-200 text-green-800'
                             };
                           case 'disc':
                             return {
-                              title: 'Tes DISC',
-                              description: 'Mengukur kepribadian dan gaya komunikasi',
+                              title: 'DISC Test',
+                              description: 'Measures personality and communication style',
                               icon: '👤',
                               color: 'bg-purple-50 border-purple-200 text-purple-800'
                             };
                           default:
                             return {
-                              title: `Tes ${type}`,
-                              description: 'Tes psikologi',
+                              title: `${type} Test`,
+                              description: 'Psychological test',
                               icon: '📝',
                               color: 'bg-gray-50 border-gray-200 text-gray-800'
                             };
@@ -206,12 +206,12 @@ export function ReminderPage({
                           
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between">
-                              <span>Durasi:</span>
-                              <span className="font-medium">{section.duration_minutes} menit</span>
+                              <span>Duration:</span>
+                              <span className="font-medium">{section.duration_minutes} minutes</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span>Soal:</span>
-                              <span className="font-medium">{section.question_count} pertanyaan</span>
+                              <span>Questions:</span>
+                              <span className="font-medium">{section.question_count} questions</span>
                             </div>
                           </div>
                         </div>
@@ -221,10 +221,10 @@ export function ReminderPage({
                 ) : (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                     <div className="text-2xl mb-2">📝</div>
-                    <p className="font-medium">Tes Psikologi</p>
+                    <p className="font-medium">Psychological Test</p>
                     <div className="mt-2 text-sm text-gray-600">
-                      <p>Durasi: {test.duration} menit</p>
-                      <p>Soal: {test.questionCount} pertanyaan</p>
+                      <p>Duration: {test.duration} minutes</p>
+                      <p>Questions: {test.questionCount} questions</p>
                     </div>
                   </div>
                 )}

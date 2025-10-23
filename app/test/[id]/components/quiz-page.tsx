@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Question } from "./question-card";
+import { Question, DiscAnswer } from "./question-card";
+import { DiscQuestionCard } from "./disc-question-card";
 import { useQuizTimer } from "../hooks/use-quiz-timer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -57,7 +58,7 @@ interface QuizPageProps {
   questions: Question[];
   test: Test;
   timer: number; // detik
-  onFinish: () => void;
+  onFinish: (answers?: Record<number, any>) => void;
   onExpire: () => void;
 }
 
@@ -69,10 +70,37 @@ export function QuizPage({
   onExpire,
 }: QuizPageProps) {
   const { timeLeft, start, reset } = useQuizTimer(timer, onExpire);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<number, string | DiscAnswer>>({});
   const [flags, setFlags] = useState<Record<number, boolean>>({});
   const [showReminder, setShowReminder] = useState(false);
   const [current, setCurrent] = useState(0);
+
+  // Local cache key untuk menyimpan jawaban
+  const cacheKey = `quiz_answers_${questions[0]?.id || 'unknown'}`;
+
+  /* Load answers from local storage on mount */
+  useEffect(() => {
+    try {
+      const savedAnswers = localStorage.getItem(cacheKey);
+      if (savedAnswers) {
+        const parsedAnswers = JSON.parse(savedAnswers);
+        setAnswers(parsedAnswers);
+        // console.log("✅ Loaded answers from cache:", parsedAnswers); // Debug logging removed
+      }
+    } catch (error) {
+      // console.error("❌ Error loading answers from cache:", error); // Debug logging removed
+    }
+  }, [cacheKey]);
+
+  /* Save answers to local storage whenever answers change */
+  useEffect(() => {
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(answers));
+      // console.log("💾 Saved answers to cache:", answers); // Debug logging removed
+    } catch (error) {
+      // console.error("❌ Error saving answers to cache:", error); // Debug logging removed
+    }
+  }, [answers, cacheKey]);
 
   /* Timer lifecycle */
   useEffect(() => {
@@ -91,96 +119,170 @@ export function QuizPage({
   }
 
   /* Helper */
-  const handleAnswer = (idx: number, val: string) =>
-    setAnswers((a) => ({ ...a, [idx]: val }));
+  const handleAnswer = (idx: number, val: string | DiscAnswer) => {
+    const question = questions[idx];
+    // console.log("🔍 handleAnswer called:", { idx, val, question }); // Debug logging removed
+    const answerKey = question?.id; // Use question.id as key instead of array index
+    // console.log("🔍 Answer key:", answerKey); // Debug logging removed
+    if (answerKey) {
+      setAnswers((a) => ({ ...a, [answerKey]: val }));
+      // console.log("🔍 Answer saved with key:", answerKey, "value:", val); // Debug logging removed
+    } else {
+      // console.log("❌ No answer key found for question:", question); // Debug logging removed
+    }
+  };
 
-  const toggleFlag = (idx: number) =>
-    setFlags((f) => ({ ...f, [idx]: !f[idx] }));
+  const toggleFlag = (idx: number) => {
+    const question = questions[idx];
+    const flagKey = question?.id;
+    if (flagKey) {
+      setFlags((f) => ({ ...f, [flagKey]: !f[flagKey] }));
+    }
+  };
 
   const handleFinishClick = () => {
-    const hasUnanswered = questions.some((_, i) => !answers[i]);
+    const hasUnanswered = questions.some((question, i) => {
+      const answerKey = question.id;
+      const answer = answers[answerKey];
+      if (question.questionType === 'DISC') {
+        // Untuk DISC, pastikan most dan least sudah dipilih
+        return !answer || typeof answer === 'string' || !answer.most || !answer.least;
+      } else {
+        // Untuk tipe lain, pastikan ada jawaban
+        return !answer;
+      }
+    });
+    
     if (hasUnanswered) {
       setShowReminder(true);
     } else {
-      onFinish();
+      // Clear cache setelah test selesai
+      try {
+        localStorage.removeItem(cacheKey);
+        // console.log("🗑️ Cleared answers cache after test completion"); // Debug logging removed
+      } catch (error) {
+        // console.error("❌ Error clearing cache:", error); // Debug logging removed
+      }
+      onFinish(answers);
     }
   };
 
   /* Pastikan current selalu valid */
   const safeIndex = Math.min(Math.max(current, 0), questions.length - 1);
   const currentQuestion = questions[safeIndex];
+  
+  // Debug logging
+  // console.log("🔍 Current question:", currentQuestion); // Debug logging removed
+  // console.log("🔍 Question type:", currentQuestion?.questionType); // Debug logging removed
+  // console.log("🔍 Disc options:", currentQuestion?.discOptions); // Debug logging removed
 
   return (
     <div className="flex flex-col md:flex-row gap-8 items-start justify-stretch p-4">
       {/* Main Card */}
       <div className="flex-1">
-        <div className="bg-white rounded-2xl shadow p-6">
-          <div className="mb-1 text-xs text-gray-400">
-            Question {safeIndex + 1}/{questions.length}
+        {(currentQuestion.questionType === 'DISC' && currentQuestion.discOptions) || 
+         (currentQuestion.options && currentQuestion.options.length === 4 && 
+          currentQuestion.text && currentQuestion.text.toLowerCase().includes('most') && 
+          currentQuestion.text.toLowerCase().includes('least')) ? (
+          <DiscQuestionCard
+            question={{
+              text: currentQuestion.text,
+              discOptions: currentQuestion.discOptions || 
+                currentQuestion.options.map((opt, index) => ({
+                  id: index.toString(),
+                  text: opt,
+                  dimensionMost: '*',
+                  dimensionLeast: '*'
+                }))
+            }}
+            answer={(() => {
+              const answerKey = currentQuestion.id;
+              const answer = answers[answerKey];
+              return typeof answer === 'object' ? answer as DiscAnswer : null;
+            })()}
+            onAnswer={(answer) => handleAnswer(safeIndex, answer)}
+            onToggleFlag={() => toggleFlag(safeIndex)}
+            isFlagged={(() => {
+              const flagKey = currentQuestion.id;
+              return flags[flagKey] || false;
+            })()}
+            questionNumber={safeIndex + 1}
+            totalQuestions={questions.length}
+            onPrevious={() => {}} // Disabled - no previous button
+            onNext={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
+            canGoPrevious={false} // Always false - no previous allowed
+            canGoNext={safeIndex < questions.length - 1}
+          />
+        ) : (
+          <div className="bg-white rounded-2xl shadow p-6">
+            <div className="mb-1 text-xs text-gray-400">
+              Question {safeIndex + 1}/{questions.length}
+            </div>
+            <div className="font-semibold text-[1.1rem] mb-4 leading-relaxed">
+              {currentQuestion.text}
+            </div>
+            <div className="space-y-3 mb-6">
+              {currentQuestion.options.map((opt, i) => {
+                const answerKey = currentQuestion.id;
+                const currentAnswer = answers[answerKey];
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleAnswer(safeIndex, opt)}
+                    disabled={!!currentAnswer} // Disable once answer is selected
+                    className={[
+                      "w-full flex items-center px-4 py-3 rounded-lg border text-left transition",
+                      currentAnswer === opt
+                        ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
+                        : "border-gray-200 hover:bg-gray-50",
+                      currentAnswer ? "opacity-75 cursor-not-allowed" : "",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={[
+                        "inline-flex items-center justify-center w-5 h-5 mr-3 border rounded-full transition",
+                        currentAnswer === opt
+                          ? "bg-blue-500 border-blue-500"
+                          : "border-gray-300",
+                      ].join(" ")}
+                    >
+                      {currentAnswer === opt && (
+                        <span className="w-3 h-3 rounded-full bg-white block" />
+                      )}
+                    </span>
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="font-semibold text-[1.1rem] mb-4 leading-relaxed">
-            {currentQuestion.text}
-          </div>
-          <div className="space-y-3 mb-6">
-            {currentQuestion.options.map((opt, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handleAnswer(safeIndex, opt)}
-                className={[
-                  "w-full flex items-center px-4 py-3 rounded-lg border text-left transition",
-                  answers[safeIndex] === opt
-                    ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
-                    : "border-gray-200 hover:bg-gray-50",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "inline-flex items-center justify-center w-5 h-5 mr-3 border rounded-full transition",
-                    answers[safeIndex] === opt
-                      ? "bg-blue-500 border-blue-500"
-                      : "border-gray-300",
-                  ].join(" ")}
-                >
-                  {answers[safeIndex] === opt && (
-                    <span className="w-3 h-3 rounded-full bg-white block" />
-                  )}
-                </span>
-                {opt}
-              </button>
-            ))}
-          </div>
-          {/* Bottom nav */}
+        )}
+
+        {/* Bottom nav - hanya untuk non-DISC questions */}
+        {currentQuestion.questionType !== 'DISC' && (
           <div className="flex flex-wrap gap-2 mt-6">
             <Button
-              variant={flags[safeIndex] ? undefined : "outline"}
+              variant={flags[currentQuestion.id] ? undefined : "outline"}
               size="sm"
               onClick={() => toggleFlag(safeIndex)}
               className={[
                 "flex items-center gap-2",
-                flags[safeIndex]
+                flags[currentQuestion.id]
                   ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
                   : "",
               ].join(" ")}
             >
               <Flag
                 className={`w-4 h-4 ${
-                  flags[safeIndex] ? "text-white" : "text-yellow-500"
+                  flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
                 }`}
               />
-              <span className={flags[safeIndex] ? "text-white" : ""}>
+              <span className={flags[currentQuestion.id] ? "text-white" : ""}>
                 Mark for Review
               </span>
             </Button>
-            <div className="ml-auto flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrent((c) => Math.max(0, c - 1))}
-                disabled={safeIndex === 0}
-              >
-                Previous
-              </Button>
+            <div className="ml-auto">
               <Button
                 size="sm"
                 onClick={() =>
@@ -192,7 +294,7 @@ export function QuizPage({
               </Button>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Sidebar */}
@@ -219,14 +321,25 @@ export function QuizPage({
         <div className="bg-white p-4 rounded-xl shadow-sm mt-2">
           <div className="font-semibold text-sm mb-2">Question Navigation</div>
           <div className="grid grid-cols-5 gap-2">
-            {questions.map((_, i) => {
+            {questions.map((question, i) => {
               let style =
                 "w-8 h-8 rounded flex items-center justify-center border cursor-pointer transition";
               if (i === safeIndex)
                 style += " bg-blue-500 text-white font-bold border-blue-500";
-              else if (answers[i])
-                style += " bg-green-500 text-white border-green-500";
-              else if (flags[i])
+              else if (answers[question.id]) {
+                // Check if answer is complete based on question type
+                const answer = answers[question.id];
+                const isComplete = question.questionType === 'DISC' 
+                  ? typeof answer === 'object' && answer !== null && 
+                    (answer as DiscAnswer).most && (answer as DiscAnswer).least
+                  : true; // For non-DISC, any answer is complete
+                
+                if (isComplete) {
+                  style += " bg-green-500 text-white border-green-500";
+                } else {
+                  style += " bg-orange-400 text-white border-orange-400";
+                }
+              } else if (flags[question.id])
                 style += " bg-yellow-400 text-white border-yellow-400";
               else style += " bg-gray-100 text-gray-500 border-gray-200";
 

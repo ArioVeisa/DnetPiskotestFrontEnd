@@ -34,29 +34,29 @@ export function SectionAnnouncement({
     switch (type.toLowerCase()) {
       case 'caas':
         return {
-          title: 'Tes CAAS (Career Assessment and Analysis System)',
-          description: 'Tes ini mengukur kemampuan analisis karier dan perencanaan masa depan Anda.',
+          title: 'CAAS Test (Career Assessment and Analysis System)',
+          description: 'This test measures your career analysis ability and future planning skills.',
           icon: '🎯',
           color: 'bg-blue-50 border-blue-200'
         };
       case 'teliti':
         return {
-          title: 'Tes Ketelitian',
-          description: 'Tes ini mengukur tingkat ketelitian dan akurasi Anda dalam menyelesaikan tugas.',
+          title: 'Fast Accuracy Test',
+          description: 'This test measures your accuracy and speed in completing tasks.',
           icon: '🔍',
           color: 'bg-green-50 border-green-200'
         };
       case 'disc':
         return {
-          title: 'Tes DISC',
-          description: 'Tes ini mengukur kepribadian dan gaya komunikasi Anda.',
+          title: 'DISC Test',
+          description: 'This test measures your personality and communication style.',
           icon: '👤',
           color: 'bg-purple-50 border-purple-200'
         };
       default:
         return {
-          title: `Tes ${type}`,
-          description: 'Tes ini akan mengukur kemampuan dan kepribadian Anda.',
+          title: `${type} Test`,
+          description: 'This test will measure your abilities and personality.',
           icon: '📝',
           color: 'bg-gray-50 border-gray-200'
         };
@@ -83,26 +83,26 @@ export function SectionAnnouncement({
           <div className="bg-white rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-3">
               <Clock className="h-5 w-5 text-blue-600" />
-              <span className="font-medium">Durasi:</span>
-              <span className="text-blue-600 font-bold">{duration} menit</span>
+              <span className="font-medium">Duration:</span>
+              <span className="text-blue-600 font-bold">{duration} minutes</span>
             </div>
             
             <div className="flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              <span className="font-medium">Jumlah Soal:</span>
-              <span className="text-green-600 font-bold">{questionCount} soal</span>
+              <span className="font-medium">Number of Questions:</span>
+              <span className="text-green-600 font-bold">{questionCount} questions</span>
             </div>
           </div>
 
           {/* Countdown Timer */}
           <div className="text-center">
             <div className="text-4xl font-bold text-orange-600 mb-2">
-              {countdown > 0 ? countdown : 'Siap!'}
+              {countdown > 0 ? countdown : 'Ready!'}
             </div>
             <p className="text-gray-600">
               {countdown > 0 
-                ? `Tes akan dimulai dalam ${countdown} detik...` 
-                : 'Klik tombol di bawah untuk memulai tes'
+                ? `Test will start in ${countdown} seconds...` 
+                : 'Click the button below to start the test'
               }
             </p>
           </div>
@@ -115,7 +115,7 @@ export function SectionAnnouncement({
               size="lg"
               className="px-8 py-3 text-lg font-semibold"
             >
-              {canStart ? 'Mulai Tes' : 'Persiapan...'}
+              {canStart ? 'Start Test' : 'Preparing...'}
             </Button>
           </div>
 
@@ -124,12 +124,12 @@ export function SectionAnnouncement({
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div className="text-sm text-yellow-800">
-                <p className="font-medium mb-1">Panduan Tes:</p>
+                <p className="font-medium mb-1">Test Guidelines:</p>
                 <ul className="space-y-1 text-xs">
-                  <li>• Baca setiap pertanyaan dengan teliti</li>
-                  <li>• Pilih jawaban yang paling sesuai dengan diri Anda</li>
-                  <li>• Anda dapat menggunakan tombol Mark for Review untuk menandai pertanyaan</li>
-                  <li>• Pastikan semua pertanyaan terjawab sebelum waktu habis</li>
+                  <li>• Read each question carefully</li>
+                  <li>• Choose the answer that best fits you</li>
+                  <li>• You can use the Mark for Review button to flag questions</li>
+                  <li>• Make sure all questions are answered before time runs out</li>
                 </ul>
               </div>
             </div>

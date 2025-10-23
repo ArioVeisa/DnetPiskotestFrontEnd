@@ -18,7 +18,7 @@ export function TestCompletedPage({
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleString("id-ID", {
+      return date.toLocaleString("en-US", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -39,10 +39,10 @@ export function TestCompletedPage({
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           <CardTitle className="text-2xl font-bold text-green-600">
-            Tes Berhasil Diselesaikan!
+            Test Successfully Completed!
           </CardTitle>
           <p className="text-gray-600 mt-2">
-            Terima kasih telah menyelesaikan psikotes online
+            Thank you for completing the online psychotest
           </p>
         </CardHeader>
         
@@ -51,7 +51,7 @@ export function TestCompletedPage({
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-3 mb-3">
               <Calendar className="h-5 w-5 text-green-600" />
-              <span className="font-medium text-green-800">Tanggal Penyelesaian:</span>
+              <span className="font-medium text-green-800">Completion Date:</span>
             </div>
             <p className="text-green-700 font-semibold">
               {formatDate(completedAt)}
@@ -60,29 +60,29 @@ export function TestCompletedPage({
 
           {/* Result Information */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="font-semibold text-green-800 mb-3">Informasi Hasil:</h3>
+            <h3 className="font-semibold text-green-800 mb-3">Result Information:</h3>
             <ul className="space-y-2 text-green-700">
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Hasil tes Anda telah tersimpan dengan aman</span>
+                <span>Your test results have been securely saved</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Tim HRD akan meninjau hasil dalam 1-2 hari kerja</span>
+                <span>HRD team will review results within 1-2 working days</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Anda akan dihubungi untuk tahap selanjutnya</span>
+                <span>You will be contacted for the next stage</span>
               </li>
             </ul>
           </div>
 
           {/* Next Steps */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 mb-2">Langkah Selanjutnya:</h3>
+            <h3 className="font-semibold text-blue-800 mb-2">Next Steps:</h3>
             <p className="text-blue-700">
-              Silakan tunggu konfirmasi dari tim rekrutmen kami. Jika ada pertanyaan, 
-              Anda dapat menghubungi HRD melalui email yang telah diberikan.
+              Please wait for confirmation from our recruitment team. If you have any questions, 
+              you can contact HRD via the provided email.
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export function TestCompletedPage({
               className="flex items-center gap-2"
             >
               <Mail className="h-4 w-4" />
-              Hubungi HRD
+              Contact HRD
             </Button>
           </div>
 
@@ -102,10 +102,10 @@ export function TestCompletedPage({
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div className="text-sm text-yellow-800">
-                <p className="font-medium mb-1">Penting:</p>
+                <p className="font-medium mb-1">Important:</p>
                 <p>
-                  Link tes ini hanya dapat digunakan sekali. Anda tidak dapat mengakses 
-                  tes yang sama lagi menggunakan link ini.
+                  This test link can only be used once. You cannot access 
+                  the same test again using this link.
                 </p>
               </div>
             </div>

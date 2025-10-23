@@ -61,7 +61,7 @@ export interface DashboardApiResponse {
 export const getDashboardData = async (): Promise<DashboardApiResponse> => {
   try {
     console.log("🔍 [dashboard] Fetching dashboard data...");
-    const response = await api.get<DashboardApiResponse>("/dashboard");
+    const response = await api.get<DashboardApiResponse>("/dashboard-public");
     console.log("✅ [dashboard] Dashboard data received:", response.data);
     return response.data;
   } catch (error) {

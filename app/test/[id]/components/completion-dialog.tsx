@@ -21,27 +21,27 @@ export function CompletionDialog({
           <CheckCircle className="w-14 h-14 text-green-500" />
         </div>
         <div className="text-2xl font-bold text-green-600 mb-1 text-center">
-          Tes Berhasil Diselesaikan!
+          Test Successfully Completed!
         </div>
         <div className="text-gray-500 text-base mb-6 text-center">
-          Terima kasih telah menyelesaikan psikotes online
+          Thank you for completing the online psychotest
         </div>
 
         {/* INFORMASI HASIL */}
         <div className="bg-green-50 rounded-lg w-full px-5 py-4 mb-4 border border-green-100">
-          <div className="font-semibold text-green-700 mb-1">Informasi Hasil</div>
+          <div className="font-semibold text-green-700 mb-1">Result Information</div>
           <ul className="text-sm text-green-800 space-y-1 list-disc pl-4">
-            <li>Hasil tes Anda telah tersimpan dengan aman</li>
-            <li>Tim HRD akan meninjau hasil dalam 1-2 hari kerja</li>
-            <li>Anda akan dihubungi untuk tahap selanjutnya</li>
+            <li>Your test results have been securely saved</li>
+            <li>HRD team will review results within 1-2 working days</li>
+            <li>You will be contacted for the next stage</li>
           </ul>
         </div>
 
         {/* LANGKAH SELANJUTNYA */}
         <div className="bg-blue-50 rounded-lg w-full px-5 py-4 mb-6 border border-blue-100">
-          <div className="font-semibold text-blue-500 mb-1">Langkah Selanjutnya</div>
+          <div className="font-semibold text-blue-500 mb-1">Next Steps</div>
           <div className="text-sm text-blue-900">
-            Silakan tunggu konfirmasi dari tim rekrutmen kami. Jika ada pertanyaan, Anda dapat menghubungi HRD melalui email yang telah diberikan.
+            Please wait for confirmation from our recruitment team. If you have any questions, you can contact HRD via the provided email.
           </div>
         </div>
 
@@ -53,15 +53,15 @@ export function CompletionDialog({
           >
             <span className="inline-flex items-center gap-2">
               <Mail className="w-5 h-5" />
-              Hubungi HRD
+              Contact HRD
             </span>
           </Button>
         </div>
 
         {/* FOOTER */}
         <div className="text-center text-xs text-gray-400 mt-2 w-full">
-          ID Tes: {testId} <br />
-          Tanggal: {date}
+          Test ID: {testId} <br />
+          Date: {date}
         </div>
       </div>
     </div>

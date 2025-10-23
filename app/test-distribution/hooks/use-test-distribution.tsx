@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   fetchDistributions,
   Distribution,
@@ -77,7 +78,16 @@ export function useTestDistributions() {
       console.log('✅ Hook: State updated successfully');
     } catch (error: unknown) {
       console.error('❌ Hook: Error deleting distribution:', error);
-      setError(`Failed to delete distribution: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Extract meaningful error message from backend response
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setError(`Failed to delete distribution: ${errorMessage}`);
       throw error; // Re-throw to let component handle it
     }
   }

@@ -11,6 +11,8 @@ export interface QuestionOption {
   id: number;
   option_text: string;
   score?: number;
+  dimension_most?: string; // Untuk DISC
+  dimension_least?: string; // Untuk DISC
 }
 
 /** Detail pertanyaan dari backend */
@@ -108,11 +110,11 @@ export const candidateService = {
     const url = `/candidate-tests/start/${token}`;
 
     try {
-      console.log("🔍 Fetch candidate URL:", api.defaults.baseURL + url);
+      // console.log("🔍 Fetch candidate URL:", api.defaults.baseURL + url); // Debug logging removed
       const res = await api.get<CandidateResponse>(url);
       const data = res.data;
 
-      console.log("✅ Candidate response:", data);
+      // console.log("✅ Candidate response:", data); // Debug logging removed
 
       const tests: TestInfo[] = data.test
         ? [
@@ -155,19 +157,21 @@ export const candidateService = {
       return candidate;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error("❌ Fetch candidate error:", {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-        });
-
         // Handle test already completed
         if (
           error.response?.status === 403 &&
           error.response?.data?.status === "completed"
         ) {
+          // console.log("🔍 Test already completed, throwing TEST_COMPLETED error"); // Debug logging removed
           throw new Error(`TEST_COMPLETED:${error.response.data.completed_at}`);
         }
+
+        // Log other errors (silenced in production)
+        // console.error("❌ Fetch candidate error:", {
+        //   status: error.response?.status,
+        //   data: error.response?.data,
+        //   message: error.message,
+        // });
 
         throw new Error(
           (error.response?.data as { message?: string })?.message ||
@@ -175,7 +179,7 @@ export const candidateService = {
         );
       }
 
-      console.error("❌ Unknown fetch candidate error:", error);
+      // console.error("❌ Unknown fetch candidate error:", error); // Debug logging removed
       throw new Error("Terjadi error tidak dikenal saat fetch candidate");
     }
   },

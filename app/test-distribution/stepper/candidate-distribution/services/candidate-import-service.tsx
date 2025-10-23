@@ -5,18 +5,29 @@ export interface ImportCandidateResponse {
   message: string;
   imported_count?: number;
   errors?: string[];
+  candidates?: Array<{
+    nik: string;
+    name: string;
+    email: string;
+    phone_number: string;
+    position: string;
+    birth_date: string;
+    gender: string;
+    department: string;
+  }>;
+  test_package_id?: number;
 }
 
 /* ========== IMPORT FROM XLSX ========== */
 export async function importCandidatesFromXlsx(
   file: File,
-  testId: number,
+  testPackageId: number,
   token: string
 ): Promise<ImportCandidateResponse> {
   try {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("test_id", testId.toString());
+    formData.append("test_package_id", testPackageId.toString());
 
     console.log("[importCandidatesFromXlsx] Uploading file:", file.name);
 

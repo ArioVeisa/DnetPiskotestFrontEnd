@@ -87,6 +87,17 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     }
   }, [testId]);
 
+  // Load draft candidates saat pertama kali mount
+  useEffect(() => {
+    if (testId && options?.autoLoad !== false) {
+      const drafts = readDrafts();
+      if (drafts.length > 0) {
+        setCandidates(drafts);
+        console.log(`✅ Loaded ${drafts.length} draft candidates from localStorage`);
+      }
+    }
+  }, [testId, options?.autoLoad]);
+
   /** Ambil detail kandidat */
   const fetchCandidateById = useCallback(async (id: number) => {
     setLoading(true);
@@ -125,6 +136,14 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
       } as unknown as CandidateWithStatus;
 
       setCandidates((prev) => {
+        // Cek duplicate berdasarkan NIK atau email
+        const existingNiks = new Set(prev.map(c => c.nik));
+        const existingEmails = new Set(prev.map(c => c.email));
+        
+        if (existingNiks.has(payload.nik) || existingEmails.has(payload.email)) {
+          throw new Error('NIK atau email sudah ada dalam daftar kandidat');
+        }
+        
         const next = [draft, ...prev];
         writeDrafts(next);
         return next;
@@ -316,7 +335,7 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     /** Import candidates dari Excel */
     importFromExcel: async (file: File, token: string) => {
       if (!testId) {
-        throw new Error('Test ID is required for import');
+        throw new Error('Test Package ID is required for import');
       }
 
       setLoading(true);
@@ -324,8 +343,45 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
       try {
         const result = await importCandidatesFromXlsx(file, testId, token);
         
-        // Refresh candidates setelah import
-        await refreshCandidates();
+        // Simpan candidates ke local cache sebagai draft
+        if (result.candidates && result.candidates.length > 0) {
+          const draftCandidates: CandidateWithStatus[] = result.candidates.map((c, index) => ({
+            id: -Date.now() - index, // Negative ID untuk draft
+            nik: c.nik,
+            name: c.name,
+            email: c.email,
+            phone_number: c.phone_number,
+            position: c.position,
+            birth_date: c.birth_date,
+            gender: c.gender as "male" | "female",
+            department: c.department,
+            localStatus: "Pending",
+            isDraft: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }));
+          
+          // Gabungkan dengan candidates yang sudah ada, hindari duplicate
+          const existingCandidates = readDrafts();
+          const existingNiks = new Set(existingCandidates.map(c => c.nik));
+          const existingEmails = new Set(existingCandidates.map(c => c.email));
+          
+          // Filter out candidates yang sudah ada (berdasarkan NIK atau email)
+          const newCandidates = draftCandidates.filter(candidate => 
+            !existingNiks.has(candidate.nik) && !existingEmails.has(candidate.email)
+          );
+          
+          if (newCandidates.length > 0) {
+            const allCandidates = [...existingCandidates, ...newCandidates];
+            setCandidates(allCandidates);
+            writeDrafts(allCandidates);
+            console.log(`✅ Added ${newCandidates.length} new candidates (${draftCandidates.length - newCandidates.length} duplicates skipped)`);
+          } else {
+            console.log(`ℹ️ All ${draftCandidates.length} candidates already exist, no duplicates added`);
+          }
+          
+          console.log(`✅ Imported ${result.candidates.length} candidates to local cache as drafts`);
+        }
         
         return result;
       } catch (err) {
@@ -345,6 +401,15 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         const errorMessage = err instanceof Error ? err.message : 'Gagal mendownload template';
         setError(errorMessage);
         throw err;
+      }
+    },
+
+    /** Clear all draft candidates */
+    clearDrafts: () => {
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+        setCandidates([]);
+        console.log('✅ All draft candidates cleared');
       }
     },
   };

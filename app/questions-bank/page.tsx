@@ -23,20 +23,20 @@ type AnyQuestionBank = DiscBank | CaasBank | FastBank;
 export default function QuestionBankPage() {
   const [activeBank, setActiveBank] = useState<AnyQuestionBank | null>(null);
 
-  // terima global bank dari BankQuestionContent, cast ke union
+  // Receive global bank from BankQuestionContent, cast to union
   const handleStart = (bank: GlobalBank) => {
     setActiveBank(bank as AnyQuestionBank);
   };
 
   const handleCancel = () => {
-    setActiveBank(null); // balik ke list bank
+    setActiveBank(null); // Return to bank list
   };
 
   const handleSave = () => {
     if (activeBank) {
-      console.log("Saved bank:", activeBank);
+      // console.log("Saved bank:", activeBank); // Debug logging removed
     }
-    setActiveBank(null); // setelah save balik ke list
+    setActiveBank(null); // After save return to list
   };
 
   const renderCrud = (type: TestType) => {
@@ -80,7 +80,7 @@ export default function QuestionBankPage() {
       <div className="flex flex-1 flex-col bg-white">
         <TopBar />
         <main className="flex-1 px-8 pt-2 pb-16">
-          {/* List Bank */}
+          {/* Bank List */}
           {!activeBank && (
             <>
               <TitleBar />

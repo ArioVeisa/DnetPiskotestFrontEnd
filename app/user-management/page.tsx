@@ -27,7 +27,7 @@ export default function UserManagementPage() {
       await addUser(data);
       setShowAdd(false);
     } catch (err) {
-      console.error("Failed to add user:", err);
+      // console.error("Failed to add user:", err); // Error logging removed
     }
   };
 
@@ -37,7 +37,7 @@ export default function UserManagementPage() {
       await updateUserInfo(data);
       setEditUser(null);
     } catch (err) {
-      console.error("Failed to update user:", err);
+      // console.error("Failed to update user:", err); // Error logging removed
     }
   };
 

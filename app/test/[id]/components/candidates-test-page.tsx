@@ -14,7 +14,7 @@ import { useParams } from "next/navigation";
 
 export default function CandidateTestPage() {
   const { id: token } = useParams<{ id: string }>();
-  console.log("Token:", token); // harus UUID
+  // console.log("Token:", token); // Debug logging removed for production
 
   const {
     step,
@@ -22,9 +22,12 @@ export default function CandidateTestPage() {
     tests,
     currentTest,
     currentSection,
+    currentSectionIndex,
     questions,
     timer,
     completedAt,
+    allAnswers,
+    error,
     verify,
     startQuiz,
     startSectionQuiz,
@@ -32,6 +35,8 @@ export default function CandidateTestPage() {
     nextTest,
     validateNik,
     fetchCandidate, // ambil dari hook
+    saveAnswers,
+    submitAllAnswers,
   } = useCandidateTest(token);
 
   // 🔑 panggil sekali ketika halaman dibuka
@@ -44,13 +49,13 @@ export default function CandidateTestPage() {
   }, [token]);
 
   function handleContactHRD() {
-    alert("Hubungi HRD diklik. (Ganti dengan aksi asli)");
+    alert("Contact HRD clicked. (Replace with actual action)");
   }
 
   const lastTest = tests[tests.length - 1];
   const testId = lastTest ? lastTest.id : "-";
   const dateObj = new Date();
-  const dateStr = dateObj.toLocaleString("id-ID", {
+  const dateStr = dateObj.toLocaleString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -87,6 +92,36 @@ export default function CandidateTestPage() {
           completedAt={completedAt}
           onContactHRD={handleContactHRD}
         />
+      )}
+
+      {error && (
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Test Cannot Be Accessed</h2>
+            <p className="text-gray-600 mb-6">There was an issue accessing your test. Please contact HR for assistance.</p>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                Possible causes:
+              </p>
+              <ul className="text-sm text-gray-500 text-left space-y-1">
+                <li>• Test has already been completed</li>
+                <li>• Test link has expired</li>
+                <li>• Test token is invalid</li>
+              </ul>
+            </div>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-6 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       )}
 
       {step === "reminder" && candidate && (

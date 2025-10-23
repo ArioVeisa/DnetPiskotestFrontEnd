@@ -73,7 +73,16 @@ export default function DistributionTable() {
           response: axios.isAxiosError(error) ? error.response?.data : undefined,
           status: axios.isAxiosError(error) ? error.response?.status : undefined
         });
-        alert(`Gagal menghapus test distribution: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        // Extract meaningful error message from backend response
+        let errorMessage = 'Unknown error';
+        if (axios.isAxiosError(error) && error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        alert(`Gagal menghapus test distribution: ${errorMessage}`);
       }
     }
   };

@@ -33,8 +33,11 @@ export interface DuplicateCandidate {
 }
 
 export interface InviteResponse {
+  success: boolean;
   message: string;
   data?: InvitedCandidate[];
+  success_count?: number;
+  total_requested?: number;
   duplicate?: DuplicateCandidate[];
 }
 
@@ -60,13 +63,25 @@ export const emailInviteService = {
         console.error("❌ Response data:", error.response?.data);
         console.error("❌ Response status:", error.response?.status);
 
-        const message =
-          (error.response?.data as { message?: string })?.message ??
-          "Gagal mengirim undangan email";
+        // Jangan tampilkan error SQL ke user
+        const responseData = error.response?.data as any;
+        let message = "Gagal mengirim undangan email";
+        
+        if (responseData?.message) {
+          // Jika ada message yang user-friendly, gunakan itu
+          message = responseData.message;
+        } else if (error.response?.status === 500) {
+          // Untuk error 500, berikan pesan yang lebih umum
+          message = "Terjadi kesalahan pada server. Silakan coba lagi.";
+        } else if (error.response?.status === 422) {
+          // Untuk error validasi, berikan pesan yang lebih spesifik
+          message = "Data yang dikirim tidak valid. Silakan periksa kembali.";
+        }
+        
         throw new Error(message);
       }
 
-      throw new Error("Terjadi error tidak dikenal");
+      throw new Error("Terjadi kesalahan tidak dikenal. Silakan coba lagi.");
     }
   },
 };

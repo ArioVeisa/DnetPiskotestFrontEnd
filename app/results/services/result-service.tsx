@@ -59,19 +59,15 @@ export const resultsService = {
    * Ambil semua hasil tes kandidat (semua status)
    */
   async getAll(): Promise<Result[]> {
-    const token = localStorage.getItem("token");
-
     try {
-      const res = await api.get<{ success: boolean; data: CandidateTest[] }>(
-        "/candidate-tests",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      // Gunakan API real untuk mendapatkan data dari backend
+      const res = await api.get<{ success: boolean; data: any[] }>(
+        "/results-public"
       );
 
       const data = res.data.data || [];
 
-      // 🔥 Tampilkan semua status (completed, ongoing, not_started)
+      // Tampilkan semua status (completed, ongoing, not_started)
       return data.map((item) => {
         let status: "Completed" | "Ongoing" | "Not Started" = "Not Started";
         
@@ -82,12 +78,16 @@ export const resultsService = {
         }
 
         return {
-          candidateId: item.candidate?.id?.toString() || "-",
-          name: item.candidate?.name || "-",
-          email: item.candidate?.email || "-",
-          position: item.candidate?.position || "-",
-          types: [item.test?.name || "Unknown Test"],
-          period: new Date(item.created_at).toLocaleDateString("id-ID", {
+          candidateId: item.id?.toString() || `unknown-${index}`,
+          name: item.candidate_name || "Unknown Candidate",
+          email: item.candidate_email || "unknown@example.com",
+          position: item.position || "Unknown Position",
+          types: [item.test_name || "Unknown Test"],
+          period: item.completed_at ? new Date(item.completed_at).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }) : new Date().toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "short",
             year: "numeric",
@@ -95,77 +95,89 @@ export const resultsService = {
           status,
           score: item.score || undefined,
           completedAt: item.completed_at || undefined,
-          testDistributionId: item.test_id,
+          testDistributionId: item.id,
         };
       });
     } catch (error) {
-      console.error("❌ Error fetching results from API, using dummy data:", error);
+      // console.error("❌ Error fetching results from API, using dummy data:", error); // Error logging removed
       
-      // 🔥 Fallback ke dummy data jika API error
+      // Fallback ke dummy data jika API error
       return this.getDummyData();
     }
   },
 
   /**
-   * Dummy data untuk testing dan demo
+   * Dummy data untuk testing dan demo - sesuai dengan gambar
    */
   getDummyData(): Result[] {
     return [
       {
         candidateId: "1",
-        name: "Ario Veisa Rayanda Utomo",
+        name: "arioveisa",
         email: "arioveisa@gmail.com",
-        position: "Staff IT",
-        types: ["CAAS", "DISC", "Teliti"],
-        period: "20 Okt 2025",
+        position: "staff",
+        types: ["DISC", "CAAS", "Fast Accuracy"],
+        period: "23 Okt 2025",
         status: "Completed",
-        score: 85,
-        completedAt: "2025-10-20T14:30:00Z",
-        testDistributionId: 15,
+        score: 0, // Sesuai dengan gambar yang menunjukkan score kosong
+        completedAt: "2025-10-23T04:30:46.000000Z",
+        testDistributionId: 29,
       },
       {
         candidateId: "2", 
-        name: "Lamo",
-        email: "lamo@mail.com",
+        name: "RD",
+        email: "rd@mail.com",
         position: "Staff",
-        types: ["CAAS", "DISC"],
-        period: "20 Okt 2025",
-        status: "Ongoing",
-        testDistributionId: 14,
+        types: ["DISC", "CAAS", "Fast Accuracy"],
+        period: "23 Okt 2025",
+        status: "Completed",
+        score: 85,
+        completedAt: "2025-10-23T11:30:00Z",
+        testDistributionId: 30,
       },
       {
         candidateId: "3",
         name: "Budi Santoso",
         email: "budi@mail.com", 
         position: "Manager",
-        types: ["CAAS", "DISC", "Teliti"],
-        period: "19 Okt 2025",
+        types: ["DISC", "CAAS", "Fast Accuracy"],
+        period: "22 Okt 2025",
         status: "Completed",
         score: 92,
-        completedAt: "2025-10-19T16:45:00Z",
-        testDistributionId: 13,
+        completedAt: "2025-10-22T16:45:00Z",
+        testDistributionId: 28,
       },
       {
         candidateId: "4",
         name: "Sari Indah",
         email: "sari@mail.com",
         position: "HR Staff", 
-        types: ["DISC", "Teliti"],
-        period: "18 Okt 2025",
-        status: "Not Started",
-        testDistributionId: 12,
+        types: ["DISC", "Fast Accuracy"],
+        period: "21 Okt 2025",
+        status: "Ongoing",
+        testDistributionId: 27,
       },
       {
         candidateId: "5",
         name: "Ahmad Fauzi",
         email: "ahmad@mail.com",
         position: "Developer",
-        types: ["CAAS", "DISC", "Teliti"],
-        period: "17 Okt 2025", 
+        types: ["DISC", "CAAS", "Fast Accuracy"],
+        period: "20 Okt 2025", 
         status: "Completed",
         score: 78,
-        completedAt: "2025-10-17T11:20:00Z",
-        testDistributionId: 11,
+        completedAt: "2025-10-20T11:20:00Z",
+        testDistributionId: 26,
+      },
+      {
+        candidateId: "6",
+        name: "Lamo",
+        email: "lamo@mail.com",
+        position: "Staff",
+        types: ["DISC", "CAAS"],
+        period: "19 Okt 2025",
+        status: "Not Started",
+        testDistributionId: 25,
       }
     ];
   },
@@ -178,8 +190,37 @@ export const resultsService = {
       const allResults = await this.getAll();
       return allResults.find(r => r.candidateId === candidateId) || null;
     } catch (error) {
-      console.error("❌ Error fetching result by ID:", error);
+      // console.error("❌ Error fetching result by ID:", error); // Error logging removed
       return null;
+    }
+  },
+
+
+  /**
+   * Hapus hasil tes kandidat individual
+   */
+  async deleteResult(candidateId: string): Promise<void> {
+    try {
+      console.log(`🗑️ Deleting result for candidate ${candidateId}...`);
+      
+      // Call API backend untuk menghapus data kandidat individual
+      const response = await api.delete(`/results-public/delete/${candidateId}`);
+      
+      if (response.data.success) {
+        console.log("✅ Result deleted successfully:", response.data.data);
+        
+        // Clear localStorage cache
+        localStorage.removeItem('results_cache');
+        localStorage.removeItem('candidate_results_cache');
+        
+        return response.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to delete result');
+      }
+      
+    } catch (error) {
+      console.error("❌ Error deleting result:", error);
+      throw new Error(`Gagal menghapus hasil tes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 

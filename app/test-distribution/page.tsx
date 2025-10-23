@@ -19,13 +19,13 @@ export default function TestDistributionPage() {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showStepper, setShowStepper] = useState(false);
 
-  // ✅ simpan id paket di state utama
+  // ✅ Save package id in main state
   const [packageId, setPackageId] = useState<number | null>(null);
   
-  // Hook untuk mengelola data distributions
+  // Hook to manage distributions data
   const { distributions, loading, error, create, update, remove, refresh } = useTestDistributions();
 
-  // mulai bikin session baru
+  // Start creating new session
   function handleCreate() {
     // Clear localStorage untuk distribusi baru
     const keysToRemove = [] as string[];
@@ -84,7 +84,7 @@ export default function TestDistributionPage() {
               {/* Stepper progress indicator */}
               <StepperCreate activeStep={activeStep ?? 0} />
 
-              {/* STEP 1: pilih paket */}
+              {/* STEP 1: Select Package */}
               {activeStep === 0 && (
                 <AddPackageStep
                   onNext={(id: number) => {
@@ -106,7 +106,7 @@ export default function TestDistributionPage() {
             </MakeSessionProvider>
           ) : (
             <>
-              {/* Default tampilan sebelum klik "Add New Test" */}
+              {/* Default view before clicking "Add New Test" */}
               <TitleBar onAddTest={handleCreate} />
               <DistributionTable />
             </>

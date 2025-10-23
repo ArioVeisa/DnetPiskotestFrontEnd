@@ -6,8 +6,8 @@ import TopBar from "@/components/TopBar";
 import Sidebar from "@/components/Sidebar";
 import { TitleBar } from "./components/title-bar";
 import { ResultTable } from "./components/result-table";
-import { useResults } from "./hooks/use-result"; // ✅ pakai hooks sesuai service
-import { resultsService } from "./services/result-service"; // ✅ gunakan object resultsService
+import { useResults } from "./hooks/use-result"; // ✅ Use hooks according to service
+import { resultsService } from "./services/result-service"; // ✅ Use resultsService object
 import TableSkeleton from "./components/table-skeleton";
 
 export default function ResultsPage() {
@@ -15,33 +15,47 @@ export default function ResultsPage() {
   const { results, loading } = useResults();
   const [, setSelectedId] = useState<string | null>(null);
 
-  // ✅ Handler untuk melihat detail hasil kandidat
+  // ✅ Handler to view candidate result details
   const handleView = (candidateId: string) => {
     setSelectedId(candidateId);
     router.push(`/results/result-candidate/${candidateId}`);
   };
 
-  // ✅ Handler untuk download hasil (PDF)
+  // ✅ Handler to download results (PDF)
   const handleDownload = async (candidateId: string) => {
     try {
       await resultsService.downloadResult(candidateId);
-      console.log(`✅ PDF hasil kandidat ${candidateId} berhasil diunduh`);
+      // console.log(`✅ PDF hasil kandidat ${candidateId} berhasil diunduh`); // Debug logging removed
     } catch (error) {
-      console.error("❌ Gagal mengunduh hasil kandidat:", error);
-      alert(`Gagal mengunduh hasil tes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // console.error("❌ Gagal mengunduh hasil kandidat:", error); // Error logging removed
+      alert(`Failed to download test results: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  // ✅ Handler untuk export semua hasil (sementara — bisa ditambah endpoint backend)
+  // ✅ Handler to export all results (temporary — can add backend endpoint)
   const handleExportAll = async () => {
     try {
-      // Saat ini belum ada endpoint exportAll di service
-      // Kamu bisa ganti dengan fungsi lain jika sudah tersedia di backend
+      // Currently no exportAll endpoint in service
+      // You can replace with other function if available in backend
       const allResults = await resultsService.getAll();
-      console.log("✅ Semua hasil kandidat berhasil diambil:", allResults);
-      alert("Export all berhasil (simulasi).");
+      // console.log("✅ Semua hasil kandidat berhasil diambil:", allResults); // Debug logging removed
+      alert("Export all successful (simulation).");
     } catch (error) {
-      console.error("❌ Gagal export semua hasil:", error);
+      // console.error("❌ Gagal export semua hasil:", error); // Error logging removed
+    }
+  };
+
+  // ✅ Handler to delete individual test results
+  const handleDelete = async (candidateId: string) => {
+    try {
+      await resultsService.deleteResult(candidateId);
+      alert("✅ Hasil tes berhasil dihapus!");
+      
+      // Refresh halaman untuk menampilkan data terbaru
+      window.location.reload();
+    } catch (error) {
+      console.error("❌ Gagal menghapus hasil tes:", error);
+      alert(`❌ Gagal menghapus hasil tes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -70,6 +84,7 @@ export default function ResultsPage() {
               results={results}
               onView={handleView}
               onDownload={handleDownload}
+              onDelete={handleDelete}
             />
           )}
         </main>

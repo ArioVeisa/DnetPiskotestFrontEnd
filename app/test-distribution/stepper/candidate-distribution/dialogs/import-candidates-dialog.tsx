@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Upload, Download, FileSpreadsheet, AlertCircle } from "lucide-react";
+import { downloadCandidateTemplate } from "../services/candidate-import-service";
 
 interface Props {
   open: boolean;
@@ -58,14 +59,13 @@ export default function ImportCandidatesDialog({
     }
   };
 
-  const handleDownloadTemplate = () => {
-    // Trigger download template
-    const link = document.createElement('a');
-    link.href = '/templates/template-candidates.xlsx';
-    link.download = 'template-candidates.xlsx';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadCandidateTemplate();
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      // Error handling could be improved with toast notification
+    }
   };
 
   return (

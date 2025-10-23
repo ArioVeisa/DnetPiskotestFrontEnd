@@ -37,12 +37,37 @@ export default function ResultCandidatePage() {
   const createChart = (
     canvas: HTMLCanvasElement | null,
     data: { label: string; value: number }[],
-    color: string
+    color: string,
+    title: string
   ) => {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Determine Y-axis range based on data - sesuai dengan gambar Excel
+    const allValues = data.map(d => d.value);
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    
+    // Set Y-axis range sesuai dengan gambar Excel
+    let yMin, yMax;
+    if (title.includes("MOST")) {
+      yMin = -10;
+      yMax = 10;
+    } else if (title.includes("LEAST")) {
+      yMin = -4;
+      yMax = 8;
+    } else if (title.includes("CHANGE")) {
+      yMin = -4;
+      yMax = 8;
+    } else {
+      // Fallback
+      const range = maxValue - minValue;
+      const padding = Math.max(1, range * 0.1);
+      yMin = Math.floor(minValue - padding);
+      yMax = Math.ceil(maxValue + padding);
+    }
 
     const config: ChartConfiguration = {
       type: "line",
@@ -54,9 +79,12 @@ export default function ResultCandidatePage() {
             borderColor: color,
             backgroundColor: `${color}20`,
             fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 4,
+            tension: 0, // Garis lurus yang tegas
+            pointRadius: 0, // Tidak ada titik (sesuai gambar Excel)
+            pointHoverRadius: 0,
+            pointBackgroundColor: color,
+            pointBorderColor: color,
+            borderWidth: 3, // Garis yang lebih tebal dan tegas
           },
         ],
       },
@@ -65,17 +93,36 @@ export default function ResultCandidatePage() {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: { enabled: true },
+          tooltip: { 
+            enabled: true,
+            callbacks: {
+              title: () => title,
+              label: (context) => `${context.label}: ${context.parsed.y}`
+            }
+          },
         },
         scales: {
           x: {
             grid: { display: false },
-            border: { display: false },
+            border: { display: true, color: '#e5e7eb' },
+            ticks: {
+              color: '#374151',
+              font: { size: 12, weight: 'bold' }
+            }
           },
           y: {
-            grid: { color: "#f0f0f0" },
-            border: { display: false },
-            ticks: { stepSize: 2 },
+            grid: { 
+              color: "#f3f4f6",
+              drawBorder: false
+            },
+            border: { display: true, color: '#e5e7eb' },
+            ticks: { 
+              stepSize: title.includes("MOST") ? 5 : 2, // Sesuai dengan gambar Excel
+              color: '#374151',
+              font: { size: 11 }
+            },
+            min: yMin,
+            max: yMax,
           },
         },
       },
@@ -96,17 +143,20 @@ export default function ResultCandidatePage() {
     const chart1 = createChart(
       chartMostRef.current,
       data.graphs.most,
-      "#3b82f6"
+      "#3b82f6",
+      "GRAPH 1 MOST (Make Public Self)"
     );
     const chart2 = createChart(
       chartLeastRef.current,
       data.graphs.least,
-      "#eab308"
+      "#eab308",
+      "GRAPH 2 LEAST (Core Private Self)"
     );
     const chart3 = createChart(
       chartChangeRef.current,
       data.graphs.change,
-      "#10b981"
+      "#10b981",
+      "GRAPH 3 CHANGE (Mirror Perceived Self)"
     );
 
     if (chart1) chartInstancesRef.current.push(chart1);
@@ -321,29 +371,31 @@ export default function ResultCandidatePage() {
             <CardTitle className="text-sm font-medium">Job Match</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {[
-              { title: "Researcher", subtitle: "Human and Quality Control" },
-              { title: "Engineer", subtitle: "Project Supervisor" },
-              { title: "Statistician", subtitle: "" },
-              { title: "Surveyor", subtitle: "" },
-            ].map((job, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-2 p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                  {index + 1}
+            {data?.jobMatch?.slice(0, 4).map((job, index) => {
+              // Parse job string to extract title and subtitle
+              const jobParts = job.split(' (');
+              const title = jobParts[0];
+              const subtitle = jobParts[1] ? jobParts[1].replace(')', '') : '';
+              
+              return (
+                <div
+                  key={index}
+                  className="flex items-start gap-2 p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                >
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-medium">{title}</h4>
+                    {subtitle && (
+                      <p className="text-[10px] text-muted-foreground line-clamp-1">
+                        {subtitle}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-medium">{job.title}</h4>
-                  {job.subtitle && (
-                    <p className="text-[10px] text-muted-foreground line-clamp-1">
-                      {job.subtitle}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       </div>

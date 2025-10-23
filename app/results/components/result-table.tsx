@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Result } from "../services/result-service";
 import { resultsService } from "../services/result-service";
@@ -10,7 +10,8 @@ import { resultsService } from "../services/result-service";
 export interface ResultTableProps {
   results: Result[];
   onView: (candidateId: string) => void;
-  onDownload: (candidateId: string) => Promise<void>; // ✅ tambahkan ini
+  onDownload: (candidateId: string) => Promise<void>;
+  onDelete: (candidateId: string) => Promise<void>; // ✅ tambahkan ini
   pageSize?: number;
 }
 
@@ -18,10 +19,12 @@ export function ResultTable({
   results,
   onView,
   onDownload,
+  onDelete,
   pageSize = 5,
 }: ResultTableProps) {
   const [page, setPage] = useState(1);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const totalPages = Math.ceil(results.length / pageSize);
   const paginatedResults = results.slice(
@@ -44,6 +47,24 @@ export function ResultTable({
     }
   };
 
+  const handleDelete = async (candidateId: string) => {
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin menghapus hasil tes untuk kandidat ini?\n\nTindakan ini tidak dapat dibatalkan.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(candidateId);
+      await onDelete(candidateId);
+    } catch (error) {
+      console.error("Error deleting result:", error);
+      alert("Gagal menghapus hasil tes. Silakan coba lagi.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <>
       {/* DESKTOP TABLE */}
@@ -61,10 +82,11 @@ export function ResultTable({
             </tr>
           </thead>
           <tbody>
-            {paginatedResults.map((r) => {
+            {paginatedResults.map((r, index) => {
               const displayName = r.name.split(" ").slice(0, 2).join(" ");
+              const uniqueKey = r.candidateId && r.candidateId !== "-" ? r.candidateId : `candidate-${index}`;
               return (
-                <tr key={r.candidateId}>
+                <tr key={uniqueKey}>
                   <td className="px-6 py-4 flex items-center gap-3 align-middle">
                     <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-semibold">
                       {r.name.charAt(0).toUpperCase()}
@@ -126,7 +148,7 @@ export function ResultTable({
                     )}
                   </td>
 
-                  <td className="px-6 py-4 flex items-center gap-3 align-middle">
+                  <td className="px-6 py-4 flex items-center gap-2 align-middle">
                     <Button
                       size="sm"
                       variant="outline"
@@ -146,6 +168,18 @@ export function ResultTable({
                         })}
                       />
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={deletingId === r.candidateId}
+                      onClick={() => handleDelete(r.candidateId)}
+                    >
+                      <Trash2
+                        className={cn("h-4 w-4", {
+                          "animate-pulse": deletingId === r.candidateId,
+                        })}
+                      />
+                    </Button>
                   </td>
                 </tr>
               );
@@ -156,11 +190,12 @@ export function ResultTable({
 
       {/* MOBILE LIST */}
       <div className="md:hidden space-y-4">
-        {paginatedResults.map((r) => {
+        {paginatedResults.map((r, index) => {
           const displayName = r.name.split(" ").slice(0, 2).join(" ");
+          const uniqueKey = r.candidateId && r.candidateId !== "-" ? r.candidateId : `candidate-mobile-${index}`;
           return (
             <div
-              key={r.candidateId}
+              key={uniqueKey}
               className="bg-white rounded-lg shadow-sm p-4 space-y-4"
             >
               <div className="flex items-center justify-between">
@@ -225,7 +260,7 @@ export function ResultTable({
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between space-x-3">
+                <div className="flex justify-between space-x-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -243,6 +278,19 @@ export function ResultTable({
                     <Download
                       className={cn("h-4 w-4", {
                         "animate-pulse": downloadingId === r.candidateId,
+                      })}
+                    />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1"
+                    disabled={deletingId === r.candidateId}
+                    onClick={() => handleDelete(r.candidateId)}
+                  >
+                    <Trash2
+                      className={cn("h-4 w-4", {
+                        "animate-pulse": deletingId === r.candidateId,
                       })}
                     />
                   </Button>

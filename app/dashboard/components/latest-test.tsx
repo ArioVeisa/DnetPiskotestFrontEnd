@@ -11,7 +11,7 @@ export function LatestTests({ activities }: LatestTestsProps) {
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Tes Terbaru</CardTitle>
+        <CardTitle>Latest Tests</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {activities.map((act) => (
@@ -28,9 +28,9 @@ export function LatestTests({ activities }: LatestTestsProps) {
               <span
                 className={cn(
                   "px-2 py-0.5 rounded-full text-xs font-semibold",
-                  act.status === "Selesai"
+                  act.status === "Completed"
                     ? "bg-green-100 text-green-700"
-                    : act.status === "Berlangsung"
+                    : act.status === "In Progress"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-gray-100 text-gray-500"
                 )}

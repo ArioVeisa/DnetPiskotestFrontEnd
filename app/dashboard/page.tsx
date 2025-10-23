@@ -23,23 +23,23 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* Error message jika ada */}
+              {/* Error message if any */}
               {error && (
                 <div className="bg-yellow-50 text-yellow-700 p-4 rounded-lg">
                   <p className="text-sm">
-                    <strong>Perhatian:</strong> {error}. Menampilkan data dummy.
+                    <strong>Warning:</strong> {error}. Displaying dummy data.
                   </p>
                 </div>
               )}
 
-              {/* Statistik atas */}
+              {/* Top Statistics */}
               <StatCards stats={stats} />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Tes Terbaru */}
+                {/* Latest Tests */}
                 <LatestTests activities={activities} />
 
-                {/* Aksi Cepat */}
+                {/* Quick Actions */}
                 <QuickActions actions={actions} />
               </div>
             </>

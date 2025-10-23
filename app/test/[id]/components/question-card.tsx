@@ -7,14 +7,31 @@ import { Button } from "@/components/ui/button";
 
 // Bentuk data untuk setiap pertanyaan
 export interface Question {
+  id?: number; // test_question id
   text: string;
   options: string[];
+  questionType?: string; // DISC, CAAS, teliti
+  discOptions?: DiscOption[]; // Untuk DISC format
+}
+
+// Interface khusus untuk DISC options
+export interface DiscOption {
+  id: string;
+  text: string;
+  dimensionMost: string; // D, I, S, C, *
+  dimensionLeast: string; // D, I, S, C, *
+}
+
+// Interface untuk jawaban DISC
+export interface DiscAnswer {
+  most: string; // ID dari option yang dipilih sebagai MOST
+  least: string; // ID dari option yang dipilih sebagai LEAST
 }
 
 interface QuestionCardProps {
   questions: Question[];
-  answers: Record<number, string>;
-  onAnswer: (index: number, value: string) => void;
+  answers: Record<number, string | DiscAnswer>; // Support both string and DiscAnswer
+  onAnswer: (index: number, value: string | DiscAnswer) => void;
   flags: Record<number, boolean>;
   onToggleFlag: (index: number) => void;
 }
@@ -54,7 +71,11 @@ export function QuestionCard({
         >
           {q.options.map((opt, i) => (
             <div key={i} className="flex items-center">
-              <RadioGroupItem value={opt} id={`opt-${current}-${i}`} />
+              <RadioGroupItem 
+                value={opt} 
+                id={`opt-${current}-${i}`}
+                disabled={!!answers[current]} // Disable once answer is selected
+              />
               <label htmlFor={`opt-${current}-${i}`} className="ml-2">
                 {opt}
               </label>
@@ -62,13 +83,7 @@ export function QuestionCard({
           ))}
         </RadioGroup>
 
-        <div className="mt-4 flex justify-between">
-          <Button
-            onClick={() => setCurrent((c) => Math.max(0, c - 1))}
-            disabled={current === 0}
-          >
-            Previous
-          </Button>
+        <div className="mt-4 flex justify-end">
           <Button
             onClick={() =>
               setCurrent((c) => Math.min(questions.length - 1, c + 1))

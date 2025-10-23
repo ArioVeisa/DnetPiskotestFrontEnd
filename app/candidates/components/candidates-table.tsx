@@ -67,7 +67,7 @@ export function CandidateTable() {
   if (candidates.length === 0) {
     return (
       <div className="text-center text-gray-500 mt-8">
-        Belum ada kandidat ditambahkan.
+        No candidates have been added yet.
       </div>
     );
   }
@@ -264,7 +264,7 @@ export function CandidateTable() {
             if (!open) setEditCandidate(null);
           }}
           onSave={(updated) => {
-            console.log("Updated candidate:", updated);
+            // console.log("Updated candidate:", updated); // Debug logging removed
             setEditCandidate(null);
           }}
         />
@@ -283,7 +283,7 @@ export function CandidateTable() {
             await deleteCandidateFn(deleteCandidate.id);
             window.location.reload();
           } catch (err) {
-            console.error(err);
+            // console.error(err); // Error logging removed for production
           } finally {
             setDeleteCandidate(null);
           }

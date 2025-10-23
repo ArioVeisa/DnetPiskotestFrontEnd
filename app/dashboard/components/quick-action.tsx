@@ -16,7 +16,7 @@ export function QuickActions({ actions }: QuickActionsProps) {
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Aksi Cepat</CardTitle>
+        <CardTitle>Quick Actions</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 cursor-pointer">
         {actions.map((a, idx) => (

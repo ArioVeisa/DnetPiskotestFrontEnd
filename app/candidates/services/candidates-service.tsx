@@ -35,10 +35,8 @@ type CandidateApiResponse = {
 export const candidatesService = {
   async getCandidates(): Promise<Candidate[]> {
     try {
-      const token = localStorage.getItem("token");
-      const res = await api.get<CandidateApiResponse[]>("/candidates", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Use public endpoint for testing
+      const res = await api.get<CandidateApiResponse[]>("/candidates-public");
 
       return res.data.map((c) => ({
         id: c.id,
