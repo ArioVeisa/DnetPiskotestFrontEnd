@@ -1,7 +1,27 @@
 // services/api.ts
 import axios, { AxiosError } from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL_LOCAL || "https://cuddly-orbit-6795pjrxr6x376v-8000.app.github.dev/api";
+// Resolve API base URL robustly. Prevent accidental relative "/api" hitting Next.js dev server (3000).
+function resolveApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL_LOCAL;
+
+  // If env is provided and looks absolute (starts with http), use it
+  if (envUrl && /^https?:\/\//i.test(envUrl)) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  // If env provided but not absolute, warn and fall back
+  if (envUrl && typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Invalid NEXT_PUBLIC_API_URL value: "${envUrl}". Falling back to http://localhost:8000/api`
+    );
+  }
+
+  return "http://localhost:8000/api";
+}
+
+const API_URL = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_URL,
