@@ -38,7 +38,7 @@ export default function ImportCsvDialog({
 
   const downloadTemplate = () => {
     const link = document.createElement("a");
-    link.href = "/templates/template-teliti.xlsx"; // ✅ path publik, bukan relative filesystem
+    link.href = "/templates/template-teliti.xlsx"; // template CSV dengan header benar
     link.download = "template-teliti.xlsx";
     document.body.appendChild(link);
     link.click();
@@ -97,9 +97,10 @@ export default function ImportCsvDialog({
           }`}
         >
           <Upload className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-          <div className="text-base font-medium">Upload XLS File</div>
+          <div className="text-base font-medium">Upload XLS/CSV File</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Drag & drop file di sini, atau klik tombol di bawah.
+            Drag & drop file di sini, atau klik tombol di bawah. Format valid: xlsx, xls, csv.
+            Header wajib: question_a, question_b, category_id, is_active, is_true.
           </p>
 
           <input

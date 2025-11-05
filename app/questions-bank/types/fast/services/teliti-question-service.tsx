@@ -70,6 +70,13 @@ function normalizeQuestion(q: ApiQuestion): Question {
   if (q.correct_option_id) {
     correctId = q.correct_option_id.toString();
   }
+  // 🔹 Jika tidak ada, tapi option memiliki flag is_correct dari API, gunakan itu
+  else if (q.options && q.options.length > 0) {
+    const flagged = q.options.find((o) => o.is_correct === true);
+    if (flagged) {
+      correctId = flagged.id.toString();
+    }
+  }
   // 🔹 Jika belum ada correct_option_id, tentukan berdasarkan logika Fast Accuracy
   else if (q.question_text.includes("|")) {
     const [left, right] = q.question_text.split("|").map((s) => s.trim());
@@ -85,6 +92,23 @@ function normalizeQuestion(q: ApiQuestion): Question {
     }
   }
 
+  // Tentukan jawaban string "True"/"False" jika memungkinkan
+  let answer: string | undefined = undefined;
+  if (correctId) {
+    const corr = q.options.find((o) => o.id.toString() === correctId);
+    if (corr) {
+      const txt = corr.option_text.trim().toLowerCase();
+      if (txt === "true" || txt === "false") {
+        answer = txt === "true" ? "True" : "False";
+      }
+    }
+  }
+  if (!answer && q.question_text.includes("|")) {
+    const [left, right] = q.question_text.split("|").map((s) => s.trim());
+    const isSame = left === right;
+    answer = isSame ? "True" : "False";
+  }
+
   return {
     id: q.id.toString(),
     text: q.question_text,
@@ -98,6 +122,7 @@ function normalizeQuestion(q: ApiQuestion): Question {
     category: q.category_id.toString(),
     mediaUrl: q.media_path ?? undefined,
     createdAt: q.created_at,
+    answer,
   };
 }
 
