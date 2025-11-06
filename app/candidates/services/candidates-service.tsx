@@ -109,10 +109,10 @@ export const candidatesService = {
       };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const data = error.response?.data as any;
+        const data = error.response?.data as { message?: string } | string | undefined;
         let message: string;
         if (typeof data === "string") message = data;
-        else if (data?.message) message = data.message;
+        else if (data && typeof data === "object" && data.message) message = data.message;
         else message = "Gagal memperbarui kandidat!";
         throw message;
       }

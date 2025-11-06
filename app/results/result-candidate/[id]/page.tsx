@@ -5,12 +5,11 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useResultCandidates } from "./hooks/use-result-candidates";
-import { CandidateResult } from "./services/result-candidates-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ArrowUpRight } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Chart, ChartConfiguration } from "chart.js/auto";
 import { Download } from "lucide-react";
 import { generateDownloadContent } from "../../utils/generate-download-content";

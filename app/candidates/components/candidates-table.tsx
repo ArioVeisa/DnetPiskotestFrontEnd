@@ -298,7 +298,7 @@ export function CandidateTable() {
               createdAt: updated.createdAt,
               updatedAt: new Date().toISOString(),
                 status: updated.status,
-            } as any);
+            } as Candidate);
 
             // Persist ke DB (sinkronkan hasil akhir)
             const saved = await candidatesService.updateCandidate({
@@ -314,7 +314,7 @@ export function CandidateTable() {
               createdAt: updated.createdAt,
               updatedAt: updated.updatedAt,
               status: updated.status,
-            } as any);
+            } as Candidate);
 
             updateLocalCandidate(saved);
             // Hard refresh untuk memastikan state bersih dan hindari efek freeze
@@ -340,8 +340,8 @@ export function CandidateTable() {
           try {
             await deleteCandidateFn(deleteCandidate.id);
             window.location.reload();
-          } catch (err) {
-            // console.error(err); // Error logging removed for production
+          } catch {
+            // Error logging removed for production
           } finally {
             setDeleteCandidate(null);
           }

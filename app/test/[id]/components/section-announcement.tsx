@@ -112,8 +112,8 @@ export function SectionAnnouncement({
           <p className="font-semibold mb-2">Tugas Utama</p>
           <p className="text-xs mb-2">Bandingkan data kiri dan kanan. Tentukan apakah SAMA PERSIS atau TIDAK SAMA.</p>
           <ul className="space-y-1 text-xs mb-3">
-            <li>• Pilih "T" (True) jika keduanya Sama Persis</li>
-            <li>• Pilih "F" (False) jika ada perbedaan sekecil apa pun</li>
+            <li>• Pilih &quot;T&quot; (True) jika keduanya Sama Persis</li>
+            <li>• Pilih &quot;F&quot; (False) jika ada perbedaan sekecil apa pun</li>
           </ul>
           <p className="font-semibold mb-1">Aturan Penting!</p>
           <ul className="space-y-1 text-xs">
