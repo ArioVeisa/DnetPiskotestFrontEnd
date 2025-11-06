@@ -167,7 +167,7 @@ export default function DistributionTable() {
                   <span className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow">
                     {d.iconPath && d.iconPath in ICON_MAP ? (
                       <span className="text-blue-400">
-                        {React.cloneElement(ICON_MAP[d.iconPath as keyof typeof ICON_MAP] as React.ReactElement, { size: 22 })}
+                        {React.cloneElement(ICON_MAP[d.iconPath as keyof typeof ICON_MAP] as React.ReactElement<{ size?: number }>, { size: 22 })}
                       </span>
                     ) : (
                       CATEGORY_ICON[d.category] ?? CATEGORY_ICON["Default"]
@@ -250,7 +250,7 @@ export default function DistributionTable() {
                 <span className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow">
                   {d.iconPath && d.iconPath in ICON_MAP ? (
                     <span className="text-blue-400">
-                      {React.cloneElement(ICON_MAP[d.iconPath as keyof typeof ICON_MAP] as React.ReactElement, { size: 20 })}
+                      {React.cloneElement(ICON_MAP[d.iconPath as keyof typeof ICON_MAP] as React.ReactElement<{ size?: number }>, { size: 20 })}
                     </span>
                   ) : (
                     CATEGORY_ICON[d.category] ?? CATEGORY_ICON["Default"]

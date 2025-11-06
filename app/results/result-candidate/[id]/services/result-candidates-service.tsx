@@ -448,6 +448,7 @@ export const resultCandidatesService = {
         data: {
           candidate_test: {
             id: number;
+            completed_at: string | null;
             candidate: {
               id: number;
               name: string;
