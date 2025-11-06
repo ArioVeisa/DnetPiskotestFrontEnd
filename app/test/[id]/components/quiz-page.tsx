@@ -65,6 +65,7 @@ interface QuizPageProps {
 /* ---------------- Main Component ---------------- */
 export function QuizPage({
   questions,
+  test,
   timer,
   onFinish,
   onExpire,
@@ -140,6 +141,21 @@ export function QuizPage({
     }
   };
 
+  const isDisc = questions[0]?.questionType === 'DISC';
+  const isCaas = questions[0]?.questionType === 'CAAS';
+  const isFast = questions[0]?.questionType === 'teliti' || questions[0]?.questionType === 'Fast Accuracy';
+
+  const isAllAnswered = () => {
+    return questions.every((question) => {
+      const answerKey = question.id;
+      const answer = answerKey ? answers[answerKey] : undefined;
+      if (question.questionType === 'DISC') {
+        return !!(answer && typeof answer === 'object' && (answer as DiscAnswer).most && (answer as DiscAnswer).least);
+      }
+      return !!answer;
+    });
+  };
+
   const handleFinishClick = () => {
     const hasUnanswered = questions.some((question, i) => {
       const answerKey = question.id;
@@ -153,7 +169,8 @@ export function QuizPage({
       }
     });
     
-    if (hasUnanswered) {
+    // Untuk DISC & CAAS, tidak boleh submit jika belum lengkap
+    if (hasUnanswered && (isDisc || isCaas)) {
       setShowReminder(true);
     } else {
       // Clear cache setelah test selesai
@@ -223,31 +240,32 @@ export function QuizPage({
             </div>
             <div className="space-y-3 mb-6">
               {currentQuestion.options.map((opt, i) => {
+                const optId = currentQuestion.optionIds?.[i] ?? opt; // gunakan id jika tersedia
                 const answerKey = currentQuestion.id;
                 const currentAnswer = answerKey ? answers[answerKey] : undefined;
                 return (
                   <button
                     key={i}
                     type="button"
-                    onClick={() => handleAnswer(safeIndex, opt)}
-                    disabled={!!currentAnswer} // Disable once answer is selected
+                    onClick={() => handleAnswer(safeIndex, optId)}
+                    disabled={isFast && !!currentAnswer} // Hanya Fast Accuracy yang terkunci setelah jawab
                     className={[
                       "w-full flex items-center px-4 py-3 rounded-lg border text-left transition",
-                      currentAnswer === opt
+                      currentAnswer === optId
                         ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
                         : "border-gray-200 hover:bg-gray-50",
-                      currentAnswer ? "opacity-75 cursor-not-allowed" : "",
+                      isFast && currentAnswer ? "opacity-75 cursor-not-allowed" : "",
                     ].join(" ")}
                   >
                     <span
                       className={[
                         "inline-flex items-center justify-center w-5 h-5 mr-3 border rounded-full transition",
-                        currentAnswer === opt
+                      currentAnswer === optId
                           ? "bg-blue-500 border-blue-500"
                           : "border-gray-300",
                       ].join(" ")}
                     >
-                      {currentAnswer === opt && (
+                      {currentAnswer === optId && (
                         <span className="w-3 h-3 rounded-full bg-white block" />
                       )}
                     </span>
@@ -259,8 +277,8 @@ export function QuizPage({
           </div>
         )}
 
-        {/* Bottom nav - hanya untuk non-DISC questions */}
-        {currentQuestion.questionType !== 'DISC' && (
+        {/* Bottom actions */}
+        <div className="flex flex-wrap gap-2 mt-6">
           <div className="flex flex-wrap gap-2 mt-6">
             <Button
               variant={currentQuestion.id && flags[currentQuestion.id] ? undefined : "outline"}
@@ -282,19 +300,21 @@ export function QuizPage({
                 Mark for Review
               </span>
             </Button>
-            <div className="ml-auto">
-              <Button
-                size="sm"
-                onClick={() =>
-                  setCurrent((c) => Math.min(questions.length - 1, c + 1))
-                }
-                disabled={safeIndex === questions.length - 1}
-              >
-                Next
-              </Button>
-            </div>
+            {currentQuestion.questionType !== 'DISC' && (
+              <div className="ml-auto">
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    setCurrent((c) => Math.min(questions.length - 1, c + 1))
+                  }
+                  disabled={safeIndex === questions.length - 1}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Sidebar */}
@@ -324,9 +344,15 @@ export function QuizPage({
             {questions.map((question, i) => {
               let style =
                 "w-8 h-8 rounded flex items-center justify-center border cursor-pointer transition";
-              if (i === safeIndex)
+              
+              // Prioritas: Current > Flagged > Answered > Default
+              if (i === safeIndex) {
+                // Current question selalu biru
                 style += " bg-blue-500 text-white font-bold border-blue-500";
-              else if (question.id && answers[question.id]) {
+              } else if (question.id && flags[question.id]) {
+                // Flagged question selalu kuning (bahkan jika sudah dijawab)
+                style += " bg-yellow-400 text-white border-yellow-400";
+              } else if (question.id && answers[question.id]) {
                 // Check if answer is complete based on question type
                 const answer = answers[question.id];
                 const isComplete = question.questionType === 'DISC' 
@@ -339,9 +365,9 @@ export function QuizPage({
                 } else {
                   style += " bg-orange-400 text-white border-orange-400";
                 }
-              } else if (question.id && flags[question.id])
-                style += " bg-yellow-400 text-white border-yellow-400";
-              else style += " bg-gray-100 text-gray-500 border-gray-200";
+              } else {
+                style += " bg-gray-100 text-gray-500 border-gray-200";
+              }
 
               return (
                 <button key={i} className={style} onClick={() => setCurrent(i)}>
@@ -365,13 +391,18 @@ export function QuizPage({
             </div>
           </div>
         </div>
-        <Button
-          onClick={handleFinishClick}
-          className="mt-4 w-full"
-          variant="default"
-        >
-          Finish Test
-        </Button>
+        {(
+          // Sembunyikan tombol Finish untuk DISC/CAAS sampai semua terisi
+          (isDisc || isCaas) ? isAllAnswered() : true
+        ) && (
+          <Button
+            onClick={handleFinishClick}
+            className="mt-4 w-full"
+            variant="default"
+          >
+            Finish Test
+          </Button>
+        )}
       </aside>
 
       {/* Reminder Modal */}
@@ -393,17 +424,19 @@ export function QuizPage({
                   onClick={() => setShowReminder(false)}
                   className="min-w-[100px]"
                 >
-                  Batal
+                  OK
                 </Button>
-                <Button
-                  onClick={() => {
-                    setShowReminder(false);
-                    onFinish();
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white min-w-[140px]"
-                >
-                  Tetap Submit
-                </Button>
+                {!isDisc && !isCaas && (
+                  <Button
+                    onClick={() => {
+                      setShowReminder(false);
+                      onFinish();
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white min-w-[140px]"
+                  >
+                    Tetap Submit
+                  </Button>
+                )}
               </div>
             </div>
           </DialogContent>

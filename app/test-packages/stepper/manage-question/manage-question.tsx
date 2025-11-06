@@ -115,11 +115,12 @@ export default function ManageQuestions({
   /* ========================================================================
      TABS
      ======================================================================== */
+  const getTypeLabel = (t: QuestionType) => (t === "teliti" ? "Fast Accuracy" : t);
   const TABS = useMemo(
     () =>
       allowedTypes.map((t) => ({
         key: t,
-        label: t,
+        label: getTypeLabel(t),
       })),
     [allowedTypes]
   );

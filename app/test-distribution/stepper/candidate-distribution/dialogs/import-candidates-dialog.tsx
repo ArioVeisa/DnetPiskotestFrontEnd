@@ -85,7 +85,7 @@ export default function ImportCandidatesDialog({
               1. Download Template
             </h3>
             <p className="text-sm text-blue-700 mb-3">
-              Download template Excel untuk format yang benar
+              Download Candidate Excel Template (proper format)
             </p>
             <Button
               variant="outline"

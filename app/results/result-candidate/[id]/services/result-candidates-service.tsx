@@ -86,6 +86,7 @@ export interface CandidateResult {
   name: string;
   position: string;
   caas: string;
+  completedAt?: string; // Tanggal completed test
   adaptability: {
     score: number;
     correctAnswers: number;
@@ -567,6 +568,7 @@ export const resultCandidatesService = {
         name: candidate.name,
         position: candidate.position,
         caas: caas?.category ?? "Medium Adaptability",
+        completedAt: candidate_test.completed_at || undefined,
 
         adaptability: {
           score: teliti?.score ?? 0,

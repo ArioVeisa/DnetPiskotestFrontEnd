@@ -162,11 +162,13 @@ export function useCandidateTest(token: string) {
           "Option C",
           "Option D",
         ];
+        const optionIds = q.question_detail?.options?.map(opt => String(opt.id)) || [];
         
         return {
           id: q.id, // Add the test_question id
           text: questionText,
           options: options,
+          optionIds: optionIds,
           questionType: questionType
         };
       }
@@ -220,7 +222,7 @@ export function useCandidateTest(token: string) {
           if (answer) {
             const submitAnswer: SubmitAnswer = {
               section_id: section.section_id,
-              question_id: question.question_id
+              question_id: question.id // Kirim test_question.id untuk konsistensi dengan backend
             };
 
             // Handle different question types

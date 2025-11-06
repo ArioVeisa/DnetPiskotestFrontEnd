@@ -40,11 +40,18 @@ export function useCandidates() {
     fetchCandidates();
   }, [fetchCandidates]);
 
-  return { 
-    candidates, 
-    loading, 
-    error, 
-    refetch: fetchCandidates, 
-    deleteCandidate 
+  const updateLocalCandidate = (updated: Candidate) => {
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+    );
+  };
+
+  return {
+    candidates,
+    loading,
+    error,
+    refetch: fetchCandidates,
+    deleteCandidate,
+    updateLocalCandidate,
   };
 }

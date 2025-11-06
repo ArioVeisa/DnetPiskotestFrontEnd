@@ -18,6 +18,7 @@ export interface Distribution {
   endDate: string | null;
   candidatesTotal: number;
   status: DistributionStatus;
+  iconPath?: string | null; // Icon dari test package
 }
 
 const STORAGE_KEY = "test_distributions";
@@ -59,6 +60,8 @@ export async function fetchDistributions(): Promise<Distribution[]> {
         started_date: string;
         candidates_count: number;
         status: string;
+        icon_path?: string | null;
+        test_package?: { icon_path?: string | null } | null;
       };
       return {
         id: data.id,
@@ -69,7 +72,8 @@ export async function fetchDistributions(): Promise<Distribution[]> {
         candidatesTotal: data.candidates_count,
         status: data.status === 'Completed' ? 'Completed' : 
                 data.status === 'In Progress' ? 'Ongoing' : 
-                data.status === 'Scheduled' ? 'Scheduled' : 'Draft'
+                data.status === 'Scheduled' ? 'Scheduled' : 'Draft',
+        iconPath: data.icon_path || data.test_package?.icon_path || null
       };
     });
     

@@ -65,6 +65,67 @@ export function SectionAnnouncement({
 
   const info = getSectionInfo(sectionType);
 
+  const renderGuidelines = () => {
+    const type = sectionType.toLowerCase();
+    if (type === 'disc') {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="text-sm text-yellow-800">
+            <p className="font-semibold mb-2">Langkah - langkah:</p>
+            <ol className="list-decimal ml-5 space-y-1 text-xs">
+              <li>Dari 4 pernyataan, pilih satu yang PALING menggambarkan diri Anda (P).</li>
+              <li>Pilih satu lagi yang PALING TIDAK menggambarkan diri Anda (K).</li>
+            </ol>
+            <div className="mt-3">
+              <p className="font-semibold mb-1">Poin Penting!</p>
+              <ul className="space-y-1 text-xs">
+                <li>• Setiap nomor harus memiliki tepat satu pilihan (P) dan satu pilihan (K).</li>
+                <li>• (P) dan (K) tidak boleh pada pernyataan yang sama.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (type === 'caas') {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="text-sm text-yellow-800">
+            <p className="font-semibold mb-2">Poin Penting!</p>
+            <p className="text-xs mb-2">Tidak ada jawaban benar atau salah. Pilih sesuai yang paling Anda rasakan.</p>
+            <p className="font-semibold mb-2">Gunakan 5 tingkat skala berikut:</p>
+            <ul className="space-y-1 text-xs">
+              <li>• 5 - Paling Kuat (PK)</li>
+              <li>• 4 - Sangat Kuat (SK)</li>
+              <li>• 3 - Kuat (K)</li>
+              <li>• 2 - Cukup Kuat (CK)</li>
+              <li>• 1 - Tidak Kuat (TK)</li>
+            </ul>
+          </div>
+        </div>
+      );
+    }
+    // teliti / fast accuracy
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="text-sm text-yellow-800">
+          <p className="font-semibold mb-2">Tugas Utama</p>
+          <p className="text-xs mb-2">Bandingkan data kiri dan kanan. Tentukan apakah SAMA PERSIS atau TIDAK SAMA.</p>
+          <ul className="space-y-1 text-xs mb-3">
+            <li>• Pilih "T" (True) jika keduanya Sama Persis</li>
+            <li>• Pilih "F" (False) jika ada perbedaan sekecil apa pun</li>
+          </ul>
+          <p className="font-semibold mb-1">Aturan Penting!</p>
+          <ul className="space-y-1 text-xs">
+            <li>• Tes dibatasi waktu, waktu berjalan otomatis saat mulai.</li>
+            <li>• Setiap jawaban bersifat final dan tidak bisa diubah.</li>
+            <li>• Soal disajikan dalam satu halaman scrolling untuk efisiensi.</li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <Card className={`w-full max-w-2xl ${info.color}`}>
@@ -119,21 +180,8 @@ export function SectionAnnouncement({
             </Button>
           </div>
 
-          {/* Instructions */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <p className="font-medium mb-1">Test Guidelines:</p>
-                <ul className="space-y-1 text-xs">
-                  <li>• Read each question carefully</li>
-                  <li>• Choose the answer that best fits you</li>
-                  <li>• You can use the Mark for Review button to flag questions</li>
-                  <li>• Make sure all questions are answered before time runs out</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          {/* Instructions by Type */}
+          {renderGuidelines()}
         </CardContent>
       </Card>
     </div>

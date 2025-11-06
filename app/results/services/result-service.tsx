@@ -229,21 +229,20 @@ export const resultsService = {
    */
   async downloadResult(candidateId: string): Promise<void> {
     try {
-      const token = localStorage.getItem("token");
-      
       console.log(`📄 Downloading PDF for candidate ${candidateId}...`);
       
-      // Coba ambil data kandidat terlebih dahulu
-      const result = await this.getById(candidateId);
-      if (!result) {
-        throw new Error("Data kandidat tidak ditemukan");
-      }
+      // Import resultCandidatesService untuk mendapatkan data lengkap
+      const { resultCandidatesService } = await import("../result-candidate/[id]/services/result-candidates-service");
+      const { generateDownloadContent } = await import("../utils/generate-download-content");
       
-      // Generate HTML content untuk PDF
-      const htmlContent = this.generatePDFContent(result);
+      // Ambil data lengkap kandidat (sama dengan yang ditampilkan di halaman result candidate)
+      const candidateData = await resultCandidatesService.getCandidateById(candidateId);
+      
+      // Generate HTML content untuk PDF menggunakan fungsi yang sama dengan halaman result candidate
+      const htmlContent = generateDownloadContent(candidateData);
       
       // Buat file PDF menggunakan html2pdf
-      await this.generatePDF(htmlContent, result.name);
+      await this.generatePDF(htmlContent, candidateData.name);
       
       console.log(`✅ PDF downloaded for candidate ${candidateId}`);
       

@@ -97,7 +97,7 @@ export default function TestTable({
                           TYPE_STYLE[type] || "bg-gray-100 text-gray-500"
                         )}
                       >
-                        {type}
+                        {type === "teliti" ? "Fast Accuracy" : type}
                       </span>
                     ))}
                   </div>
@@ -202,7 +202,7 @@ export default function TestTable({
                         TYPE_STYLE[type] || "bg-gray-100 text-gray-500"
                       )}
                     >
-                      {type.charAt(0)}
+                      {(type === "teliti" ? "Fast Accuracy" : type).charAt(0)}
                     </span>
                   ))}
                 </div>

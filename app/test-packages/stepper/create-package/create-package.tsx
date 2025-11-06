@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TEST_TYPES, useCreateNewTestForm } from "./hooks/use-create-package";
 import { cn } from "@/lib/utils";
-import { Check, ClipboardList } from "lucide-react";
+import { Check, ClipboardList, ArrowLeft } from "lucide-react";
 import { ICON_MAP, IconKey } from "@/lib/icon-mapping";
 import { QuestionType } from "../manage-question/service/manage-question-service";
 
@@ -33,6 +33,7 @@ type Props = {
     testName: string;
     selectedTypes: string[];
   }) => void;
+  onBack?: () => void;
   onCancelEdit?: () => void;
 };
 
@@ -43,6 +44,7 @@ export default function CreateNewTest({
   isEditMode = false,
   defaultValues,
   onNext,
+  onBack,
   onCancelEdit,
 }: Props) {
   const {
@@ -150,7 +152,7 @@ export default function CreateNewTest({
                 className={cn(
                   "relative flex items-center justify-center px-8 py-3 min-w-[110px] rounded-xl border transition-all bg-white shadow-sm focus:outline-none font-bold text-base",
                   selected
-                    ? TYPE_COLOR_MAP[t.label]
+                    ? TYPE_COLOR_MAP[t.value]
                     : "border-gray-200 bg-white text-gray-700"
                 )}
                 onClick={() => handleTypeToggle(t.value)}
@@ -160,9 +162,9 @@ export default function CreateNewTest({
                   <span className="absolute top-2 right-2">
                     <Check
                       className={
-                        t.label === "DISC"
+                        t.value === "DISC"
                           ? "w-4 h-4 text-blue-500"
-                          : t.label === "CAAS"
+                          : t.value === "CAAS"
                           ? "w-4 h-4 text-yellow-500"
                           : "w-4 h-4 text-green-500"
                       }
@@ -177,14 +179,27 @@ export default function CreateNewTest({
 
       {/* Tombol Aksi */}
       <div className="flex justify-end gap-2 mt-7">
-        {isEditMode && (
-          <Button variant="outline" type="button" onClick={onCancelEdit}>
-            Cancel
+        <div className="flex gap-2">
+          {onBack && (
+            <Button
+              variant="outline"
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          )}
+          {isEditMode && (
+            <Button variant="outline" type="button" onClick={onCancelEdit}>
+              Cancel
+            </Button>
+          )}
+          <Button type="button" onClick={handleNext} disabled={!testName}>
+            {isEditMode ? "Next (Update)" : "Next"}
           </Button>
-        )}
-        <Button type="button" onClick={handleNext} disabled={!testName}>
-          {isEditMode ? "Next (Update)" : "Next"}
-        </Button>
+        </div>
       </div>
 
       {error && <div className="text-red-500 mt-3">{error}</div>}

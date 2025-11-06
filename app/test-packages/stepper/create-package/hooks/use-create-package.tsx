@@ -26,7 +26,7 @@ export type CreateNewTestResult = {
 export const TEST_TYPES = [
   { label: "DISC", value: "DISC", icon: "briefcase" },
   { label: "CAAS", value: "CAAS", icon: "graduation-cap" },
-  { label: "teliti", value: "teliti", icon: "users" },
+  { label: "Fast Accuracy", value: "teliti", icon: "users" },
 ];
 
 export const TEMPLATES = [

@@ -5,6 +5,7 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useResultCandidates } from "./hooks/use-result-candidates";
+import { CandidateResult } from "./services/result-candidates-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ArrowUpRight } from "lucide-react";
 import { Chart, ChartConfiguration } from "chart.js/auto";
 import { Download } from "lucide-react";
+import { generateDownloadContent } from "../../utils/generate-download-content";
 
 export default function ResultCandidatePage() {
   const params = useParams();
@@ -490,15 +492,38 @@ export default function ResultCandidatePage() {
 
         <Button
           className="px-12 py-4 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white justify-end"
-          onClick={() => {
-            // Ganti dengan logika download kamu
-            const element = document.createElement("a");
-            const file = new Blob(["Report data here"], { type: "text/plain" });
-            element.href = URL.createObjectURL(file);
-            element.download = `${data.name}-report.txt`;
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
+          onClick={async () => {
+            try {
+              // Generate PDF content yang sama dengan view result
+              const htmlContent = generateDownloadContent(data);
+              
+              // Import html2pdf secara dinamis
+              const html2pdf = (await import('html2pdf.js')).default;
+              
+              const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `${data.name.replace(/\s+/g, '_')}_psychotest_report.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                  scale: 2,
+                  useCORS: false,
+                  allowTaint: false,
+                  backgroundColor: '#ffffff',
+                },
+                jsPDF: { 
+                  unit: 'in', 
+                  format: 'a4', 
+                  orientation: 'portrait',
+                  compress: true
+                },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+              };
+
+              await html2pdf().set(opt).from(htmlContent).save();
+            } catch (error) {
+              console.error("Error downloading report:", error);
+              alert("Failed to download report. Please try again.");
+            }
           }}
         >
           <Download />

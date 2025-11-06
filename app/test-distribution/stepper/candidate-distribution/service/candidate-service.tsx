@@ -14,6 +14,7 @@ export interface Candidate {
   department: string;
   created_at: string;
   updated_at: string;
+  candidate_test_id?: number; // id kandidat pada tabel candidate_tests (untuk resend)
 }
 
 export interface CreateCandidatePayload {
@@ -85,6 +86,7 @@ export const candidateService = {
       console.log(`📋 Loading test distribution candidates for distribution ${distributionId}`);
       const res = await api.get(`/candidates/test-distribution-candidates?test_distribution_id=${distributionId}`);
       console.log(`✅ Test distribution candidates loaded:`, res.data.data);
+      // Biarkan field tambahan (candidate_test_id) ikut terlempar ke frontend jika tersedia
       return res.data.data ?? res.data;
     } catch (error) {
       console.error(`❌ Error loading test distribution candidates:`, error);
@@ -166,6 +168,26 @@ export const candidateService = {
         throw error.response?.data?.message || "Gagal menghapus kandidat";
       }
       throw "Terjadi error tidak dikenal";
+    }
+  },
+
+  async resendInvitations(distributionId: number, candidateIds: number[]): Promise<{ success: boolean; sent: number }>{
+    try {
+      // Endpoint baru khusus resend: menggunakan test_distribution_candidate_id
+      const payload = {
+        test_distribution_id: distributionId,
+        candidate_ids: candidateIds, // ini adalah test_distribution_candidate_id
+      };
+      
+      const res = await api.post('/candidate-tests/resend-invitations', payload);
+      const sent = res.data?.sent ?? 0;
+      return { success: sent > 0, sent };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Gagal mengirim ulang email undangan';
+        throw message;
+      }
+      throw 'Terjadi error tidak dikenal';
     }
   },
 };

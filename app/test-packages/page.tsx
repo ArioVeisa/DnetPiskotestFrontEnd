@@ -142,6 +142,7 @@ export default function TestManagementPage() {
                         }
                       : undefined
                   }
+                  onBack={handleBack}
                   onNext={async (data) => {
                     try {
                       const payloadTypes = data.selectedTypes.map((t, idx) => ({

@@ -15,6 +15,7 @@ import { CandidateEditDialog } from "./candidates-dialog";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useCandidates } from "../hooks/use-candidates";
 import TableSkeleton from "./table-skeleton";
+import { candidatesService } from "../services/candidates-service";
 
 /* =======================================
    STYLE DEFINITIONS
@@ -40,6 +41,7 @@ export function CandidateTable() {
     loading,
     error,
     deleteCandidate: deleteCandidateFn,
+    updateLocalCandidate,
   } = useCandidates();
 
   const [editCandidate, setEditCandidate] = useState<
@@ -71,6 +73,22 @@ export function CandidateTable() {
       </div>
     );
   }
+
+  const emptyCandidate: Candidate & { phone: string } = {
+    id: "",
+    name: "",
+    nik: "",
+    phoneNumber: "",
+    email: "",
+    position: "",
+    birthDate: "",
+    gender: "",
+    department: "",
+    createdAt: "",
+    updatedAt: "",
+    status: "Active",
+    phone: "",
+  };
 
   return (
     <div>
@@ -134,7 +152,7 @@ export function CandidateTable() {
                       className="min-w-[140px] rounded-xl py-2 px-1 shadow-lg border border-gray-100"
                     >
                       <DropdownMenuItem
-                        onSelect={() => setEditCandidate({ ...c, phone: "" })}
+                        onSelect={() => setEditCandidate({ ...c, phone: c.phoneNumber })}
                       >
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
@@ -181,7 +199,7 @@ export function CandidateTable() {
                   className="min-w-[120px] bg-white rounded-md shadow-md"
                 >
                   <DropdownMenuItem
-                    onSelect={() => setEditCandidate({ ...c, phone: "" })}
+                    onSelect={() => setEditCandidate({ ...c, phone: c.phoneNumber })}
                   >
                     <Edit className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
@@ -255,20 +273,60 @@ export function CandidateTable() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      {editCandidate && (
-        <CandidateEditDialog
-          candidate={editCandidate}
-          open={true}
-          onOpenChange={(open: boolean) => {
-            if (!open) setEditCandidate(null);
-          }}
-          onSave={(updated) => {
-            // console.log("Updated candidate:", updated); // Debug logging removed
-            setEditCandidate(null);
-          }}
-        />
-      )}
+      {/* Edit Dialog (selalu mounted; kontrol via open) */}
+      <CandidateEditDialog
+        candidate={editCandidate ?? emptyCandidate}
+        open={!!editCandidate}
+        onOpenChange={(open: boolean) => {
+          if (!open) setEditCandidate(null);
+        }}
+        onSave={async (updated) => {
+          // Tutup dialog lebih dulu agar tidak terasa freeze saat request berjalan
+          setEditCandidate(null);
+          try {
+            // Optimistic update ke UI
+            updateLocalCandidate({
+                id: updated.id,
+                name: updated.name,
+                nik: updated.nik,
+                phoneNumber: updated.phone,
+                email: updated.email,
+                position: updated.position,
+                birthDate: updated.birthDate,
+                gender: updated.gender,
+                department: updated.department,
+              createdAt: updated.createdAt,
+              updatedAt: new Date().toISOString(),
+                status: updated.status,
+            } as any);
+
+            // Persist ke DB (sinkronkan hasil akhir)
+            const saved = await candidatesService.updateCandidate({
+              id: updated.id,
+              name: updated.name,
+              nik: updated.nik,
+              phoneNumber: updated.phone,
+              email: updated.email,
+              position: updated.position,
+              birthDate: updated.birthDate,
+              gender: updated.gender,
+              department: updated.department,
+              createdAt: updated.createdAt,
+              updatedAt: updated.updatedAt,
+              status: updated.status,
+            } as any);
+
+            updateLocalCandidate(saved);
+            // Hard refresh untuk memastikan state bersih dan hindari efek freeze
+            setTimeout(() => {
+              window.location.reload();
+            }, 50);
+            } catch (e) {
+              console.error(e);
+              alert(typeof e === "string" ? e : "Gagal menyimpan perubahan kandidat");
+          }
+        }}
+      />
 
       {/* Confirm Delete */}
       <ConfirmDialog

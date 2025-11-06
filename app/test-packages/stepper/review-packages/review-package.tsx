@@ -92,7 +92,7 @@ const TEST_ITEM_MAP: Record<
   },
   teliti: {
     key: "teliti",
-    title: "Tes Ketelitian",
+    title: "Fast Accuracy",
     bgColor: "bg-green-50",
     borderColor: "border-green-200",
     textColor: "text-green-700",

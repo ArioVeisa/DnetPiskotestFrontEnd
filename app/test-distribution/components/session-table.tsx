@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import EditSessionDialog from "./edit-session-dialog";
 import { Distribution } from "../services/test-distribution-service";
+import { ICON_MAP } from "@/lib/icon-mapping";
 
 /* ==========================
    ICONS UNTUK CATEGORY
@@ -164,11 +165,17 @@ export default function DistributionTable() {
                 {/* Test Name */}
                 <td className="px-6 py-4 flex items-center gap-3">
                   <span className="w-12 h-12 flex items-center justify-center rounded-full bg-white shadow">
-                    {CATEGORY_ICON[d.category] ?? CATEGORY_ICON["Default"]}
+                    {d.iconPath && d.iconPath in ICON_MAP ? (
+                      <span className="text-blue-400">
+                        {React.cloneElement(ICON_MAP[d.iconPath as keyof typeof ICON_MAP] as React.ReactElement, { size: 22 })}
+                      </span>
+                    ) : (
+                      CATEGORY_ICON[d.category] ?? CATEGORY_ICON["Default"]
+                    )}
                   </span>
                   <div>
                     <div className="font-semibold text-gray-900 truncate">
-                      {d.testName}
+                      {d.testName.split(" - ")[0]}
                     </div>
                     <div className="text-xs text-gray-500">{d.category}</div>
                   </div>
@@ -241,11 +248,17 @@ export default function DistributionTable() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow">
-                  {CATEGORY_ICON[d.category] ?? CATEGORY_ICON["Default"]}
+                  {d.iconPath && d.iconPath in ICON_MAP ? (
+                    <span className="text-blue-400">
+                      {React.cloneElement(ICON_MAP[d.iconPath as keyof typeof ICON_MAP] as React.ReactElement, { size: 20 })}
+                    </span>
+                  ) : (
+                    CATEGORY_ICON[d.category] ?? CATEGORY_ICON["Default"]
+                  )}
                 </span>
                 <div>
                   <div className="font-semibold text-gray-900 truncate">
-                    {d.testName}
+                    {d.testName.split(" - ")[0]}
                   </div>
                   <div className="text-xs text-gray-500">{d.category}</div>
                 </div>
@@ -352,7 +365,15 @@ export default function DistributionTable() {
       {/* Edit Session Dialog */}
       <EditSessionDialog
         open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
+        onOpenChange={(open: boolean) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            // Auto refresh untuk memastikan state bersih dan menghindari freeze overlay
+            setTimeout(() => {
+              window.location.reload();
+            }, 50);
+          }
+        }}
         session={selectedSession}
         onSave={handleSaveEdit}
         saving={saving}

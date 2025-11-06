@@ -32,19 +32,6 @@ export default function ResultsPage() {
     }
   };
 
-  // ✅ Handler to export all results (temporary — can add backend endpoint)
-  const handleExportAll = async () => {
-    try {
-      // Currently no exportAll endpoint in service
-      // You can replace with other function if available in backend
-      const allResults = await resultsService.getAll();
-      // console.log("✅ Semua hasil kandidat berhasil diambil:", allResults); // Debug logging removed
-      alert("Export all successful (simulation).");
-    } catch (error) {
-      // console.error("❌ Gagal export semua hasil:", error); // Error logging removed
-    }
-  };
-
   // ✅ Handler to delete individual test results
   const handleDelete = async (candidateId: string) => {
     try {
@@ -74,7 +61,6 @@ export default function ResultsPage() {
           <TitleBar
             title="Psychotest Results"
             subtitle="View and analyze psychometric test results"
-            onExportAll={handleExportAll}
           />
 
           {loading ? (

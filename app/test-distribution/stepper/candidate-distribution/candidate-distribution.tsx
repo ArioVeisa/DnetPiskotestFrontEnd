@@ -270,7 +270,7 @@ export default function CandidatesDistributions({
             className="border-green-500 text-green-600 hover:bg-green-50"
           >
             <Upload className="w-4 h-4 mr-2" />
-            Import Excel
+            Import Candidate
           </Button>
           <Button
             onClick={() => {

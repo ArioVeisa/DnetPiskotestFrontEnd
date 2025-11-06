@@ -35,10 +35,6 @@ export function DiscQuestionCard({
   canGoNext,
 }: DiscQuestionCardProps) {
   const handleMostSelect = (optionId: string) => {
-    // Prevent changes if answer is already selected
-    if (answer?.most && answer?.least) {
-      return;
-    }
     const newAnswer: DiscAnswer = {
       most: optionId,
       least: answer?.least || ""
@@ -47,10 +43,6 @@ export function DiscQuestionCard({
   };
 
   const handleLeastSelect = (optionId: string) => {
-    // Prevent changes if answer is already selected
-    if (answer?.most && answer?.least) {
-      return;
-    }
     // Validasi: most dan least tidak boleh sama
     if (answer?.most === optionId) {
       return;
@@ -114,14 +106,12 @@ export function DiscQuestionCard({
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleMostSelect(option.id)}
-                      disabled={!!(answer?.most && answer?.least)} // Disable once both are selected
                       className={`
                         w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
                         ${isMostSelected(option.id)
                           ? "bg-blue-500 border-blue-500 text-white"
                           : "border-gray-300 hover:border-blue-400"
                         }
-                        ${answer?.most && answer?.least ? "opacity-50 cursor-not-allowed" : ""}
                       `}
                     >
                       {isMostSelected(option.id) && (
@@ -138,9 +128,9 @@ export function DiscQuestionCard({
                           ? "bg-red-500 border-red-500 text-white"
                           : "border-gray-300 hover:border-red-400"
                         }
-                        ${answer?.most === option.id || (answer?.most && answer?.least) ? "opacity-50 cursor-not-allowed" : ""}
+                        ${answer?.most === option.id ? "opacity-50 cursor-not-allowed" : ""}
                       `}
-                      disabled={!!(answer?.most === option.id || (answer?.most && answer?.least))}
+                      disabled={!!(answer?.most === option.id)}
                     >
                       {isLeastSelected(option.id) && (
                         <span className="w-2 h-2 rounded-full bg-white" />

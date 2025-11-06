@@ -43,9 +43,15 @@ export function CandidateEditDialog({
     phone: "",
   });
 
-  // Reset form when candidate changes
+  // Prefill form dengan nilai kandidat saat dialog dibuka
   useEffect(() => {
-    setForm({ nik: "", name: "", email: "", phone: "" });
+    if (!candidate) return;
+    setForm({
+      nik: candidate.nik || "",
+      name: candidate.name || "",
+      email: candidate.email || "",
+      phone: candidate.phone || "",
+    });
   }, [candidate]);
 
   const FIELDS: {

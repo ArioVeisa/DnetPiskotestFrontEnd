@@ -73,6 +73,53 @@ export const candidatesService = {
     }
   },
 
+  async updateCandidate(updated: Candidate): Promise<Candidate> {
+    try {
+      const token = localStorage.getItem("token");
+      const payload = {
+        name: updated.name,
+        nik: updated.nik,
+        phone_number: updated.phoneNumber,
+        email: updated.email,
+        position: updated.position,
+        birth_date: updated.birthDate,
+        gender: updated.gender,
+        department: updated.department,
+      };
+
+      const res = await api.put<CandidateApiResponse>(
+        `/candidates/${updated.id}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const c = res.data;
+      return {
+        id: c.id,
+        name: c.name,
+        nik: c.nik,
+        phoneNumber: c.phone_number,
+        email: c.email,
+        position: c.position,
+        birthDate: c.birth_date,
+        gender: c.gender,
+        department: c.department,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const data = error.response?.data as any;
+        let message: string;
+        if (typeof data === "string") message = data;
+        else if (data?.message) message = data.message;
+        else message = "Gagal memperbarui kandidat!";
+        throw message;
+      }
+      throw "Terjadi error tidak dikenal saat memperbarui kandidat";
+    }
+  },
+
   async deleteCandidate(id: string): Promise<boolean> {
     try {
       const token = localStorage.getItem("token");

@@ -20,6 +20,15 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Distribution } from "../services/test-distribution-service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { candidateService, type Candidate } from "../stepper/candidate-distribution/service/candidate-service";
 
 type Props = {
   open: boolean;
@@ -45,6 +54,14 @@ export default function EditSessionDialog({
     status: "Draft" as "Draft" | "Scheduled" | "Ongoing" | "Completed" | "Expired",
   });
 
+  // Resend email state
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]); // berisi candidate_test_id jika ada
+  const [sending, setSending] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("Invitation email has been resent.");
+
   // Populate form when session changes
   useEffect(() => {
     if (session) {
@@ -54,6 +71,18 @@ export default function EditSessionDialog({
         endDate: session.endDate || "",
         status: session.status || "Draft",
       });
+      (async () => {
+        try {
+          setLoadingCandidates(true);
+          const list = await candidateService.getTestDistributionCandidates(session.id);
+          setCandidates(list ?? []);
+          setSelectedIds([]);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoadingCandidates(false);
+        }
+      })();
     }
   }, [session]);
 
@@ -201,7 +230,89 @@ export default function EditSessionDialog({
             </Button>
           </div>
         </form>
+
+        {/* Resend Email Section */}
+        <div className="mt-4 space-y-3">
+          <div className="font-medium">Resend Invitations</div>
+          <div className="text-xs text-muted-foreground">Pilih kandidat yang tidak menerima email untuk kirim ulang.</div>
+          <div className="max-h-40 overflow-auto rounded border">
+            {loadingCandidates ? (
+              <div className="p-3 text-sm text-muted-foreground">Loading candidates...</div>
+            ) : candidates.length === 0 ? (
+              <div className="p-3 text-sm text-muted-foreground">Belum ada kandidat pada sesi ini.</div>
+            ) : (
+              <ul className="divide-y">
+                {candidates.map((c) => {
+                  // Gunakan test_distribution_candidate_id (c.id) untuk resend
+                  const key = c.id; // ini adalah test_distribution_candidate_id
+                  const checked = selectedIds.includes(key);
+                  return (
+                    <li key={c.id} className="flex items-center gap-2 p-2">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          setSelectedIds((prev) =>
+                            e.target.checked ? [...prev, key] : prev.filter((id) => id !== key)
+                          );
+                        }}
+                      />
+                      <div className="text-sm">
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-muted-foreground text-xs">{c.email}</div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!session || selectedIds.length === 0 || sending}
+              onClick={async () => {
+                if (!session) return;
+                try {
+                  setSending(true);
+                  await candidateService.resendInvitations(session.id, selectedIds);
+                  setSelectedIds([]);
+                  setSuccessMessage("Invitation email has been resent.");
+                  setSuccessOpen(true);
+                } catch (e) {
+                  console.error(e);
+                  setSuccessMessage(
+                    typeof e === "string" ? e : "Failed to resend invitation."
+                  );
+                  setSuccessOpen(true);
+                } finally {
+                  setSending(false);
+                }
+              }}
+            >
+              {sending ? "Sending..." : "Resend Email"}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
+      {/* Success Popup */}
+      <AlertDialog open={successOpen} onOpenChange={(open) => {
+        setSuccessOpen(open);
+        if (!open) {
+          // close parent dialog to trigger reload in parent
+          onOpenChange(false);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{successMessage}</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

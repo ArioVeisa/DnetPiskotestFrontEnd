@@ -10,6 +10,7 @@ export interface Question {
   id?: number; // test_question id
   text: string;
   options: string[];
+  optionIds?: string[]; // mapping id untuk non-DISC (CAAS/teliti)
   questionType?: string; // DISC, CAAS, teliti
   discOptions?: DiscOption[]; // Untuk DISC format
 }
@@ -65,7 +66,7 @@ export function QuestionCard({
         <h3 className="font-medium mb-4">{q.text}</h3>
 
         <RadioGroup
-          value={typeof answers[current] === 'string' ? answers[current] : ""}
+          value={typeof answers[current] === 'string' ? (answers[current] as string) : ""}
           onValueChange={(v) => onAnswer(current, v)}
           className="space-y-2"
         >
