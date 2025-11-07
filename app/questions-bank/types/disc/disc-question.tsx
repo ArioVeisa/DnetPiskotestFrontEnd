@@ -133,7 +133,7 @@ export default function CaasQuestionsStep({
   };
 
   return (
-    <div className="w-full px-3 sm:px-6 md:px-8 lg:px-16 py-6 sm:py-8">
+    <div className="w-full px-3 sm:px-6 md:px-8 lg:px-16 py-6 sm:py-8 pb-24">
       {/* Loading state */}
       {loading && (
         <div className="mb-4 text-center text-sm text-muted-foreground">
@@ -295,14 +295,8 @@ export default function CaasQuestionsStep({
         )}
       </div>
 
-      {/* FOOTER */}
-      <div
-        className={`border-t bg-white py-3 px-8 flex justify-end gap-2 transition-all duration-300 ${
-          isScrolled
-            ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
-            : "relative mt-8"
-        }`}
-      >
+      {/* FOOTER - Always fixed at bottom */}
+      <div className="fixed bottom-0 left-[260px] right-0 border-t bg-white py-3 px-8 flex justify-end gap-2 shadow-md z-40">
         <Button variant="ghost" type="button" onClick={onCancel}>
           Back
         </Button>

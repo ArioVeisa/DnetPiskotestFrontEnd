@@ -78,7 +78,7 @@ function mapQuestion(raw: QuestionResponse): Question {
   const rawOptions = detail?.options ?? raw.options ?? [];
 
   return {
-    id: String(raw.question_id ?? raw.id),
+    id: String(raw.id), // Gunakan test_question.id untuk delete, bukan question_id
     type: raw.question_type,
     question_text: qText, // ✅ selalu ada isi
     category,
@@ -197,18 +197,9 @@ export const listQuestionService = {
     questionId: number;
     token: string;
   }): Promise<void> {
-    const payload = {
-      questions: [
-        {
-          test_id: params.testId,
-          section_id: params.sectionId,
-          question_id: params.questionId,
-        },
-      ],
-    };
-
-    await api.delete("/manage-questions", {
-      data: payload,
+    // Endpoint yang benar: DELETE /manage-questions/{section_id}/{id}
+    // questionId adalah test_question.id (id dari tabel test_questions)
+    await api.delete(`/manage-questions/${params.sectionId}/${params.questionId}`, {
       headers: { Authorization: `Bearer ${params.token}` },
     });
   },

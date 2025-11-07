@@ -191,11 +191,6 @@ export default function CreateNewTest({
               Back
             </Button>
           )}
-          {isEditMode && (
-            <Button variant="outline" type="button" onClick={onCancelEdit}>
-              Cancel
-            </Button>
-          )}
           <Button type="button" onClick={handleNext} disabled={!testName}>
             {isEditMode ? "Next (Update)" : "Next"}
           </Button>

@@ -34,13 +34,13 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     try {
       const raw = localStorage.getItem(storageKey);
       const arr: unknown[] = raw ? JSON.parse(raw) : [];
-      return arr.map((c) => ({
-        id: -Date.now() + Math.floor(Math.random() * 1000),
+      return arr.map((c: any) => ({
+        id: c.id ?? (-Date.now() + Math.floor(Math.random() * 1000)), // Gunakan ID yang tersimpan jika ada
         ...(typeof c === 'object' && c !== null ? c : {}),
         localStatus: "Pending",
-        isDraft: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        isDraft: c.isDraft ?? true, // Gunakan status draft yang tersimpan
+        created_at: c.created_at ?? new Date().toISOString(),
+        updated_at: c.updated_at ?? new Date().toISOString(),
       })) as CandidateWithStatus[];
     } catch {
       return [];
@@ -49,18 +49,19 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
 
   const writeDrafts = (items: CandidateWithStatus[]) => {
     if (!storageKey) return;
-    const payload = items
-      .filter((c) => c.isDraft)
-      .map((c) => ({
-        nik: c.nik,
-        name: c.name,
-        phone_number: c.phone_number,
-        email: c.email,
-        position: c.position,
-        birth_date: c.birth_date,
-        gender: (c.gender as "male" | "female") ?? "male",
-        department: c.department,
-      }));
+    // Simpan semua candidates (draft dan non-draft) dengan ID untuk backup
+    const payload = items.map((c) => ({
+      id: c.id, // Simpan ID untuk memastikan data tidak hilang
+      nik: c.nik,
+      name: c.name,
+      phone_number: c.phone_number,
+      email: c.email,
+      position: c.position,
+      birth_date: c.birth_date,
+      gender: (c.gender as "male" | "female") ?? "male",
+      department: c.department,
+      isDraft: c.isDraft ?? false, // Simpan status draft
+    }));
     localStorage.setItem(storageKey, JSON.stringify(payload));
   };
 
@@ -92,8 +93,13 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     if (testId && options?.autoLoad !== false) {
       const drafts = readDrafts();
       if (drafts.length > 0) {
+        // Load dari localStorage (termasuk yang sudah di-update)
         setCandidates(drafts);
-        console.log(`✅ Loaded ${drafts.length} draft candidates from localStorage`);
+        console.log(`✅ Loaded ${drafts.length} candidates from localStorage (including updated ones)`);
+      } else {
+        // Jika tidak ada draft, coba load dari backend (jika sudah ada test distribution)
+        // Tapi di step 2, belum ada test distribution, jadi skip
+        console.log(`ℹ️ No draft candidates found for test ${testId}`);
       }
     }
   }, [testId, options?.autoLoad]);
@@ -205,8 +211,22 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
             localStatus: current?.localStatus || "Pending",
             isDraft: false,
           } as CandidateWithStatus;
-          setCandidates((prev) => prev.map((c) => (c.id === payload.id ? withStatus : c)));
+          
+          // Update state dengan data terbaru dari backend
+          const updatedList = candidates.map((c) => (c.id === payload.id ? withStatus : c));
+          setCandidates(updatedList);
+          
+          // Simpan semua candidates (termasuk yang sudah di-update) ke localStorage
+          // untuk memastikan data tidak hilang saat refresh
+          if (storageKey) {
+            // Pastikan data tersimpan dengan benar
+            writeDrafts(updatedList);
+            console.log(`💾 Saved ${updatedList.length} candidates to localStorage after update`);
+          }
+          
           if (selected?.id === payload.id) setSelected(withStatus);
+          
+          console.log(`✅ Candidate updated in state and localStorage:`, withStatus);
           return withStatus;
         }
       } catch (err) {
@@ -218,7 +238,7 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         setLoading(false);
       }
     },
-    [selected?.id, candidates]
+    [selected?.id, candidates, storageKey]
   );
 
   /** Hapus kandidat */

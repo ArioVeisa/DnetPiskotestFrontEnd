@@ -109,6 +109,9 @@ export default function CandidatesDistributions({
     localStorage.setItem(`sent_all_${testPackageId}`, sentAll.toString());
   }, [sentAll, testPackageId]);
 
+  // State untuk trigger re-render kandidat list saja
+  const [candidateListKey, setCandidateListKey] = useState(0);
+
   // hooks for candidates management
   const {
     candidates,
@@ -120,6 +123,7 @@ export default function CandidatesDistributions({
     updateCandidate,
     removeCandidate,
     refreshAfterAdd,
+    refreshCandidates,
     saveDraftsTo,
     importFromExcel,
     downloadTemplate,
@@ -302,6 +306,7 @@ export default function CandidatesDistributions({
       )}
 
       {/* ===== LIST ===== */}
+      <div key={candidateListKey}>
         {!candidateLoading && candidates.length === 0 ? (
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-400 text-sm">
             <div className="space-y-3">
@@ -433,6 +438,7 @@ export default function CandidatesDistributions({
           </div>
         )
       )}
+      </div>
 
       {/* ===== SESSION SETTINGS ===== */}
       <div className="mb-8">
@@ -553,7 +559,7 @@ export default function CandidatesDistributions({
 
           try {
             console.log('💾 Updating candidate:', selected.id, payload);
-            await updateCandidate({
+            const updated = await updateCandidate({
               id: selected.id, // id diambil dari selected (backend butuh id)
               name: payload.name,
               email: payload.email,
@@ -563,7 +569,12 @@ export default function CandidatesDistributions({
               birth_date: payload.birth_date,
               gender: payload.gender as "male" | "female",
             });
-            console.log('✅ Candidate updated successfully');
+            console.log('✅ Candidate updated successfully:', updated);
+            
+            // Data sudah di-update di state dan localStorage oleh updateCandidate
+            // Trigger re-render kandidat list saja dengan mengubah key
+            setCandidateListKey(prev => prev + 1);
+            
             setDetailOpen(false);
             setSelected(null);
             setError(null); // Clear any errors

@@ -23,6 +23,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import EditSessionDialog from "./edit-session-dialog";
 import { Distribution } from "../services/test-distribution-service";
@@ -59,32 +69,47 @@ export default function DistributionTable() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus test distribution ini?')) {
-      try {
-        console.log('🗑️ Attempting to delete distribution with ID:', id);
-        await remove(id);
-        console.log('✅ Distribution deleted successfully, refreshing data...');
-        await refresh(); // Refresh data setelah delete
-        console.log('✅ Data refreshed successfully');
-      } catch (error: unknown) {
-        console.error('❌ Error deleting distribution:', error);
-        console.error('❌ Error details:', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          response: axios.isAxiosError(error) ? error.response?.data : undefined,
-          status: axios.isAxiosError(error) ? error.response?.status : undefined
-        });
-        
-        // Extract meaningful error message from backend response
-        let errorMessage = 'Unknown error';
-        if (axios.isAxiosError(error) && error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        } else if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-        
-        alert(`Gagal menghapus test distribution: ${errorMessage}`);
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [distributionToDelete, setDistributionToDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteClick = (id: number) => {
+    setDistributionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (distributionToDelete === null) return;
+
+    try {
+      setDeleting(true);
+      console.log('🗑️ Attempting to delete distribution with ID:', distributionToDelete);
+      await remove(distributionToDelete);
+      console.log('✅ Distribution deleted successfully, refreshing page...');
+      
+      // Auto reload page setelah delete berhasil
+      window.location.reload();
+    } catch (error: unknown) {
+      console.error('❌ Error deleting distribution:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: axios.isAxiosError(error) ? error.response?.data : undefined,
+        status: axios.isAxiosError(error) ? error.response?.status : undefined
+      });
+      
+      // Extract meaningful error message from backend response
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      
+      alert(`Gagal menghapus test distribution: ${errorMessage}`);
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setDistributionToDelete(null);
     }
   };
 
@@ -225,7 +250,7 @@ export default function DistributionTable() {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="text-red-500"
-                        onClick={() => handleDelete(d.id)}
+                        onClick={() => handleDeleteClick(d.id)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>
@@ -278,7 +303,7 @@ export default function DistributionTable() {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="text-red-500"
-                    onClick={() => handleDelete(d.id)}
+                    onClick={() => handleDeleteClick(d.id)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
@@ -379,6 +404,28 @@ export default function DistributionTable() {
         saving={saving}
         error={editError}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Penghapusan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus test distribution ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? "Deleting..." : "OK"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

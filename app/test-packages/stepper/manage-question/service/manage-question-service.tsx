@@ -232,18 +232,9 @@ export const manageQuestionService = {
     token: string;
   }): Promise<void> {
     try {
-      const payload = {
-        questions: [
-          {
-            test_id: params.testId,
-            section_id: params.sectionId,
-            question_id: params.questionId,
-          },
-        ],
-      };
-
-      await api.delete("/manage-questions/", {
-        data: payload,
+      // Endpoint yang benar: DELETE /manage-questions/{section_id}/{id}
+      // questionId adalah test_question.id (id dari tabel test_questions)
+      await api.delete(`/manage-questions/${params.sectionId}/${params.questionId}`, {
         headers: { Authorization: `Bearer ${params.token}` },
       });
     } catch (error) {
