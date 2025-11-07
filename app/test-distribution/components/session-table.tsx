@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
   MoreVertical,

@@ -1,7 +1,7 @@
 // app/questions-bank/stepper/type/teliti/teliti-question.tsx
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -78,16 +78,6 @@ export default function CaasQuestionsStep({
     }
   };
 
-  // di atas return, di dalam komponen
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const handleEditSave = async (id: string, data: Omit<StepQuestion, "id">) => {
     try {

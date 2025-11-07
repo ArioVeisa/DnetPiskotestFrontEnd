@@ -34,14 +34,17 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     try {
       const raw = localStorage.getItem(storageKey);
       const arr: unknown[] = raw ? JSON.parse(raw) : [];
-      return arr.map((c: any) => ({
-        id: c.id ?? (-Date.now() + Math.floor(Math.random() * 1000)), // Gunakan ID yang tersimpan jika ada
-        ...(typeof c === 'object' && c !== null ? c : {}),
-        localStatus: "Pending",
-        isDraft: c.isDraft ?? true, // Gunakan status draft yang tersimpan
-        created_at: c.created_at ?? new Date().toISOString(),
-        updated_at: c.updated_at ?? new Date().toISOString(),
-      })) as CandidateWithStatus[];
+      return arr.map((c: unknown) => {
+        const candidate = c as Record<string, unknown>;
+        return {
+          id: candidate.id ?? (-Date.now() + Math.floor(Math.random() * 1000)), // Gunakan ID yang tersimpan jika ada
+          ...(typeof c === 'object' && c !== null ? c : {}),
+          localStatus: "Pending",
+          isDraft: candidate.isDraft ?? true, // Gunakan status draft yang tersimpan
+          created_at: candidate.created_at ?? new Date().toISOString(),
+          updated_at: candidate.updated_at ?? new Date().toISOString(),
+        } as CandidateWithStatus;
+      });
     } catch {
       return [];
     }
