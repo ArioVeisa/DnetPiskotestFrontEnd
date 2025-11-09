@@ -71,14 +71,9 @@ export function useTestDistributions() {
   // 🔹 Delete distribution
   async function remove(id: number) {
     try {
-      console.log('🗑️ Hook: Attempting to delete distribution with ID:', id);
       await deleteDistribution(id);
-      console.log('✅ Hook: Distribution deleted successfully, updating state...');
       setDistributions((prev) => prev.filter((t) => t.id !== id));
-      console.log('✅ Hook: State updated successfully');
     } catch (error: unknown) {
-      console.error('❌ Hook: Error deleting distribution:', error);
-      
       // Extract meaningful error message from backend response
       let errorMessage = 'Unknown error';
       if (axios.isAxiosError(error) && error.response?.data?.message) {

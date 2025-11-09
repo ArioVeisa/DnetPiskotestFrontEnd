@@ -201,14 +201,10 @@ export const resultsService = {
    */
   async deleteResult(candidateId: string): Promise<void> {
     try {
-      console.log(`🗑️ Deleting result for candidate ${candidateId}...`);
-      
       // Call API backend untuk menghapus data kandidat individual
       const response = await api.delete(`/results-public/delete/${candidateId}`);
       
       if (response.data.success) {
-        console.log("✅ Result deleted successfully:", response.data.data);
-        
         // Clear localStorage cache
         localStorage.removeItem('results_cache');
         localStorage.removeItem('candidate_results_cache');
@@ -219,7 +215,6 @@ export const resultsService = {
       }
       
     } catch (error) {
-      console.error("❌ Error deleting result:", error);
       throw new Error(`Gagal menghapus hasil tes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
@@ -229,8 +224,6 @@ export const resultsService = {
    */
   async downloadResult(candidateId: string): Promise<void> {
     try {
-      console.log(`📄 Downloading PDF for candidate ${candidateId}...`);
-      
       // Import resultCandidatesService untuk mendapatkan data lengkap
       const { resultCandidatesService } = await import("../result-candidate/[id]/services/result-candidates-service");
       const { generateDownloadContent, imageToBase64 } = await import("../utils/generate-download-content");
@@ -243,7 +236,7 @@ export const resultsService = {
       try {
         logoBase64 = await imageToBase64('/images/logo-dwp.svg');
       } catch (error) {
-        console.warn('Failed to load logo, using text fallback:', error);
+        // Silent fail, use text fallback
       }
       
       // Generate HTML content untuk PDF menggunakan fungsi yang sama dengan halaman result candidate
@@ -252,10 +245,7 @@ export const resultsService = {
       // Buat file PDF menggunakan html2pdf
       await this.generatePDF(htmlContent, candidateData.name);
       
-      console.log(`✅ PDF downloaded for candidate ${candidateId}`);
-      
     } catch (error) {
-      console.error("❌ Error downloading result:", error);
       throw new Error(`Gagal mengunduh hasil tes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },

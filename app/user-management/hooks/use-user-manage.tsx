@@ -15,7 +15,6 @@ export function useUserManagement() {
       const data = await userManagementService.fetchAll();
       setUsers(data);
     } catch (err) {
-      console.error(err);
       setError("Failed to load users");
     } finally {
       setLoading(false);
@@ -35,7 +34,6 @@ export function useUserManagement() {
       await fetchAllUsers();
       setError(null); // Clear error after success
     } catch (err) {
-      console.error("❌ Update user error:", err);
       setError(typeof err === 'string' ? err : "Failed to update user");
     } finally {
       setActionLoading(false);
@@ -49,7 +47,6 @@ export function useUserManagement() {
       await userManagementService.deleteById(id);
       await fetchAllUsers();
     } catch (err) {
-      console.error(err);
       setError("Failed to delete user");
     } finally {
       setActionLoading(false);
@@ -63,7 +60,6 @@ export function useUserManagement() {
       await userManagementService.create(user);
       await fetchAllUsers();
     } catch (err) {
-      console.error(err);
       setError("Failed to add user");
     } finally {
       setActionLoading(false);

@@ -54,8 +54,6 @@ export interface InviteResponse {
 export const emailInviteService = {
   async sendInvite(payload: InvitePayload): Promise<InviteResponse> {
     try {
-      console.log("📧 Email invite payload:", payload);
-
       // Use public endpoint to avoid CORS issues
       // Add timeout to prevent hanging (60 seconds)
       const res = await api.post<InviteResponse>(
@@ -66,15 +64,9 @@ export const emailInviteService = {
         }
       );
 
-      console.log("✅ Email invite response:", res.data);
       return res.data;
     } catch (error) {
-      console.error("❌ Email invite error:", error);
-
       if (axios.isAxiosError(error)) {
-        console.error("❌ Response data:", error.response?.data);
-        console.error("❌ Response status:", error.response?.status);
-        console.error("❌ Error code:", error.code);
 
         // Handle network errors (CORS, timeout, etc.)
         if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {

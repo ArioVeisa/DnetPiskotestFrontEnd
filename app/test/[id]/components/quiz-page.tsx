@@ -501,7 +501,7 @@ export function QuizPage({
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Time is Over</h3>
             <p className="text-gray-600 text-center mb-6">
-              The test time has expired. Please click the "Finish Test" button to submit your answers.
+              The test time has expired. Please click the &quot;Finish Test&quot; button to submit your answers.
             </p>
             <Button
               onClick={() => setShowTimeOverDialog(false)}

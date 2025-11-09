@@ -85,11 +85,9 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         // Load candidates from test_distribution_candidates table
         const data = await candidateService.getTestDistributionCandidates(testId);
         setCandidates(normalizeCandidates(data));
-        console.log(`✅ Loaded ${data.length} candidates from test distribution for test ${testId}`);
       } else {
         // No testId, set empty array
         setCandidates([]);
-        console.log('ℹ️ No testId provided, setting empty candidates list');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -153,7 +151,6 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         return next;
       });
 
-      console.log(`✅ Candidate saved as draft`);
       return draft;
     } catch (err) {
       if (err instanceof AxiosError) {
@@ -204,7 +201,6 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         if (storageKey) {
           const drafts = readDrafts();
           if (drafts.length > 0) {
-            console.log(`📋 Loading ${drafts.length} candidates from localStorage (source of truth)`);
             sourceCandidates = drafts;
           }
         }
@@ -212,12 +208,10 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         // Jika tidak ada di localStorage, gunakan state dari ref (selalu ter-update)
         if (sourceCandidates.length === 0) {
           sourceCandidates = candidatesRef.current;
-          console.log(`📋 Using ${sourceCandidates.length} candidates from state ref`);
         }
 
         // Jika masih kosong, berarti memang tidak ada candidate
         if (sourceCandidates.length === 0) {
-          console.error(`❌ No candidates found in state or localStorage`);
           setLoading(false);
           throw new Error(`No candidates found. Cannot update candidate with ID: ${payload.id}`);
         }
@@ -226,14 +220,9 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         const currentCandidate = sourceCandidates.find((c) => c.id === payload.id);
         
         if (!currentCandidate) {
-          console.error(`❌ Candidate not found. ID: ${payload.id}`);
-          console.log('Source candidates count:', sourceCandidates.length);
-          console.log('Available candidate IDs:', sourceCandidates.map(c => ({ id: c.id, name: c.name, isDraft: c.isDraft })));
           setLoading(false);
           throw new Error(`Candidate not found with ID: ${payload.id}`);
         }
-
-        console.log(`✅ Found candidate to update:`, { id: currentCandidate.id, name: currentCandidate.name, isDraft: currentCandidate.isDraft });
 
         // Buat updated candidate
         const updatedCandidate: CandidateWithStatus = {
@@ -243,8 +232,6 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
           isDraft: currentCandidate.isDraft ?? true,
           updated_at: new Date().toISOString(),
         } as CandidateWithStatus;
-
-        console.log(`✏️ Updating ${currentCandidate.isDraft ? 'draft' : 'test distribution'} candidate with ID: ${payload.id}`);
 
         // Update state dan localStorage dalam satu operasi menggunakan functional update
         setCandidates((prevCandidates) => {
@@ -257,13 +244,10 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
           // Simpan ke localStorage
           if (storageKey) {
             writeDrafts(updatedList);
-            console.log(`💾 Saved ${updatedList.length} candidates to localStorage after update`);
           }
           
           return updatedList;
         });
-
-        console.log(`✅ Candidate updated in state and localStorage:`, updatedCandidate);
         
         // Reset loading SETELAH state update selesai
         // Pastikan loading di-reset sebelum return untuk menghindari freeze
@@ -272,7 +256,6 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
         // Return updated candidate
         return updatedCandidate;
       } catch (err) {
-        console.error('❌ Error updating candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
         setError(msg);
         setLoading(false);
@@ -294,13 +277,11 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
           setCandidates(filtered);
           writeDrafts(filtered);
         } else {
-          console.log(`🗑️ Removing candidate with ID: ${id}`);
           await candidateService.remove(id);
           setCandidates((prev) => prev.filter((c) => c.id !== id));
         }
         if (selected?.id === id) setSelected(null);
       } catch (err) {
-        console.error('❌ Error removing candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
         setError(msg);
         throw err;
@@ -330,7 +311,6 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     
     const shouldAutoLoad = options?.autoLoad !== false;
     if (shouldAutoLoad) {
-      console.log(`🔄 Auto-loading candidates for test ${testId}`);
       refreshCandidates();
     } else {
       // Meskipun autoLoad: false, kita tetap load dari localStorage
@@ -338,9 +318,6 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
       const drafts = readDrafts();
       if (drafts.length > 0) {
         setCandidates(drafts);
-        console.log(`ℹ️ Auto-load disabled, loaded ${drafts.length} drafts from storage`);
-      } else {
-        console.log(`ℹ️ Auto-load disabled, no drafts found in storage`);
       }
     }
   }, [testId, refreshCandidates, options?.autoLoad]);

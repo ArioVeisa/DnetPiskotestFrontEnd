@@ -179,7 +179,7 @@ export function CandidateTable({
                             // State akan di-update otomatis oleh hook melalui fetchCandidates()
                             // Tidak perlu reload untuk menghindari freeze
                           } catch (error) {
-                            console.error('❌ Error deleting candidate:', error);
+                            // Silent error handling
                           }
                         }}
                       >
@@ -233,9 +233,9 @@ export function CandidateTable({
                         await deleteCandidateFn(c.id);
                         // State akan di-update otomatis oleh hook melalui fetchCandidates()
                         // Tidak perlu reload untuk menghindari freeze
-                      } catch (error) {
-                        console.error('❌ Error deleting candidate:', error);
-                      }
+                        } catch (error) {
+                          // Silent error handling
+                        }
                     }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -325,9 +325,8 @@ export function CandidateTable({
               window.location.reload();
             }, 50);
             } catch (e) {
-              console.error(e);
               alert(typeof e === "string" ? e : "Gagal menyimpan perubahan kandidat");
-          }
+            }
         }}
       />
 

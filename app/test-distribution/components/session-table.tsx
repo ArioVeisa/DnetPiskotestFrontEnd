@@ -85,21 +85,12 @@ export default function DistributionTable() {
 
     try {
       setDeleting(true);
-      console.log('🗑️ Attempting to delete distribution with ID:', distributionToDelete);
       await remove(distributionToDelete);
-      console.log('✅ Distribution deleted successfully');
       
       // Close dialog, onOpenChange will trigger auto reload
       setDeleteDialogOpen(false);
       setDistributionToDelete(null);
     } catch (error: unknown) {
-      console.error('❌ Error deleting distribution:', error);
-      console.error('❌ Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        response: axios.isAxiosError(error) ? error.response?.data : undefined,
-        status: axios.isAxiosError(error) ? error.response?.status : undefined
-      });
-      
       // Extract meaningful error message from backend response
       let errorMessage = 'Unknown error';
       if (axios.isAxiosError(error) && error.response?.data?.message) {

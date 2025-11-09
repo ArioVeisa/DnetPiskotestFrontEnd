@@ -160,11 +160,8 @@ export const candidateService = {
 
   async remove(id: number): Promise<void> {
     try {
-      console.log(`🗑️ Removing candidate with ID: ${id} from test distribution`);
       await api.post('/candidates/remove-from-test-distribution', { id });
-      console.log(`✅ Candidate ${id} successfully removed from test distribution`);
     } catch (error) {
-      console.error(`❌ Error removing candidate ${id} from test distribution:`, error);
       if (axios.isAxiosError(error)) {
         throw error.response?.data?.message || "Gagal menghapus kandidat";
       }

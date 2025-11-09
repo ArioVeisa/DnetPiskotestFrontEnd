@@ -65,7 +65,7 @@ export default function EditSessionDialog({
           setCandidates(list ?? []);
           setSelectedIds([]);
         } catch (e) {
-          console.error(e);
+          // Silent error handling
         } finally {
           setLoadingCandidates(false);
         }
@@ -84,7 +84,7 @@ export default function EditSessionDialog({
       });
       onOpenChange(false);
     } catch (error) {
-      console.error("Error updating session:", error);
+      // Silent error handling
     }
   };
 

@@ -500,7 +500,7 @@ export default function ResultCandidatePage() {
                 // Coba load logo dari public/images/logo-dwp.svg
                 logoBase64 = await imageToBase64('/images/logo-dwp.svg');
               } catch (error) {
-                console.warn('Failed to load logo, using text fallback:', error);
+                // Silent fail, use text fallback
               }
               
               // Generate PDF content yang sama dengan view result
@@ -530,7 +530,6 @@ export default function ResultCandidatePage() {
 
               await html2pdf().set(opt).from(htmlContent).save();
             } catch (error) {
-              console.error("Error downloading report:", error);
               alert("Failed to download report. Please try again.");
             }
           }}

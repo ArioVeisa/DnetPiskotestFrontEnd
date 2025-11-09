@@ -496,31 +496,9 @@ export const resultCandidatesService = {
 
       // DISC results diperlukan untuk characteristics, personality, dan job match
       if (!disc) {
-        console.warn('⚠️ DISC results not found, using fallback data');
         // Jika tidak ada DISC results, gunakan dummy DISC data untuk fallback
         throw new Error('DISC results not found');
       }
-
-      // Lanjutkan dengan processing data...
-      console.log('✅ Successfully fetched real results data:', { 
-        candidate: candidate.name, 
-        candidateData: {
-          name: candidate.name,
-          email: candidate.email,
-          position: candidate.position,
-          nik: candidate.nik,
-          phone_number: candidate.phone_number,
-          gender: candidate.gender,
-        },
-        hasDisc: !!disc, 
-        hasCaas: !!caas, 
-        hasTeliti: !!teliti,
-        caasCategory: caas?.category,
-        discDominantType: disc?.dominant_type,
-        telitiScore: teliti?.score,
-        telitiCategory: teliti?.category,
-        telitiTotalQuestions: teliti?.total_questions
-      });
 
       // 🔹 Helper untuk menentukan dominant type berdasar skor tertinggi
       const getDominantType = (
@@ -614,12 +592,6 @@ export const resultCandidatesService = {
             ? calculateNorma(teliti.score) 
             : "-");
       
-      console.log('📊 Norma calculation:', {
-        telitiExists: !!teliti,
-        telitiCategory: teliti?.category,
-        telitiScore: teliti?.score,
-        calculatedNorma: norma
-      });
 
       // 🔹 Susun hasil unified
       const result: CandidateResult = {
@@ -681,8 +653,6 @@ export const resultCandidatesService = {
 
       return result;
     } catch (error) {
-      console.error("❌ Error fetching candidate data from API, using dummy data:", error);
-      
       // Fallback ke dummy data jika API error
       return this.getDummyCandidateData(id);
     }

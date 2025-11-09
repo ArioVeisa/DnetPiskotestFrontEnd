@@ -119,7 +119,6 @@ export function useCandidateTest(token: string) {
             }
           });
           setQuestionsCache(questionsCacheMap);
-          console.log("💾 Cached questions for submit:", questionsCacheMap);
         }
       }
     } catch (error) {
@@ -288,7 +287,6 @@ export function useCandidateTest(token: string) {
    * Simpan jawaban untuk section yang sedang aktif (hanya di-cache, tidak submit)
    */
   const saveAnswers = (answers: Record<number, unknown>) => {
-    console.log("💾 saveAnswers called:", { answers, currentTest: currentTest?.id });
     setAllAnswers(prev => ({ ...prev, ...answers }));
     
     // Simpan jawaban ke cache per test
@@ -296,14 +294,11 @@ export function useCandidateTest(token: string) {
       setAllTestsAnswers(prev => {
         const testAnswers = prev[currentTest.id] || {};
         const updated = { ...testAnswers, ...answers };
-        console.log(`💾 Saving answers for test ${currentTest.id}:`, updated);
         return {
           ...prev,
           [currentTest.id]: updated
         };
       });
-    } else {
-      console.warn("⚠️ No currentTest when saving answers");
     }
   };
 
@@ -312,52 +307,30 @@ export function useCandidateTest(token: string) {
    */
   const submitAllAnswers = async () => {
     if (!token) {
-      console.error("❌ No token available for submit");
       return;
     }
 
     try {
-      console.log("🔄 Starting submit all answers...");
-      console.log("📋 All tests answers cache:", allTestsAnswers);
-      console.log("📋 Questions cache:", questionsCache);
-      console.log("📋 Tests:", tests);
-
       const allSubmitAnswers: SubmitAnswer[] = [];
 
       // Loop melalui semua test dan kumpulkan jawaban dari cache
       for (const testInfo of tests) {
         const testAnswers = allTestsAnswers[testInfo.id] || {};
         const testQuestionsCache = questionsCache[testInfo.id] || {};
-        console.log(`📝 Processing test ${testInfo.id}:`, {
-          testAnswers,
-          questionsCache: testQuestionsCache,
-          sections: testInfo.sections
-        });
 
         if (!testInfo.sections) {
-          console.warn(`⚠️ Test ${testInfo.id} has no sections`);
           continue;
         }
 
         // Loop through all sections and their questions
         testInfo.sections.forEach(section => {
           const sectionQuestions = section.test_questions || section.questions || [];
-          console.log(`📦 Processing section ${section.section_id} (${section.section_type}):`, {
-            questionsCount: sectionQuestions.length,
-            questions: sectionQuestions
-          });
           
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           sectionQuestions.forEach((question: any) => {
             const answerKey = question.id;
             const answer = testAnswers[answerKey];
             const cachedQuestion = testQuestionsCache[answerKey] || question;
-            
-            console.log(`❓ Question ${answerKey}:`, {
-              answer,
-              cachedQuestion,
-              hasQuestionDetail: !!cachedQuestion.question_detail
-            });
             
             if (answer) {
               const submitAnswer: SubmitAnswer = {
@@ -370,84 +343,41 @@ export function useCandidateTest(token: string) {
                 if (answer && typeof answer === 'object' && 'most' in answer && 'least' in answer) {
                   const questionDetail = cachedQuestion.question_detail;
                   if (questionDetail?.options) {
-                    const mostOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.most);
-                    const leastOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.least);
-                    
-                    console.log(`🎯 DISC question ${answerKey}:`, {
-                      most: answer.most,
-                      least: answer.least,
-                      mostOption,
-                      leastOption,
-                      options: questionDetail.options
-                    });
+                    const mostOption = questionDetail.options.find((opt) => String(opt.id) === String(answer.most));
+                    const leastOption = questionDetail.options.find((opt) => String(opt.id) === String(answer.least));
                     
                     if (mostOption && leastOption) {
                       submitAnswer.most_option_id = mostOption.id;
                       submitAnswer.least_option_id = leastOption.id;
                       allSubmitAnswers.push(submitAnswer);
-                      console.log(`✅ Added DISC answer:`, submitAnswer);
-                    } else {
-                      console.error(`❌ DISC option not found for question ${answerKey}:`, {
-                        mostOption,
-                        leastOption,
-                        options: questionDetail.options
-                      });
                     }
-                  } else {
-                    console.error(`❌ No options in question detail for DISC question ${answerKey}`);
                   }
-                } else {
-                  console.error(`❌ DISC answer missing most/least for question ${answerKey}:`, answer);
                 }
               } else {
                 if (typeof answer === 'string') {
                   const questionDetail = cachedQuestion.question_detail;
                   if (questionDetail?.options) {
-                    const selectedOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer);
-                    
-                    console.log(`🎯 ${section.section_type} question ${answerKey}:`, {
-                      answer,
-                      selectedOption,
-                      options: questionDetail.options
-                    });
+                    const selectedOption = questionDetail.options.find((opt) => String(opt.id) === String(answer));
                     
                     if (selectedOption) {
                       submitAnswer.selected_option_id = selectedOption.id;
                       allSubmitAnswers.push(submitAnswer);
-                      console.log(`✅ Added ${section.section_type} answer:`, submitAnswer);
-                    } else {
-                      console.error(`❌ Selected option not found for question ${answerKey}:`, {
-                        answer,
-                        options: questionDetail.options
-                      });
                     }
-                  } else {
-                    console.error(`❌ No options in question detail for ${section.section_type} question ${answerKey}`);
                   }
-                } else {
-                  console.error(`❌ Non-string answer for ${section.section_type} question ${answerKey}:`, answer);
                 }
               }
-            } else {
-              console.warn(`⚠️ No answer found for question ${answerKey}`);
             }
           });
         });
       }
       
-      console.log(`📤 Final submit answers (${allSubmitAnswers.length} answers):`, allSubmitAnswers);
-      
       if (allSubmitAnswers.length > 0) {
-        console.log("🚀 Submitting to backend...");
         const response = await quizService.submitTest(token, allSubmitAnswers);
-        console.log("✅ Submit response:", response);
         return response;
       } else {
-        console.error("❌ No valid answers to submit");
         throw new Error("Tidak ada jawaban yang valid untuk disubmit.");
       }
     } catch (error) {
-      console.error("❌ Error in submitAllAnswers:", error);
       throw error;
     }
   };
@@ -671,14 +601,11 @@ export function useCandidateTest(token: string) {
    */
   const handleFinalSubmit = async () => {
     try {
-      console.log("🎯 Final submit triggered - submitting all answers...");
       await submitAllAnswers();
       // Setelah submit berhasil, update completedAt
       setCompletedAt(new Date().toISOString());
-      console.log("✅ All answers submitted successfully");
       setStep("completed");
     } catch (error) {
-      console.error("❌ Error submitting all answers:", error);
       // Tampilkan error tapi tetap set step ke completed
       alert("Error submitting answers. Please contact HR.");
       setStep("completed");

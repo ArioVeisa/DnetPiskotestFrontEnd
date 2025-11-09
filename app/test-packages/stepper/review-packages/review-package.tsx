@@ -195,7 +195,6 @@ export default function PublishTestPage({
 
         setTests(mapped);
       } catch (err) {
-        console.error("❌ Gagal fetch package detail:", err);
         setFetchError("Gagal memuat data package");
       } finally {
         setLoadingData(false);
