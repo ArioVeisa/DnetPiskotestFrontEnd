@@ -23,6 +23,9 @@ export function VerificationDialog({
   const [nik, setNik] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Only show dialog if candidate exists
+  const open = !!candidate;
+
   const handleVerify = async () => {
     if (!candidate) {
       alert("Data kandidat tidak ditemukan.");
@@ -40,8 +43,13 @@ export function VerificationDialog({
     }
   };
 
+  // Don't render if no candidate
+  if (!candidate) {
+    return null;
+  }
+
   return (
-    <Dialog open>
+    <Dialog open={open}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Verifikasi Kandidat</DialogTitle>
@@ -51,6 +59,11 @@ export function VerificationDialog({
           value={nik}
           onChange={(e) => setNik(e.target.value)}
           className="mb-4"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && nik && !loading) {
+              handleVerify();
+            }
+          }}
         />
         <Button onClick={handleVerify} disabled={loading || !nik}>
           {loading ? "Memverifikasi..." : "Verifikasi"}

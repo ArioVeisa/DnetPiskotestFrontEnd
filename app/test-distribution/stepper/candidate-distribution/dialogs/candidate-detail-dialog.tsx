@@ -40,22 +40,22 @@ export default function CandidateDetailDialog({
   saving,
   error,
 }: Props) {
-  const initialForm: CreateCandidatePayload = {
+  const getInitialForm = (): CreateCandidatePayload => ({
     nik: "",
     name: "",
     phone_number: "",
     email: "",
     position: "",
     birth_date: "",
-     gender: "male" as "male" | "female",
+    gender: "male" as "male" | "female",
     department: "",
-  };
+  });
 
-  const [form, setForm] = useState<CreateCandidatePayload>(initialForm);
+  const [form, setForm] = useState<CreateCandidatePayload>(getInitialForm());
 
-  // isi form saat candidate berubah
+  // isi form saat candidate berubah atau dialog dibuka
   useEffect(() => {
-    if (candidate) {
+    if (open && candidate) {
       setForm({
         nik: candidate.nik ?? "",
         name: candidate.name ?? "",
@@ -68,21 +68,29 @@ export default function CandidateDetailDialog({
           : "male") as "male" | "female", // ✅ fix union type
         department: candidate.department ?? "",
       });
+    } else if (!open) {
+      // Reset form ketika dialog ditutup
+      setForm(getInitialForm());
     }
-  }, [candidate?.id]); // Only depend on candidate ID to avoid infinite re-renders
+  }, [open, candidate?.id]); // Depend on open and candidate ID
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving) {
+      console.log('⏸️ Form submission already in progress, skipping...');
+      return; // Prevent double submission
+    }
+    
     try {
       console.log('💾 Submitting candidate form:', form);
       await onSave(form);
       console.log('✅ Candidate form submitted successfully');
-      // Don't close dialog here - let parent component handle it
-      // onOpenChange(false);
+      // Parent component will handle closing dialog
+      // Form akan di-reset oleh useEffect ketika dialog ditutup
     } catch (error) {
       console.error('❌ Error submitting candidate form:', error);
       // Error handling is done by parent component
-      // Don't close dialog on error
+      // Don't close dialog on error - biarkan user melihat error message
     }
   }
 

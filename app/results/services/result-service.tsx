@@ -233,13 +233,21 @@ export const resultsService = {
       
       // Import resultCandidatesService untuk mendapatkan data lengkap
       const { resultCandidatesService } = await import("../result-candidate/[id]/services/result-candidates-service");
-      const { generateDownloadContent } = await import("../utils/generate-download-content");
+      const { generateDownloadContent, imageToBase64 } = await import("../utils/generate-download-content");
       
       // Ambil data lengkap kandidat (sama dengan yang ditampilkan di halaman result candidate)
       const candidateData = await resultCandidatesService.getCandidateById(candidateId);
       
+      // Load logo dari frontend dan convert ke base64
+      let logoBase64 = '';
+      try {
+        logoBase64 = await imageToBase64('/images/logo-dwp.svg');
+      } catch (error) {
+        console.warn('Failed to load logo, using text fallback:', error);
+      }
+      
       // Generate HTML content untuk PDF menggunakan fungsi yang sama dengan halaman result candidate
-      const htmlContent = generateDownloadContent(candidateData);
+      const htmlContent = generateDownloadContent(candidateData, logoBase64);
       
       // Buat file PDF menggunakan html2pdf
       await this.generatePDF(htmlContent, candidateData.name);
@@ -461,9 +469,8 @@ export const resultsService = {
             <div class="score-subtitle">Correct Answers</div>
           </div>
           <div class="score-card">
-            <div class="score-title">Total Questions</div>
-            <div class="score-value">100</div>
-            <div class="score-subtitle">Questions</div>
+            <div class="score-title">Norma</div>
+            <div class="score-value">-</div>
           </div>
         </div>
 

@@ -12,7 +12,6 @@ import { MoreVertical, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Candidate } from "../services/candidates-service";
 import { CandidateEditDialog } from "./candidates-dialog";
-import { ConfirmDialog } from "./confirm-dialog";
 import { useCandidates } from "../hooks/use-candidates";
 import TableSkeleton from "./table-skeleton";
 import { candidatesService } from "../services/candidates-service";
@@ -27,15 +26,25 @@ const POSITION_STYLE: Record<string, string> = {
   "Frontend Dev": "bg-red-100 text-red-700",
 };
 
-const STATUS_STYLE: Record<"Active" | "Inactive", string> = {
+const STATUS_STYLE: Record<string, string> = {
   Active: "bg-green-100 text-green-700",
+  "In Progress": "bg-blue-100 text-blue-700",
+  Completed: "bg-purple-100 text-purple-700",
+  Pending: "bg-yellow-100 text-yellow-700",
+  Expired: "bg-red-100 text-red-700",
   Inactive: "bg-gray-100 text-gray-500",
 };
 
 /* =======================================
    MAIN COMPONENT
 ======================================= */
-export function CandidateTable() {
+export function CandidateTable({ 
+  page, 
+  pageSize 
+}: { 
+  page: number; 
+  pageSize: number; 
+}) {
   const {
     candidates,
     loading,
@@ -47,14 +56,8 @@ export function CandidateTable() {
   const [editCandidate, setEditCandidate] = useState<
     (Candidate & { phone: string }) | null
   >(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<Candidate | null>(
-    null
-  );
 
-  // PAGINATION
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
-  const totalPages = Math.ceil(candidates.length / pageSize);
+  // PAGINATION - menggunakan props dari parent
   const displayedCandidates = candidates.slice(
     (page - 1) * pageSize,
     page * pageSize
@@ -94,10 +97,10 @@ export function CandidateTable() {
     <div>
       {/* DESKTOP TABLE */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="min-w-[900px] w-full table-auto">
+        <table className="min-w-[1000px] w-full table-auto">
           <thead>
             <tr className="text-gray-400 text-[15px] font-semibold">
-              {["Candidates", "NIK", "Position", "Actions"].map((h) => (
+              {["Candidates", "NIK", "Position", "Status", "Actions"].map((h) => (
                 <th key={h} className="px-4 pb-2 text-left">
                   {h}
                 </th>
@@ -135,6 +138,18 @@ export function CandidateTable() {
                   </span>
                 </td>
 
+                {/* Status */}
+                <td className="px-6 py-4 align-middle">
+                  <span
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
+                      STATUS_STYLE[c.status || "Active"] ?? STATUS_STYLE["Active"]
+                    )}
+                  >
+                    {c.status || "Active"}
+                  </span>
+                </td>
+
                 {/* Actions */}
                 <td className="px-6 py-4 flex items-center gap-4 align-middle">
                   <DropdownMenu>
@@ -158,7 +173,15 @@ export function CandidateTable() {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-500"
-                        onSelect={() => setDeleteCandidate(c)}
+                        onSelect={async () => {
+                          try {
+                            await deleteCandidateFn(c.id);
+                            // State akan di-update otomatis oleh hook melalui fetchCandidates()
+                            // Tidak perlu reload untuk menghindari freeze
+                          } catch (error) {
+                            console.error('❌ Error deleting candidate:', error);
+                          }
+                        }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>
@@ -205,7 +228,15 @@ export function CandidateTable() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-red-500"
-                    onSelect={() => setDeleteCandidate(c)}
+                    onSelect={async () => {
+                      try {
+                        await deleteCandidateFn(c.id);
+                        // State akan di-update otomatis oleh hook melalui fetchCandidates()
+                        // Tidak perlu reload untuk menghindari freeze
+                      } catch (error) {
+                        console.error('❌ Error deleting candidate:', error);
+                      }
+                    }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
@@ -234,43 +265,15 @@ export function CandidateTable() {
                 <span
                   className={cn(
                     "px-3 py-1 rounded-full text-xs font-semibold",
-                    STATUS_STYLE[c.status === "Active" ? "Active" : "Inactive"]
+                    STATUS_STYLE[c.status || "Active"] ?? STATUS_STYLE["Active"]
                   )}
                 >
-                  {c.status}
+                  {c.status || "Active"}
                 </span>
               </div>
             </div>
           </div>
         ))}
-      </div>
-
-      {/* PAGINATION FOOTER */}
-      <div className="flex items-center justify-between mt-6 text-sm text-gray-600">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="text-sm rounded-lg"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="text-sm rounded-lg"
-          >
-            Next
-          </Button>
-        </div>
-        <div className="hidden md:block">
-          Showing page <span className="font-semibold">{page}</span> of{" "}
-          <span className="font-semibold">{totalPages}</span> candidates
-        </div>
       </div>
 
       {/* Edit Dialog (selalu mounted; kontrol via open) */}
@@ -328,26 +331,6 @@ export function CandidateTable() {
         }}
       />
 
-      {/* Confirm Delete */}
-      <ConfirmDialog
-        open={!!deleteCandidate}
-        title="Delete Candidate?"
-        description={`Are you sure you want to delete "${deleteCandidate?.name}"?`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={async () => {
-          if (!deleteCandidate) return;
-          try {
-            await deleteCandidateFn(deleteCandidate.id);
-            window.location.reload();
-          } catch {
-            // Error logging removed for production
-          } finally {
-            setDeleteCandidate(null);
-          }
-        }}
-        onCancel={() => setDeleteCandidate(null)}
-      />
     </div>
   );
 }

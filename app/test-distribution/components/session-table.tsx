@@ -76,6 +76,7 @@ export default function DistributionTable() {
 
   const handleDeleteClick = (id: number) => {
     setDistributionToDelete(id);
+    setDeleting(false);
     setDeleteDialogOpen(true);
   };
 
@@ -86,10 +87,11 @@ export default function DistributionTable() {
       setDeleting(true);
       console.log('🗑️ Attempting to delete distribution with ID:', distributionToDelete);
       await remove(distributionToDelete);
-      console.log('✅ Distribution deleted successfully, refreshing page...');
+      console.log('✅ Distribution deleted successfully');
       
-      // Auto reload page setelah delete berhasil
-      window.location.reload();
+      // Close dialog, onOpenChange will trigger auto reload
+      setDeleteDialogOpen(false);
+      setDistributionToDelete(null);
     } catch (error: unknown) {
       console.error('❌ Error deleting distribution:', error);
       console.error('❌ Error details:', {
@@ -106,10 +108,9 @@ export default function DistributionTable() {
         errorMessage = error.message;
       }
       
-      alert(`Gagal menghapus test distribution: ${errorMessage}`);
+      alert(`Failed to delete test distribution: ${errorMessage}`);
       setDeleting(false);
-      setDeleteDialogOpen(false);
-      setDistributionToDelete(null);
+      // Don't close dialog if there's an error, let user know about the error
     }
   };
 
@@ -406,12 +407,27 @@ export default function DistributionTable() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={(open: boolean) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            // Reset state when dialog is closed
+            setDeleting(false);
+            setDistributionToDelete(null);
+            
+            // Auto reload when dialog is closed (cancel or after delete) to prevent freeze
+            setTimeout(() => {
+              window.location.reload();
+            }, 50);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Konfirmasi Penghapusan</AlertDialogTitle>
+            <AlertDialogTitle>Delete Confirmation</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus test distribution ini? Tindakan ini tidak dapat dibatalkan.
+              Are you sure you want to delete this test distribution? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -421,7 +437,7 @@ export default function DistributionTable() {
               disabled={deleting}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleting ? "Deleting..." : "OK"}
+              {deleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

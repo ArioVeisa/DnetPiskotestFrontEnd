@@ -157,22 +157,30 @@ export default function AddQuestionDialog({
             </p>
           ) : (
             <div className="space-y-3">
-              {availableQuestions.map((q) => (
-                <div
-                  key={q.id}
-                  className="border rounded-lg p-4 shadow-sm hover:bg-blue-50 transition cursor-pointer"
-                  onClick={() => toggleQuestion(q.id)}
-                >
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={selectedIds.includes(q.id)}
-                      onCheckedChange={() => toggleQuestion(q.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <p className="text-sm flex-1">{q.question_text}</p>
+              {availableQuestions.map((q) => {
+                // For DISC questions, show first option text instead of question_text to avoid duplicate appearance
+                const displayText = 
+                  activeType === "DISC" && q.options && q.options.length > 0
+                    ? q.options[0].option_text
+                    : q.question_text;
+                
+                return (
+                  <div
+                    key={q.id}
+                    className="border rounded-lg p-4 shadow-sm hover:bg-blue-50 transition cursor-pointer"
+                    onClick={() => toggleQuestion(q.id)}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        checked={selectedIds.includes(q.id)}
+                        onCheckedChange={() => toggleQuestion(q.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <p className="text-sm flex-1">{displayText}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>

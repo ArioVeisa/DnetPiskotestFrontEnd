@@ -16,7 +16,7 @@ function resolveApiBaseUrl(): string {
     console.warn(
       `Invalid NEXT_PUBLIC_API_URL value: "${envUrl}". Falling back to http://localhost:8000/api`
     );
-  }
+  } 
 
   return "http://localhost:8000/api";
 }

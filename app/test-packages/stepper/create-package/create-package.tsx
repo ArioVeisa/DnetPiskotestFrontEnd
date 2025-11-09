@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TEST_TYPES, useCreateNewTestForm } from "./hooks/use-create-package";
@@ -35,6 +35,8 @@ type Props = {
   }) => void;
   onBack?: () => void;
   onCancelEdit?: () => void;
+  getNextHandler?: (handler: () => void) => void;
+  onFormValidationChange?: (isValid: boolean) => void;
 };
 
 /* ============================
@@ -46,6 +48,8 @@ export default function CreateNewTest({
   onNext,
   onBack,
   onCancelEdit,
+  getNextHandler,
+  onFormValidationChange,
 }: Props) {
   const {
     icon,
@@ -70,11 +74,16 @@ export default function CreateNewTest({
           sequence: i + 1,
         }))
       );
+      // Trigger validation update setelah defaultValues ter-set
+      if (onFormValidationChange) {
+        const isValid = !!(defaultValues.testName && defaultValues.selectedTypes.length > 0);
+        onFormValidationChange(isValid);
+      }
     }
-  }, [isEditMode, defaultValues, setIcon, setTestName, setSelectedTypes]);
+  }, [isEditMode, defaultValues, setIcon, setTestName, setSelectedTypes, onFormValidationChange]);
 
   /* Hanya kirim data ke parent (tanpa API call) */
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!testName || selectedTypes.length === 0) return;
 
     onNext({
@@ -82,10 +91,25 @@ export default function CreateNewTest({
       testName,
       selectedTypes: selectedTypes.map((t) => t.type),
     });
-  };
+  }, [testName, selectedTypes, icon, onNext]);
+
+  // Expose handler ke parent untuk fixed navigation
+  useEffect(() => {
+    if (getNextHandler) {
+      getNextHandler(handleNext);
+    }
+  }, [getNextHandler, handleNext]);
+
+  // Update form validation state ke parent
+  useEffect(() => {
+    if (onFormValidationChange) {
+      const isValid = !!(testName && selectedTypes.length > 0);
+      onFormValidationChange(isValid);
+    }
+  }, [testName, selectedTypes, onFormValidationChange]);
 
   return (
-    <div className="w-full sm:px-2 md:px-4 lg:px-8 py-4">
+    <div className="w-full sm:px-2 md:px-4 lg:px-8 py-4" data-create-test-form>
       {/* Judul halaman */}
       <h2 className="font-bold text-2xl mb-1">
         {isEditMode ? "Edit Test Package" : "Create New Package"}
@@ -177,24 +201,11 @@ export default function CreateNewTest({
         </div>
       </div>
 
-      {/* Tombol Aksi */}
-      <div className="flex justify-end gap-2 mt-7">
-        <div className="flex gap-2">
-          {onBack && (
-            <Button
-              variant="outline"
-              type="button"
-              onClick={onBack}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-          )}
-          <Button type="button" onClick={handleNext} disabled={!testName}>
-            {isEditMode ? "Next (Update)" : "Next"}
-          </Button>
-        </div>
+      {/* Tombol Aksi - Hidden karena menggunakan fixed navigation di parent */}
+      <div style={{ display: 'none' }}>
+        <Button type="button" onClick={handleNext} disabled={!testName}>
+          {isEditMode ? "Next (Update)" : "Next"}
+        </Button>
       </div>
 
       {error && <div className="text-red-500 mt-3">{error}</div>}

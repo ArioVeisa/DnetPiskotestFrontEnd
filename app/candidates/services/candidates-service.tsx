@@ -14,7 +14,7 @@ export type Candidate = {
   department: string;
   createdAt: string;
   updatedAt: string;
-  status?: "Active" | "Pending" | "Completed" | "Expired"; // opsional
+  status?: "Active" | "Pending" | "Completed" | "Expired" | "In Progress"; // Status dari backend
 };
 
 // tipe sesuai data dari API (snake_case)
@@ -30,6 +30,7 @@ type CandidateApiResponse = {
   department: string;
   created_at: string;
   updated_at: string;
+  status?: string; // Status dari backend (Active, Completed, In Progress, Pending)
 };
 
 export const candidatesService = {
@@ -50,6 +51,7 @@ export const candidatesService = {
         department: c.department,
         createdAt: c.created_at,
         updatedAt: c.updated_at,
+        status: (c.status as "Active" | "Pending" | "Completed" | "Expired" | "In Progress") || "Active",
       }));
     } catch (error) {
       if (axios.isAxiosError(error)) {

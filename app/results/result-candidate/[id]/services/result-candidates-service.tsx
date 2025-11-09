@@ -85,12 +85,17 @@ export interface CandidateResult {
   id: string;
   name: string;
   position: string;
+  phone?: string;
+  nik?: string;
+  email?: string;
+  gender?: string;
   caas: string;
   completedAt?: string; // Tanggal completed test
   adaptability: {
     score: number;
     correctAnswers: number;
     totalQuestions: number;
+    norma: string; // Norma berdasarkan kategori (SANGAT AKURAT, AKURAT, dll)
   };
   graphs: {
     most: { label: string; value: number }[];
@@ -489,12 +494,33 @@ export const resultCandidatesService = {
         throw new Error('Candidate data not found');
       }
 
+      // DISC results diperlukan untuk characteristics, personality, dan job match
       if (!disc) {
+        console.warn('⚠️ DISC results not found, using fallback data');
+        // Jika tidak ada DISC results, gunakan dummy DISC data untuk fallback
         throw new Error('DISC results not found');
       }
 
       // Lanjutkan dengan processing data...
-      console.log('✅ Successfully fetched real results data:', { candidate, disc, caas, teliti });
+      console.log('✅ Successfully fetched real results data:', { 
+        candidate: candidate.name, 
+        candidateData: {
+          name: candidate.name,
+          email: candidate.email,
+          position: candidate.position,
+          nik: candidate.nik,
+          phone_number: candidate.phone_number,
+          gender: candidate.gender,
+        },
+        hasDisc: !!disc, 
+        hasCaas: !!caas, 
+        hasTeliti: !!teliti,
+        caasCategory: caas?.category,
+        discDominantType: disc?.dominant_type,
+        telitiScore: teliti?.score,
+        telitiCategory: teliti?.category,
+        telitiTotalQuestions: teliti?.total_questions
+      });
 
       // 🔹 Helper untuk menentukan dominant type berdasar skor tertinggi
       const getDominantType = (
@@ -563,18 +589,55 @@ export const resultCandidatesService = {
         disc.dominant_type_3
       );
 
+      // 🔹 Helper function untuk menghitung norma dari score (fallback jika category tidak ada)
+      const calculateNorma = (score: number | undefined): string => {
+        if (score === undefined || score === null) {
+          return "-";
+        }
+        if (score >= 56 && score <= 60) {
+          return "SANGAT AKURAT";
+        } else if (score >= 41 && score <= 55) {
+          return "AKURAT";
+        } else if (score >= 21 && score <= 40) {
+          return "CUKUP AKURAT";
+        } else if (score >= 6 && score <= 20) {
+          return "KURANG AKURAT";
+        } else {
+          return "SANGAT KURANG AKURAT";
+        }
+      };
+
+      // 🔹 Ambil norma: gunakan category dari DB jika ada dan tidak kosong, jika tidak calculate dari score
+      const norma = (teliti?.category && teliti.category.trim() !== "") 
+        ? teliti.category 
+        : (teliti?.score !== undefined && teliti?.score !== null 
+            ? calculateNorma(teliti.score) 
+            : "-");
+      
+      console.log('📊 Norma calculation:', {
+        telitiExists: !!teliti,
+        telitiCategory: teliti?.category,
+        telitiScore: teliti?.score,
+        calculatedNorma: norma
+      });
+
       // 🔹 Susun hasil unified
       const result: CandidateResult = {
         id: candidate.id.toString(),
         name: candidate.name,
         position: candidate.position,
-        caas: caas?.category ?? "Medium Adaptability",
+        phone: candidate.phone_number || undefined,
+        nik: candidate.nik || undefined,
+        email: candidate.email || undefined,
+        gender: candidate.gender || undefined,
+        caas: caas?.category ?? "Sedang", // Fallback ke "Sedang" jika tidak ada data
         completedAt: candidate_test.completed_at || undefined,
 
         adaptability: {
           score: teliti?.score ?? 0,
           correctAnswers: teliti?.score ?? 0,
           totalQuestions: teliti?.total_questions ?? 0,
+          norma: norma, // Norma berdasarkan kategori dari DB atau calculated dari score
         },
 
         graphs: {
@@ -600,12 +663,19 @@ export const resultCandidatesService = {
 
         characteristics: characteristics,
 
-        personalityDescription: this.getPersonalityDescriptionByDiscType(
-          disc.dominant_type,
-          disc.dominant_type_2,
-          disc.dominant_type_3
-        ),
+        // Gunakan interpretation dari backend (Graph 1 - MOST) sebagai personality description
+        // Backend interpretation adalah format pendek dengan karakteristik yang dipisahkan koma
+        // Jika tidak ada interpretation dari backend, fallback ke mapping frontend (format naratif panjang)
+        personalityDescription: disc.interpretation && disc.interpretation.trim() !== ""
+          ? disc.interpretation 
+          : this.getPersonalityDescriptionByDiscType(
+              disc.dominant_type,
+              disc.dominant_type_2,
+              disc.dominant_type_3
+            ),
 
+        // Job Match menggunakan mapping di frontend berdasarkan dominant_type dari backend
+        // Ini sudah dinamis karena dominant_type berasal dari hasil perhitungan backend
         jobMatch: this.getJobMatchByDiscType(disc.dominant_type, disc.dominant_type_2, disc.dominant_type_3),
       };
 
@@ -629,11 +699,16 @@ export const resultCandidatesService = {
       id: id,
       name: "RD",
       position: "Staff",
+      phone: "-",
+      nik: "-",
+      email: "-",
+      gender: "-",
       caas: "Rendah",
       adaptability: {
         score: 0,
         correctAnswers: 0,
         totalQuestions: 61,
+        norma: "-", // Dummy data
       },
       graphs: {
         // Graph 1 MOST (Mask Public Self) - sesuai dengan data di gambar Excel

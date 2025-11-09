@@ -165,31 +165,14 @@ export function DiscQuestionCard({
         )}
 
         {/* Navigation buttons */}
-        <div className="flex flex-wrap gap-2 mt-6">
+        <div className="flex flex-wrap gap-2 mt-6 justify-end">
           <Button
-            variant={isFlagged ? undefined : "outline"}
             size="sm"
-            onClick={onToggleFlag}
-            className={[
-              "flex items-center gap-2",
-              isFlagged
-                ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
-                : "",
-            ].join(" ")}
+            onClick={onNext}
+            disabled={!canGoNext}
           >
-            <span className={isFlagged ? "text-white" : ""}>
-              {isFlagged ? "Unmark" : "Mark for Review"}
-            </span>
+            Next
           </Button>
-          <div className="ml-auto">
-            <Button
-              size="sm"
-              onClick={onNext}
-              disabled={!canGoNext}
-            >
-              Next
-            </Button>
-          </div>
         </div>
       </CardContent>
     </Card>

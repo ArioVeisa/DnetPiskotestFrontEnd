@@ -16,11 +16,13 @@ export function StatCards({ stats }: StatCardsProps) {
             <div>
               <div className="text-xs text-gray-500 font-medium">{s.title}</div>
               <div className="text-2xl font-bold text-gray-900">{s.value}</div>
-              <div className={cn("text-sm", s.change >= 0 ? "text-green-500" : "text-red-500")}>
-                {s.change >= 0 ? "+" : ""}
-                {s.change}
-                {s.changeLabel}
-              </div>
+              {s.change !== 0 && (
+                <div className={cn("text-sm", s.change >= 0 ? "text-green-500" : "text-red-500")}>
+                  {s.change >= 0 ? "+" : ""}
+                  {s.change}
+                  {s.changeLabel}
+                </div>
+              )}
             </div>
             <div className="p-2 bg-blue-50 rounded-full">{s.icon}</div>
           </CardContent>

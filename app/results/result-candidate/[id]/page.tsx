@@ -305,7 +305,7 @@ export default function ResultCandidatePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Question
+              Norma
             </CardTitle>
             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
               <div className="w-4 h-4 rounded-full bg-blue-500"></div>
@@ -314,8 +314,8 @@ export default function ResultCandidatePage() {
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-3xl font-bold">
-                  {data.adaptability.totalQuestions}
+                <div className="text-2xl font-bold">
+                  {data.adaptability.norma || "-"}
                 </div>
               </div>
             </div>
@@ -493,8 +493,18 @@ export default function ResultCandidatePage() {
           className="px-12 py-4 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white justify-end"
           onClick={async () => {
             try {
+              // Load logo dari frontend dan convert ke base64
+              const { imageToBase64 } = await import('../../utils/generate-download-content');
+              let logoBase64 = '';
+              try {
+                // Coba load logo dari public/images/logo-dwp.svg
+                logoBase64 = await imageToBase64('/images/logo-dwp.svg');
+              } catch (error) {
+                console.warn('Failed to load logo, using text fallback:', error);
+              }
+              
               // Generate PDF content yang sama dengan view result
-              const htmlContent = generateDownloadContent(data);
+              const htmlContent = generateDownloadContent(data, logoBase64);
               
               // Import html2pdf secara dinamis
               const html2pdf = (await import('html2pdf.js')).default;
@@ -505,8 +515,8 @@ export default function ResultCandidatePage() {
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { 
                   scale: 2,
-                  useCORS: false,
-                  allowTaint: false,
+                  useCORS: true, // Enable CORS untuk load logo
+                  allowTaint: true, // Allow taint untuk load external images
                   backgroundColor: '#ffffff',
                 },
                 jsPDF: { 

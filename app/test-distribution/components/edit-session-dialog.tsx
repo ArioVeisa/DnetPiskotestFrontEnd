@@ -10,15 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { Distribution } from "../services/test-distribution-service";
 import {
   AlertDialog,
@@ -49,8 +40,6 @@ export default function EditSessionDialog({
 }: Props) {
   const [form, setForm] = useState({
     testName: "",
-    startDate: "",
-    endDate: "",
     status: "Draft" as "Draft" | "Scheduled" | "Ongoing" | "Completed" | "Expired",
   });
 
@@ -67,8 +56,6 @@ export default function EditSessionDialog({
     if (session) {
       setForm({
         testName: session.testName || "",
-        startDate: session.startDate || "",
-        endDate: session.endDate || "",
         status: session.status || "Draft",
       });
       (async () => {
@@ -93,8 +80,6 @@ export default function EditSessionDialog({
     try {
       await onSave(session.id, {
         testName: form.testName,
-        startDate: form.startDate,
-        endDate: form.endDate,
         status: form.status,
       });
       onOpenChange(false);
@@ -103,16 +88,7 @@ export default function EditSessionDialog({
     }
   };
 
-  const handleDateChange = (field: "startDate" | "endDate", date: Date | undefined) => {
-    if (date) {
-      setForm(prev => ({
-        ...prev,
-        [field]: format(date, "yyyy-MM-dd"),
-      }));
-    }
-  };
-
-  const isValid = form.testName.trim() !== "" && form.startDate !== "";
+  const isValid = form.testName.trim() !== "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,60 +108,6 @@ export default function EditSessionDialog({
               placeholder="Enter test name"
               required
             />
-          </div>
-
-          {/* Start Date */}
-          <div className="space-y-2">
-            <Label>Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !form.startDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.startDate ? format(new Date(form.startDate), "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={form.startDate ? new Date(form.startDate) : undefined}
-                  onSelect={(date) => handleDateChange("startDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* End Date */}
-          <div className="space-y-2">
-            <Label>End Date (Optional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !form.endDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.endDate ? format(new Date(form.endDate), "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={form.endDate ? new Date(form.endDate) : undefined}
-                  onSelect={(date) => handleDateChange("endDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
           </div>
 
           {/* Status */}

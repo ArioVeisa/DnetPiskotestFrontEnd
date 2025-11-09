@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Search } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { api } from "@services/api";
 import { useRouter } from "next/navigation";
 
@@ -52,25 +51,9 @@ export default function TopBar() {
 
   return (
     <div
-      className="w-full flex items-center justify-between px-4 sm:px-6 py-6
+      className="w-full flex items-center justify-end px-4 sm:px-6 py-6
     sticky top-0 z-40 bg-white/80 backdrop-blur shadow-sm"
     >
-      {/* Search Bar */}
-      <div className="relative flex-1 max-w-xs md:max-w-md hidden md:block">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          size={18}
-        />
-        <Input
-          type="search"
-          placeholder="Search by test name, position, or category..."
-          className="pl-10 w-full"
-        />
-      </div>
-
-      {/* Spacer */}
-      <div className="flex-1 md:flex-none" />
-
       {/* Profile */}
       <div className="relative">
         <button

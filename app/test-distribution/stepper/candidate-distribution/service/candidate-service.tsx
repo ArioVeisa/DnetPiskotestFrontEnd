@@ -157,6 +157,7 @@ export const candidateService = {
     }
   },
 
+
   async remove(id: number): Promise<void> {
     try {
       console.log(`🗑️ Removing candidate with ID: ${id} from test distribution`);

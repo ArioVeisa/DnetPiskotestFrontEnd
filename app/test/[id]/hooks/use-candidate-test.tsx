@@ -33,7 +33,52 @@ export function useCandidateTest(token: string) {
   const [timer, setTimer] = useState<number>(0);
   const [completedAt, setCompletedAt] = useState<string>("");
   const [allAnswers, setAllAnswers] = useState<Record<number, unknown>>({});
+  // Cache untuk menyimpan semua jawaban dari semua test
+  const [allTestsAnswers, setAllTestsAnswers] = useState<Record<string, Record<number, unknown>>>({});
+  // Cache untuk menyimpan data questions dengan question_detail untuk submit
+  const [questionsCache, setQuestionsCache] = useState<Record<string, Record<number, BackendQuestion>>>({});
   const [error, setError] = useState<string | null>(null);
+  const [sessionTimeError, setSessionTimeError] = useState<{
+    show: boolean;
+    startDate?: string;
+    endDate?: string;
+  }>({ show: false });
+
+  /**
+   * Validasi waktu session - cek apakah waktu saat ini dalam range start_date dan end_date
+   */
+  const validateSessionTime = (startDate?: string, endDate?: string): boolean => {
+    if (!startDate && !endDate) {
+      // Jika tidak ada waktu session yang di-set, izinkan akses
+      return true;
+    }
+
+    const now = new Date();
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    // Cek apakah waktu saat ini sebelum start date
+    if (start && now < start) {
+      setSessionTimeError({
+        show: true,
+        startDate,
+        endDate,
+      });
+      return false;
+    }
+
+    // Cek apakah waktu saat ini setelah end date
+    if (end && now > end) {
+      setSessionTimeError({
+        show: true,
+        startDate,
+        endDate,
+      });
+      return false;
+    }
+
+    return true;
+  };
 
   /**
    * Ambil data kandidat dari token (sekali jalan saat load page).
@@ -47,8 +92,35 @@ export function useCandidateTest(token: string) {
     try {
       const data = await candidateService.fetchCandidateByToken(token);
       if (data) {
+        // Validasi waktu session sebelum set candidate
+        if (!validateSessionTime(data.startDate, data.endDate)) {
+          // SessionTimeErrorDialog akan ditampilkan oleh component
+          return;
+        }
+
         setCandidate(data);
         setTests(data.tests ?? []);
+        
+        // Cache questions dengan question_detail untuk submit nanti
+        if (data.tests && data.tests.length > 0) {
+          const questionsCacheMap: Record<string, Record<number, BackendQuestion>> = {};
+          data.tests.forEach(test => {
+            if (test.sections) {
+              const testQuestions: Record<number, BackendQuestion> = {};
+              test.sections.forEach(section => {
+                const sectionQuestions = section.test_questions || section.questions || [];
+                sectionQuestions.forEach((q: BackendQuestion) => {
+                  if (q.id) {
+                    testQuestions[q.id] = q;
+                  }
+                });
+              });
+              questionsCacheMap[test.id] = testQuestions;
+            }
+          });
+          setQuestionsCache(questionsCacheMap);
+          console.log("💾 Cached questions for submit:", questionsCacheMap);
+        }
       }
     } catch (error) {
       // console.log("🔍 Error in fetchCandidate:", error); // Debug logging removed
@@ -57,6 +129,23 @@ export function useCandidateTest(token: string) {
         // console.log("🔍 Setting test-completed step with date:", completedDate); // Debug logging removed
         setCompletedAt(completedDate);
         setStep("test-completed");
+      } else if (error instanceof Error && error.message.startsWith("SESSION_TIME_ERROR:")) {
+        // Handle session time validation error from backend
+        const parts = error.message.split(":");
+        if (parts.length >= 4) {
+          const startDate = parts[1] || undefined;
+          const endDate = parts[2] || undefined;
+          const message = parts.slice(3).join(":"); // Handle message that might contain colons
+          
+          setSessionTimeError({
+            show: true,
+            startDate,
+            endDate,
+          });
+        } else {
+          // Fallback to frontend validation
+          setError("Test session time validation failed");
+        }
       } else {
         // Handle other errors (token invalid, expired, etc.)
         const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan saat mengambil data test";
@@ -174,9 +263,21 @@ export function useCandidateTest(token: string) {
       }
     );
 
-    // console.log("🔍 Section questions data:", questionsData); // Debug logging removed
-    // console.log("🔍 Mapped questions:", mappedQuestions); // Debug logging removed
-    // console.log("🔍 Current section:", currentSection); // Debug logging removed
+    // Cache questions dengan question_detail untuk submit nanti
+    if (currentTest) {
+      setQuestionsCache(prev => {
+        const testQuestions = prev[currentTest.id] || {};
+        questionsData.forEach((q: BackendQuestion) => {
+          if (q.id) {
+            testQuestions[q.id] = q;
+          }
+        });
+        return {
+          ...prev,
+          [currentTest.id]: testQuestions
+        };
+      });
+    }
 
     setQuestions(mappedQuestions);
     setTimer(currentSection.duration_minutes * 60);
@@ -184,120 +285,187 @@ export function useCandidateTest(token: string) {
   };
 
   /**
-   * Simpan jawaban untuk section yang sedang aktif
+   * Simpan jawaban untuk section yang sedang aktif (hanya di-cache, tidak submit)
    */
   const saveAnswers = (answers: Record<number, unknown>) => {
+    console.log("💾 saveAnswers called:", { answers, currentTest: currentTest?.id });
     setAllAnswers(prev => ({ ...prev, ...answers }));
+    
+    // Simpan jawaban ke cache per test
+    if (currentTest) {
+      setAllTestsAnswers(prev => {
+        const testAnswers = prev[currentTest.id] || {};
+        const updated = { ...testAnswers, ...answers };
+        console.log(`💾 Saving answers for test ${currentTest.id}:`, updated);
+        return {
+          ...prev,
+          [currentTest.id]: updated
+        };
+      });
+    } else {
+      console.warn("⚠️ No currentTest when saving answers");
+    }
   };
 
   /**
-   * Submit semua jawaban ke backend
+   * Submit semua jawaban dari semua test ke backend (hanya dipanggil sekali di akhir)
    */
   const submitAllAnswers = async () => {
-    if (!currentTest || !token) return;
+    if (!token) {
+      console.error("❌ No token available for submit");
+      return;
+    }
 
     try {
-      const currentTestInfo = tests.find(t => t.id === currentTest.id);
-      if (!currentTestInfo?.sections) return;
+      console.log("🔄 Starting submit all answers...");
+      console.log("📋 All tests answers cache:", allTestsAnswers);
+      console.log("📋 Questions cache:", questionsCache);
+      console.log("📋 Tests:", tests);
 
-      // console.log("🔍 All answers state:", allAnswers); // Debug logging removed
-      // console.log("🔍 Current test info:", currentTestInfo); // Debug logging removed
-      // console.log("🔍 Test sections:", currentTestInfo.sections); // Debug logging removed
+      const allSubmitAnswers: SubmitAnswer[] = [];
 
-      const submitAnswers: SubmitAnswer[] = [];
+      // Loop melalui semua test dan kumpulkan jawaban dari cache
+      for (const testInfo of tests) {
+        const testAnswers = allTestsAnswers[testInfo.id] || {};
+        const testQuestionsCache = questionsCache[testInfo.id] || {};
+        console.log(`📝 Processing test ${testInfo.id}:`, {
+          testAnswers,
+          questionsCache: testQuestionsCache,
+          sections: testInfo.sections
+        });
 
-      // Loop through all sections and their questions
-      currentTestInfo.sections.forEach(section => {
-        // console.log("🔍 Processing section:", section); // Debug logging removed
-        const sectionQuestions = section.test_questions || section.questions || [];
-        // console.log("🔍 Array questions in section:", sectionQuestions); // Debug logging removed
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sectionQuestions.forEach((question: any) => {
-          // console.log("🔍 Processing question:", question); // Debug logging removed
-          const answerKey = question.id; // Use test_question id as key
-          const answer = allAnswers[answerKey];
-          // console.log("🔍 Answer key:", answerKey, "Answer:", answer); // Debug logging removed
+        if (!testInfo.sections) {
+          console.warn(`⚠️ Test ${testInfo.id} has no sections`);
+          continue;
+        }
+
+        // Loop through all sections and their questions
+        testInfo.sections.forEach(section => {
+          const sectionQuestions = section.test_questions || section.questions || [];
+          console.log(`📦 Processing section ${section.section_id} (${section.section_type}):`, {
+            questionsCount: sectionQuestions.length,
+            questions: sectionQuestions
+          });
           
-          if (answer) {
-            const submitAnswer: SubmitAnswer = {
-              section_id: section.section_id,
-              question_id: question.id // Kirim test_question.id untuk konsistensi dengan backend
-            };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          sectionQuestions.forEach((question: any) => {
+            const answerKey = question.id;
+            const answer = testAnswers[answerKey];
+            const cachedQuestion = testQuestionsCache[answerKey] || question;
+            
+            console.log(`❓ Question ${answerKey}:`, {
+              answer,
+              cachedQuestion,
+              hasQuestionDetail: !!cachedQuestion.question_detail
+            });
+            
+            if (answer) {
+              const submitAnswer: SubmitAnswer = {
+                section_id: section.section_id,
+                question_id: question.id
+              };
 
-            // Handle different question types
-            if (section.section_type.toLowerCase() === 'disc') {
-              // For DISC questions, we need most_option_id and least_option_id
-              if (answer && typeof answer === 'object' && 'most' in answer && 'least' in answer) {
-                // Find the option IDs from the question detail
-                const questionDetail = question.question_detail;
-                if (questionDetail?.options) {
-                  const mostOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.most);
-                  const leastOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.least);
-                  
-                  if (mostOption && leastOption) {
-                    submitAnswer.most_option_id = mostOption.id;
-                    submitAnswer.least_option_id = leastOption.id;
-                    submitAnswers.push(submitAnswer);
-                    // console.log("✅ Added DISC answer:", submitAnswer); // Debug logging removed
+              // Handle different question types
+              if (section.section_type.toLowerCase() === 'disc') {
+                if (answer && typeof answer === 'object' && 'most' in answer && 'least' in answer) {
+                  const questionDetail = cachedQuestion.question_detail;
+                  if (questionDetail?.options) {
+                    const mostOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.most);
+                    const leastOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer.least);
+                    
+                    console.log(`🎯 DISC question ${answerKey}:`, {
+                      most: answer.most,
+                      least: answer.least,
+                      mostOption,
+                      leastOption,
+                      options: questionDetail.options
+                    });
+                    
+                    if (mostOption && leastOption) {
+                      submitAnswer.most_option_id = mostOption.id;
+                      submitAnswer.least_option_id = leastOption.id;
+                      allSubmitAnswers.push(submitAnswer);
+                      console.log(`✅ Added DISC answer:`, submitAnswer);
+                    } else {
+                      console.error(`❌ DISC option not found for question ${answerKey}:`, {
+                        mostOption,
+                        leastOption,
+                        options: questionDetail.options
+                      });
+                    }
                   } else {
-                    // console.log("❌ DISC option not found:", { mostOption, leastOption }); // Debug logging removed
+                    console.error(`❌ No options in question detail for DISC question ${answerKey}`);
                   }
                 } else {
-                  // console.log("❌ No options in question detail:", questionDetail); // Debug logging removed
+                  console.error(`❌ DISC answer missing most/least for question ${answerKey}:`, answer);
                 }
               } else {
-                // console.log("❌ DISC answer missing most/least:", answer); // Debug logging removed
+                if (typeof answer === 'string') {
+                  const questionDetail = cachedQuestion.question_detail;
+                  if (questionDetail?.options) {
+                    const selectedOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer);
+                    
+                    console.log(`🎯 ${section.section_type} question ${answerKey}:`, {
+                      answer,
+                      selectedOption,
+                      options: questionDetail.options
+                    });
+                    
+                    if (selectedOption) {
+                      submitAnswer.selected_option_id = selectedOption.id;
+                      allSubmitAnswers.push(submitAnswer);
+                      console.log(`✅ Added ${section.section_type} answer:`, submitAnswer);
+                    } else {
+                      console.error(`❌ Selected option not found for question ${answerKey}:`, {
+                        answer,
+                        options: questionDetail.options
+                      });
+                    }
+                  } else {
+                    console.error(`❌ No options in question detail for ${section.section_type} question ${answerKey}`);
+                  }
+                } else {
+                  console.error(`❌ Non-string answer for ${section.section_type} question ${answerKey}:`, answer);
+                }
               }
             } else {
-              // For CAAS and Teliti questions, we need selected_option_id
-              if (typeof answer === 'string') {
-                const questionDetail = question.question_detail;
-                if (questionDetail?.options) {
-                  const selectedOption = questionDetail.options.find((opt: Record<string, unknown>) => String(opt.id) === answer);
-                  if (selectedOption) {
-                    submitAnswer.selected_option_id = selectedOption.id;
-                    submitAnswers.push(submitAnswer);
-                    // console.log("✅ Added CAAS/Teliti answer:", submitAnswer); // Debug logging removed
-                  } else {
-                    // console.log("❌ Selected option not found:", { answer, options: questionDetail.options }); // Debug logging removed
-                  }
-                } else {
-                  // console.log("❌ No options in question detail:", questionDetail); // Debug logging removed
-                }
-              } else {
-                // console.log("❌ Non-string answer for CAAS/Teliti:", answer); // Debug logging removed
-              }
+              console.warn(`⚠️ No answer found for question ${answerKey}`);
             }
-          } else {
-            // console.log("❌ No answer found for question:", answerKey); // Debug logging removed
-          }
+          });
         });
-      });
-
-      // console.log("🔍 Final submit answers:", submitAnswers); // Debug logging removed
-      // console.log("🔍 Submit answers length:", submitAnswers.length); // Debug logging removed
+      }
       
-      if (submitAnswers.length > 0) {
-        const response = await quizService.submitTest(token, submitAnswers);
-        // console.log("✅ Test submitted successfully:", response); // Debug logging removed
+      console.log(`📤 Final submit answers (${allSubmitAnswers.length} answers):`, allSubmitAnswers);
+      
+      if (allSubmitAnswers.length > 0) {
+        console.log("🚀 Submitting to backend...");
+        const response = await quizService.submitTest(token, allSubmitAnswers);
+        console.log("✅ Submit response:", response);
         return response;
       } else {
-        // console.log("❌ No valid answers to submit. All answers:", allAnswers); // Debug logging removed
-        throw new Error("Tidak ada jawaban yang valid untuk disubmit. Silakan pastikan semua soal sudah dijawab.");
+        console.error("❌ No valid answers to submit");
+        throw new Error("Tidak ada jawaban yang valid untuk disubmit.");
       }
     } catch (error) {
-      // console.error("❌ Error submitting test:", error); // Debug logging removed
+      console.error("❌ Error in submitAllAnswers:", error);
       throw error;
     }
   };
 
   /**
    * Selesaikan section dan pindah ke section berikutnya atau selesai.
+   * @param answers - Jawaban yang akan disimpan
+   * @param skipToNextTest - Jika true, hanya simpan answers tanpa mengubah step (untuk timer expiration)
    */
-  const finishSection = async (answers?: Record<number, unknown>) => {
+  const finishSection = async (answers?: Record<number, unknown>, skipToNextTest: boolean = false) => {
     if (answers) {
       saveAnswers(answers);
+    }
+
+    // Jika skipToNextTest = true (timer habis), hanya simpan answers, tidak ubah step
+    // step akan diubah oleh nextTest
+    if (skipToNextTest) {
+      return;
     }
 
     if (!currentTest) {
@@ -333,20 +501,60 @@ export function useCandidateTest(token: string) {
   const finishTest = () => setStep("finished");
 
   /**
-   * Pindah ke test berikutnya atau submit semua answers jika sudah selesai
+   * Pindah ke section berikutnya dalam test yang sama, atau ke test berikutnya jika tidak ada section lagi
+   * Dipanggil ketika waktu habis untuk langsung skip tanpa melalui finished dialog
    */
-  const nextTest = async () => {
-    if (!currentTest) return;
+  const skipToNextSectionOrTest = async () => {
+    if (!currentTest) {
+      // Jika tidak ada currentTest, tampilkan finished dialog untuk submit
+      setStep("finished");
+      return;
+    }
 
-    const nextIndex = currentTest.index + 1;
-    if (nextIndex < tests.length) {
-      const nextTestInfo = tests[nextIndex];
+    // Tidak perlu submit di sini - jawaban sudah di-cache
+    // Submit hanya akan dilakukan sekali di akhir ketika semua test selesai
+
+    // Cari test info yang sesuai dengan currentTest
+    const currentTestInfo = tests.find(t => t.id === currentTest.id);
+    
+    if (!currentTestInfo) {
+      // Jika test info tidak ditemukan, tampilkan finished dialog untuk submit
+      setStep("finished");
+      return;
+    }
+
+    // PRIORITAS 1: Cek apakah masih ada section berikutnya dalam test yang sama
+    if (currentTestInfo.sections && currentTestInfo.sections.length > 0) {
+      const nextSectionIndex = currentSectionIndex + 1;
+      
+      if (nextSectionIndex < currentTestInfo.sections.length) {
+        // Masih ada section berikutnya dalam test yang sama - skip ke section berikutnya
+        const nextSection = currentTestInfo.sections[nextSectionIndex];
+        if (nextSection) {
+          // Update state untuk section berikutnya
+          setCurrentSectionIndex(nextSectionIndex);
+          setCurrentSection(nextSection);
+          setAllAnswers({}); // Reset answers untuk section baru
+          setStep("section-announcement");
+          return; // STOP - sudah skip ke section berikutnya
+        }
+      }
+    }
+
+    // PRIORITAS 2: Tidak ada section berikutnya - cek apakah ada test berikutnya
+    const nextTestIndex = currentTest.index + 1;
+    
+    if (nextTestIndex < tests.length && tests[nextTestIndex]) {
+      // Ada test berikutnya - skip ke test berikutnya
+      const nextTestInfo = tests[nextTestIndex];
+      
+      // Buat Test object untuk test berikutnya
       const nextTest: Test = {
         id: nextTestInfo.id,
         name: nextTestInfo.name,
         questionCount: nextTestInfo.questionCount,
         duration: nextTestInfo.duration,
-        index: nextIndex,
+        index: nextTestIndex,
         total: tests.length,
         sections: nextTestInfo.sections?.map((s) => ({
           id: String(s.section_id),
@@ -355,30 +563,125 @@ export function useCandidateTest(token: string) {
         })),
       };
 
+      // Update state untuk test berikutnya
       setCurrentTest(nextTest);
+      setCurrentSectionIndex(0);
+      setAllAnswers({}); // Reset answers untuk test baru
       
-      // Kalau test punya sections, mulai dari section pertama
-      if (nextTestInfo.sections && nextTestInfo.sections.length > 0) {
-        setCurrentSectionIndex(0);
+      // Mulai test berikutnya
+      if (nextTestInfo.sections && nextTestInfo.sections.length > 0 && nextTestInfo.sections[0]) {
+        // Test punya sections - mulai dari section pertama
         setCurrentSection(nextTestInfo.sections[0]);
         setStep("section-announcement");
       } else {
-        // Tanpa sections — fallback ke quiz langsung
-        const questionsFromService = await quizService.getQuestions(token);
-        setQuestions(questionsFromService);
-        setTimer(nextTestInfo.duration * 60);
-        setStep("quiz");
+        // Test tanpa sections - fetch questions dan langsung ke quiz
+        try {
+          // Re-fetch candidate data untuk mendapatkan test berikutnya
+          const candidateData = await candidateService.fetchCandidateByToken(token);
+          if (candidateData && candidateData.tests && candidateData.tests.length > nextTestIndex) {
+            const updatedTestInfo = candidateData.tests[nextTestIndex];
+            if (updatedTestInfo && updatedTestInfo.sections && updatedTestInfo.sections.length > 0) {
+              // Test punya sections setelah di-fetch
+              setCurrentSection(updatedTestInfo.sections[0]);
+              setStep("section-announcement");
+            } else {
+              // Test tanpa sections - fetch questions
+              const questionsFromService = await quizService.getQuestions(token);
+              setQuestions(questionsFromService);
+              setTimer(nextTestInfo.duration * 60);
+              setStep("quiz");
+            }
+          } else {
+            // Tidak ada test berikutnya di data yang di-fetch
+            // Tampilkan finished dialog dengan button "Finished" untuk submit
+            setStep("finished");
+          }
+        } catch (error) {
+          // Jika error fetch, coba langsung ke quiz dengan data yang ada
+          try {
+            const questionsFromService = await quizService.getQuestions(token);
+            setQuestions(questionsFromService);
+            setTimer(nextTestInfo.duration * 60);
+            setStep("quiz");
+          } catch (quizError) {
+            // Jika masih error, tampilkan finished dialog untuk submit
+            setStep("finished");
+          }
+        }
       }
     } else {
-      // Semua test selesai, submit semua answers
-      try {
-        await submitAllAnswers();
-        setStep("completed");
-      } catch (error) {
-        // console.error("❌ Error submitting test:", error); // Debug logging removed
-        // Continue to completed step even if there's an error (test might already be submitted)
-        setStep("completed");
+      // Tidak ada test berikutnya - semua test sudah selesai
+      // Tampilkan finished dialog dengan button "Finished" untuk submit
+      setStep("finished");
+    }
+  };
+
+  /**
+   * Pindah ke test berikutnya atau submit semua answers jika sudah selesai
+   * Dipanggil ketika user selesai manual (bukan dari timer)
+   */
+  const nextTest = async (fromTimer: boolean = false) => {
+    // Jika dari timer, gunakan skipToNextSectionOrTest untuk langsung skip
+    if (fromTimer) {
+      await skipToNextSectionOrTest();
+      return;
+    }
+
+    // Jika bukan dari timer, gunakan logika normal (bisa melalui finished dialog)
+    if (!currentTest) {
+      // Tampilkan finished dialog untuk submit
+      setStep("finished");
+      return;
+    }
+
+    // Tidak submit di sini - jawaban sudah di-cache
+    // Submit hanya akan dilakukan sekali di akhir ketika semua test selesai
+
+    // Cek section berikutnya dalam test yang sama
+    const currentTestInfo = tests.find(t => t.id === currentTest.id);
+    if (currentTestInfo?.sections && currentTestInfo.sections.length > 0) {
+      const nextSectionIndex = currentSectionIndex + 1;
+      if (nextSectionIndex < currentTestInfo.sections.length) {
+        // Masih ada section berikutnya
+        const nextSection = currentTestInfo.sections[nextSectionIndex];
+        if (nextSection) {
+          setCurrentSectionIndex(nextSectionIndex);
+          setCurrentSection(nextSection);
+          setStep("section-announcement");
+          return;
+        }
       }
+    }
+
+    // Tidak ada section lagi - pindah ke test berikutnya
+    const nextIndex = currentTest.index + 1;
+    if (nextIndex < tests.length) {
+      // Ada test berikutnya - tampilkan finished dialog dulu
+      setStep("finished");
+    } else {
+      // Tidak ada test berikutnya - semua test selesai
+      // Tampilkan finished dialog dengan button "Finished" untuk submit
+      // Jangan submit langsung, tunggu user klik button "Finished"
+      setStep("finished");
+    }
+  };
+
+  /**
+   * Submit semua jawaban dan set completed (dipanggil dari FinishedDialog ketika isLast=true)
+   */
+  const handleFinalSubmit = async () => {
+    try {
+      console.log("🎯 Final submit triggered - submitting all answers...");
+      await submitAllAnswers();
+      // Setelah submit berhasil, update completedAt
+      setCompletedAt(new Date().toISOString());
+      console.log("✅ All answers submitted successfully");
+      setStep("completed");
+    } catch (error) {
+      console.error("❌ Error submitting all answers:", error);
+      // Tampilkan error tapi tetap set step ke completed
+      alert("Error submitting answers. Please contact HR.");
+      setStep("completed");
     }
   };
 
@@ -394,6 +697,8 @@ export function useCandidateTest(token: string) {
     setQuestions([]);
     setTimer(0);
     setCompletedAt("");
+    setAllAnswers({});
+    setAllTestsAnswers({});
   };
 
   return {
@@ -408,6 +713,8 @@ export function useCandidateTest(token: string) {
     completedAt,
     allAnswers,
     error,
+    sessionTimeError,
+    setSessionTimeError,
     fetchCandidate,
     validateNik,
     verify,
@@ -416,6 +723,7 @@ export function useCandidateTest(token: string) {
     finishSection,
     finishTest,
     nextTest,
+    handleFinalSubmit,
     saveAnswers,
     submitAllAnswers,
     reset,

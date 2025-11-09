@@ -80,8 +80,6 @@ export default function EditQuestionDialog({
       errorMsg = "Teks jawaban wajib diisi";
     } else if (!opt.dimensionMost || !opt.dimensionLeast) {
       errorMsg = "Dimensi Most & Least wajib diisi";
-    } else if (opt.dimensionMost === opt.dimensionLeast) {
-      errorMsg = "Most dan Least tidak boleh sama";
     }
 
     setErrors((prev) => {
@@ -110,8 +108,7 @@ export default function EditQuestionDialog({
       (opt) =>
         opt.text.trim() !== "" &&
         opt.dimensionMost &&
-        opt.dimensionLeast &&
-        opt.dimensionMost !== opt.dimensionLeast
+        opt.dimensionLeast
     );
 
     if (!allFilled) {
@@ -143,8 +140,7 @@ export default function EditQuestionDialog({
       (opt) =>
         opt.text.trim() !== "" &&
         opt.dimensionMost &&
-        opt.dimensionLeast &&
-        opt.dimensionMost !== opt.dimensionLeast
+        opt.dimensionLeast
     ) && Object.keys(errors).length === 0;
 
   return (

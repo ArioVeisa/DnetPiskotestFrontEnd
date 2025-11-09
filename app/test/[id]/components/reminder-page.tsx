@@ -65,7 +65,7 @@ export function ReminderPage({
         </p>
       </div>
 
-      {/* Candidate Information */}
+      {/* Candidate Information - Back to top */}
       <Card className="rounded-lg border">
         <CardHeader>
           <div className="flex items-center space-x-2">
@@ -74,70 +74,30 @@ export function ReminderPage({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-3 gap-x-8 text-sm">
+          <div className="grid grid-cols-2 gap-x-8 text-sm">
             <div>
               <p className="text-gray-500 mb-1">Name</p>
               <p className="font-medium text-gray-900">{candidate.name}</p>
             </div>
             <div>
-              <p className="text-gray-500 mb-1">Email</p>
-              <p className="font-medium text-gray-900">{candidate.email}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 mb-1">Position</p>
-              <p className="font-medium text-gray-900">{candidate.position}</p>
+              <p className="text-gray-500 mb-1">NIK</p>
+              <p className="font-medium text-gray-900">{candidate.nik}</p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-x-8 text-sm">
             <div>
-              <p className="text-gray-500 mb-1">NIK</p>
-              <p className="font-medium text-gray-900">{candidate.nik}</p>
+              <p className="text-gray-500 mb-1">Position</p>
+              <p className="font-medium text-gray-900">{candidate.position}</p>
             </div>
             <div>
               <p className="text-gray-500 mb-1">Phone Number</p>
               <p className="font-medium text-gray-900">{candidate.phone}</p>
             </div>
+            <div>
+              <p className="text-gray-500 mb-1">Email</p>
+              <p className="font-medium text-gray-900">{candidate.email}</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Important Instructions */}
-      <Card className="rounded-lg border">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Info className="w-5 h-5 text-yellow-500" />
-            <CardTitle>Important Instructions</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-start">
-              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
-              Ensure your internet connection is stable
-            </li>
-            <li className="flex items-start">
-              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
-              Answer all questions honestly
-            </li>
-            <li className="flex items-start">
-              <ClockIcon className="w-4 h-4 text-green-500 mr-2 mt-1" />
-              Timer will start automatically when test begins
-            </li>
-          </ul>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-start">
-              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
-              Take the test in a quiet environment
-            </li>
-            <li className="flex items-start">
-              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
-              Test cannot be retaken once started
-            </li>
-            <li className="flex items-start">
-              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
-              Contact HR for technical issues
-            </li>
-          </ul>
         </CardContent>
       </Card>
 
@@ -233,6 +193,46 @@ export function ReminderPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Important Instructions */}
+      <Card className="rounded-lg border">
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <Info className="w-5 h-5 text-yellow-500" />
+            <CardTitle>Important Instructions</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start">
+              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
+              Ensure your internet connection is stable
+            </li>
+            <li className="flex items-start">
+              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
+              Answer all questions honestly
+            </li>
+            <li className="flex items-start">
+              <ClockIcon className="w-4 h-4 text-green-500 mr-2 mt-1" />
+              Timer will start automatically when test begins
+            </li>
+          </ul>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start">
+              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
+              Take the test in a quiet environment
+            </li>
+            <li className="flex items-start">
+              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
+              Test cannot be retaken once started
+            </li>
+            <li className="flex items-start">
+              <CheckCircle2 className="w-4 h-4 text-green-500 mr-2 mt-1" />
+              Contact HR for technical issues
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
 
       {/* Start Test Button */}
       <div className="pt-4">

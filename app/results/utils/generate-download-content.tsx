@@ -1,7 +1,24 @@
 import { CandidateResult } from "../result-candidate/[id]/services/result-candidates-service";
 
+// Helper function untuk convert image URL ke base64
+export async function imageToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error converting image to base64:', error);
+    return '';
+  }
+}
+
 // Generate HTML content untuk download PDF yang sama dengan view result
-export function generateDownloadContent(data: CandidateResult): string {
+export function generateDownloadContent(data: CandidateResult, logoBase64?: string): string {
   // Gunakan completedAt jika ada, jika tidak gunakan tanggal sekarang
   const periodDate = data.completedAt 
     ? new Date(data.completedAt).toLocaleDateString("id-ID", {
@@ -29,9 +46,10 @@ export function generateDownloadContent(data: CandidateResult): string {
     yMin: number,
     yMax: number
   ): string => {
-    const width = 280;
-    const height = 180;
-    const padding = 45;
+    // Perkecil ukuran chart lebih lanjut agar tidak kepotong di PDF
+    const width = 180;
+    const height = 110;
+    const padding = 28;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
     
@@ -66,23 +84,23 @@ export function generateDownloadContent(data: CandidateResult): string {
           <!-- Area fill -->
           <polygon points="${areaPoints}" fill="url(#grad-${color.replace('#', '')})" opacity="0.3"/>
           <!-- Chart line -->
-          <polyline points="${points}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <!-- Data points -->
           ${data.map((d, i) => {
             const x = i * xScale;
             const y = chartHeight - (d.value - yMin) * yScale;
-            return `<circle cx="${x}" cy="${y}" r="4" fill="${color}" stroke="white" stroke-width="2"/>`;
+            return `<circle cx="${x}" cy="${y}" r="2.5" fill="${color}" stroke="white" stroke-width="1"/>`;
           }).join('')}
           <!-- X-axis labels -->
           ${data.map((d, i) => {
             const x = i * xScale;
-            return `<text x="${x}" y="${chartHeight + 25}" text-anchor="middle" font-size="11" fill="#374151" font-weight="bold">${d.label}</text>`;
+            return `<text x="${x}" y="${chartHeight + 16}" text-anchor="middle" font-size="8" fill="#374151" font-weight="bold">${d.label}</text>`;
           }).join('')}
           <!-- Y-axis labels -->
           ${Array.from({ length: 5 }, (_, i) => {
             const value = yMin + ((yMax - yMin) / 4) * (4 - i);
             const y = (chartHeight / 4) * i;
-            return `<text x="-15" y="${y + 4}" text-anchor="end" font-size="10" fill="#6b7280">${Math.round(value)}</text>`;
+            return `<text x="-10" y="${y + 2}" text-anchor="end" font-size="7" fill="#6b7280">${Math.round(value)}</text>`;
           }).join('')}
           <!-- Y-axis line -->
           <line x1="0" y1="0" x2="0" y2="${chartHeight}" stroke="#e5e7eb" stroke-width="1"/>
@@ -140,18 +158,44 @@ export function generateDownloadContent(data: CandidateResult): string {
           background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
           padding: 25px 20px !important;
           border-radius: 8px 8px 0 0 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
         .logo {
-          font-size: 24px !important;
+          margin-bottom: 20px !important;
+          text-align: center !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        .logo img {
+          display: block !important;
+          margin: 0 auto !important;
+        }
+        .logo-text {
+          font-size: 32px !important;
           font-weight: bold !important;
-          color: #2563eb !important;
-          margin-bottom: 10px !important;
+          color: #000 !important;
+          margin: 0 !important;
+          line-height: 1.2 !important;
+          text-align: center !important;
+        }
+        .logo-subtext {
+          font-size: 14px !important;
+          color: #000 !important;
+          margin: 5px 0 0 0 !important;
+          font-weight: normal !important;
+          text-align: center !important;
         }
         .title {
           font-size: 28px !important;
           font-weight: bold !important;
           margin-bottom: 10px !important;
           color: #1f2937 !important;
+          text-align: center !important;
         }
         .candidate-info {
           background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%) !important;
@@ -164,12 +208,32 @@ export function generateDownloadContent(data: CandidateResult): string {
         .candidate-name {
           font-size: 24px !important;
           font-weight: bold !important;
-          margin-bottom: 10px !important;
+          margin-bottom: 15px !important;
           color: #1f2937 !important;
         }
-        .candidate-position {
-          font-size: 18px !important;
+        .biodata-grid {
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 12px !important;
+          margin-top: 10px !important;
+        }
+        .biodata-item {
+          display: flex !important;
+          flex-direction: column !important;
+          padding: 10px 0 !important;
+        }
+        .biodata-label {
+          font-size: 11px !important;
           color: #6b7280 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.5px !important;
+          margin-bottom: 4px !important;
+          font-weight: 600 !important;
+        }
+        .biodata-value {
+          font-size: 14px !important;
+          color: #1f2937 !important;
+          font-weight: 500 !important;
         }
         .scores-section {
           display: flex !important;
@@ -279,31 +343,28 @@ export function generateDownloadContent(data: CandidateResult): string {
         .job-list {
           list-style: none !important;
           padding: 0 !important;
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 12px !important;
         }
         .job-item {
-          font-size: 14px !important;
-          margin-bottom: 10px !important;
-          padding-left: 25px !important;
+          font-size: 13px !important;
+          margin-bottom: 0 !important;
+          padding: 10px 12px !important;
           position: relative !important;
+          background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%) !important;
+          border: 1.5px solid #e5e7eb !important;
+          border-radius: 8px !important;
+          transition: all 0.2s !important;
+          color: #1f2937 !important;
+          font-weight: 500 !important;
         }
-        .job-item::before {
-          content: counter(job-counter) !important;
-          counter-increment: job-counter !important;
-          position: absolute !important;
-          left: 0 !important;
-          width: 20px !important;
-          height: 20px !important;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
-          color: white !important;
-          border-radius: 50% !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          font-size: 11px !important;
-          font-weight: bold !important;
-        }
-        .job-list {
-          counter-reset: job-counter !important;
+        .job-item:first-child {
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+          border-color: #3b82f6 !important;
+          border-width: 2px !important;
+          font-weight: 600 !important;
+          color: #1e40af !important;
         }
         .charts-section {
           margin-bottom: 30px !important;
@@ -311,27 +372,37 @@ export function generateDownloadContent(data: CandidateResult): string {
         .charts-grid {
           display: grid !important;
           grid-template-columns: repeat(3, 1fr) !important;
-          gap: 20px !important;
+          gap: 15px !important;
           margin-bottom: 20px !important;
         }
         .chart-container {
           background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
           border: 1px solid #e5e7eb !important;
           border-radius: 12px !important;
-          padding: 20px !important;
+          padding: 12px !important;
           text-align: center !important;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
         .chart-title {
-          font-size: 12px !important;
+          font-size: 10px !important;
           font-weight: bold !important;
-          margin-bottom: 5px !important;
+          margin-bottom: 3px !important;
           color: #1f2937 !important;
         }
         .chart-subtitle {
-          font-size: 10px !important;
+          font-size: 8px !important;
           color: #6b7280 !important;
-          margin-bottom: 10px !important;
+          margin-bottom: 6px !important;
+        }
+        .chart-svg-wrapper {
+          width: 100% !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
         }
         .footer {
           margin-top: 40px !important;
@@ -345,15 +416,49 @@ export function generateDownloadContent(data: CandidateResult): string {
     </head>
     <body>
       <div class="header">
-        <div class="logo">DWP</div>
+        <div class="logo">
+          ${logoBase64 
+            ? `<img src="${logoBase64}" alt="Logo DWP" style="max-width: 120px; height: auto; margin-bottom: 10px;" />`
+            : `
+              <p class="logo-text">DWP</p>
+              <p class="logo-subtext">Dutakom Wibawa Putra</p>
+            `
+          }
+        </div>
         <div class="title">PSYCHOTEST REPORT</div>
-        <div style="color: #6b7280; font-size: 16px;">Hasil Tes Psikometri Kandidat</div>
+        <div style="color: #6b7280; font-size: 16px; text-align: center !important;">Hasil Tes Psikometri Kandidat</div>
       </div>
 
       <div class="candidate-info">
         <div class="candidate-name">${data.name}</div>
-        <div class="candidate-position">${data.position}</div>
-        ${data.completedAt ? `<div style="margin-top: 10px; font-size: 12px; color: #6b7280;">Periode: ${periodDate}</div>` : ''}
+        <div class="biodata-grid">
+          <div class="biodata-item">
+            <div class="biodata-label">NIK</div>
+            <div class="biodata-value">${data.nik || '-'}</div>
+          </div>
+          <div class="biodata-item">
+            <div class="biodata-label">Email</div>
+            <div class="biodata-value">${data.email || '-'}</div>
+          </div>
+          <div class="biodata-item">
+            <div class="biodata-label">Nomor HP</div>
+            <div class="biodata-value">${data.phone || '-'}</div>
+          </div>
+          <div class="biodata-item">
+            <div class="biodata-label">Posisi</div>
+            <div class="biodata-value">${data.position || '-'}</div>
+          </div>
+          <div class="biodata-item">
+            <div class="biodata-label">Jenis Kelamin</div>
+            <div class="biodata-value">${data.gender === 'male' ? 'Laki-laki' : data.gender === 'female' ? 'Perempuan' : data.gender || '-'}</div>
+          </div>
+          ${data.completedAt ? `
+          <div class="biodata-item">
+            <div class="biodata-label">Periode</div>
+            <div class="biodata-value">${periodDate}</div>
+          </div>
+          ` : ''}
+        </div>
       </div>
 
       <div class="scores-section">
@@ -368,8 +473,8 @@ export function generateDownloadContent(data: CandidateResult): string {
           <div class="score-subtitle">Correct Answers</div>
         </div>
         <div class="score-card">
-          <div class="score-title">Total Question</div>
-          <div class="score-value">${data.adaptability.totalQuestions}</div>
+          <div class="score-title">Norma</div>
+          <div class="score-value">${data.adaptability.norma || "-"}</div>
         </div>
       </div>
 
@@ -379,17 +484,23 @@ export function generateDownloadContent(data: CandidateResult): string {
           <div class="chart-container">
             <div class="chart-title">GRAPH 1 MOST</div>
             <div class="chart-subtitle">Make Public Self</div>
-            ${createChartSVG(data.graphs.most, "#3b82f6", "GRAPH 1 MOST", mostRange.min, mostRange.max)}
+            <div class="chart-svg-wrapper">
+              ${createChartSVG(data.graphs.most, "#3b82f6", "GRAPH 1 MOST", mostRange.min, mostRange.max)}
+            </div>
           </div>
           <div class="chart-container">
             <div class="chart-title">GRAPH 2 LEAST</div>
             <div class="chart-subtitle">Core Private Self</div>
-            ${createChartSVG(data.graphs.least, "#eab308", "GRAPH 2 LEAST", leastRange.min, leastRange.max)}
+            <div class="chart-svg-wrapper">
+              ${createChartSVG(data.graphs.least, "#eab308", "GRAPH 2 LEAST", leastRange.min, leastRange.max)}
+            </div>
           </div>
           <div class="chart-container">
             <div class="chart-title">GRAPH 3 CHANGE</div>
             <div class="chart-subtitle">Mirror Perceived Self</div>
-            ${createChartSVG(data.graphs.change, "#10b981", "GRAPH 3 CHANGE", changeRange.min, changeRange.max)}
+            <div class="chart-svg-wrapper">
+              ${createChartSVG(data.graphs.change, "#10b981", "GRAPH 3 CHANGE", changeRange.min, changeRange.max)}
+            </div>
           </div>
         </div>
       </div>
@@ -429,7 +540,9 @@ export function generateDownloadContent(data: CandidateResult): string {
       <div class="job-match">
         <div class="section-title">Job Match</div>
         <ul class="job-list">
-          ${data.jobMatch.slice(0, 4).map(job => `<li class="job-item">${job}</li>`).join('')}
+          ${data.jobMatch.slice(0, 4).map((job, index) => `
+            <li class="job-item">${job}</li>
+          `).join('')}
         </ul>
       </div>
 
@@ -441,4 +554,5 @@ export function generateDownloadContent(data: CandidateResult): string {
     </html>
   `;
 }
+
 

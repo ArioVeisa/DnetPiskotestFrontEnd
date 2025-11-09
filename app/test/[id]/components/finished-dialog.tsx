@@ -63,17 +63,26 @@ export function FinishedDialog({
         {/* Deskripsi */}
         <div className="text-gray-500 mb-6 text-center">
           {isLast
-            ? "You have finished all tests."
+            ? "Terima kasih telah menyelesaikan semua test. Silakan hubungi HR untuk informasi lebih lanjut."
             : "Thank you for completing this test!"}
         </div>
 
         {/* Tombol */}
-        <Button
-          onClick={onNext}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base font-medium py-2 rounded-lg"
-        >
-          {isLast ? "View Results" : "Next Test"}
-        </Button>
+        {!isLast ? (
+          <Button
+            onClick={onNext}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base font-medium py-2 rounded-lg"
+          >
+            Next Test
+          </Button>
+        ) : (
+          <Button
+            onClick={onNext}
+            className="w-full bg-green-500 hover:bg-green-600 text-white text-base font-medium py-2 rounded-lg"
+          >
+            Finished
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
   );

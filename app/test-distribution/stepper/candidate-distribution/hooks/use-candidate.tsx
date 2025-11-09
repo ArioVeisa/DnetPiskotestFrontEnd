@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   candidateService,
   Candidate,
@@ -22,6 +22,14 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Ref untuk menyimpan candidates terbaru (untuk menghindari closure issues)
+  const candidatesRef = useRef<CandidateWithStatus[]>([]);
+  
+  // Update ref setiap kali candidates berubah
+  useEffect(() => {
+    candidatesRef.current = candidates;
+  }, [candidates]);
 
   /** Helper: tambahkan default status "Pending" */
   const normalizeCandidates = (data: Candidate[]): CandidateWithStatus[] =>
@@ -92,20 +100,7 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
   }, [testId]);
 
   // Load draft candidates saat pertama kali mount
-  useEffect(() => {
-    if (testId && options?.autoLoad !== false) {
-      const drafts = readDrafts();
-      if (drafts.length > 0) {
-        // Load dari localStorage (termasuk yang sudah di-update)
-        setCandidates(drafts);
-        console.log(`✅ Loaded ${drafts.length} candidates from localStorage (including updated ones)`);
-      } else {
-        // Jika tidak ada draft, coba load dari backend (jika sudah ada test distribution)
-        // Tapi di step 2, belum ada test distribution, jadi skip
-        console.log(`ℹ️ No draft candidates found for test ${testId}`);
-      }
-    }
-  }, [testId, options?.autoLoad]);
+  // Hapus useEffect ini karena sudah di-handle di useEffect yang lebih bawah
 
   /** Ambil detail kandidat */
   const fetchCandidateById = useCallback(async (id: number) => {
@@ -199,49 +194,92 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
     async (payload: UpdateCandidatePayload & { id: number }) => {
       setLoading(true);
       setError(null);
+      
       try {
-        const current = candidates.find((c) => c.id === payload.id);
-        if (current?.isDraft) {
-          const next = candidates.map((c) => (c.id === payload.id ? { ...c, ...payload } as CandidateWithStatus : c));
-          setCandidates(next);
-          writeDrafts(next);
-          return next.find((c) => c.id === payload.id)!;
-        } else {
-          console.log(`✏️ Updating candidate with ID: ${payload.id}`, payload);
-          const updated = await candidateService.update(payload.id, payload);
-          const withStatus: CandidateWithStatus = {
-            ...updated,
-            localStatus: current?.localStatus || "Pending",
-            isDraft: false,
-          } as CandidateWithStatus;
+        // Langsung load dari localStorage sebagai source of truth
+        // Ini memastikan kita selalu mendapatkan data terbaru, bahkan jika state kosong
+        let sourceCandidates: CandidateWithStatus[] = [];
+        
+        // Load dari localStorage terlebih dahulu (source of truth untuk draft candidates)
+        if (storageKey) {
+          const drafts = readDrafts();
+          if (drafts.length > 0) {
+            console.log(`📋 Loading ${drafts.length} candidates from localStorage (source of truth)`);
+            sourceCandidates = drafts;
+          }
+        }
+
+        // Jika tidak ada di localStorage, gunakan state dari ref (selalu ter-update)
+        if (sourceCandidates.length === 0) {
+          sourceCandidates = candidatesRef.current;
+          console.log(`📋 Using ${sourceCandidates.length} candidates from state ref`);
+        }
+
+        // Jika masih kosong, berarti memang tidak ada candidate
+        if (sourceCandidates.length === 0) {
+          console.error(`❌ No candidates found in state or localStorage`);
+          setLoading(false);
+          throw new Error(`No candidates found. Cannot update candidate with ID: ${payload.id}`);
+        }
+
+        // Cari candidate yang akan di-update
+        const currentCandidate = sourceCandidates.find((c) => c.id === payload.id);
+        
+        if (!currentCandidate) {
+          console.error(`❌ Candidate not found. ID: ${payload.id}`);
+          console.log('Source candidates count:', sourceCandidates.length);
+          console.log('Available candidate IDs:', sourceCandidates.map(c => ({ id: c.id, name: c.name, isDraft: c.isDraft })));
+          setLoading(false);
+          throw new Error(`Candidate not found with ID: ${payload.id}`);
+        }
+
+        console.log(`✅ Found candidate to update:`, { id: currentCandidate.id, name: currentCandidate.name, isDraft: currentCandidate.isDraft });
+
+        // Buat updated candidate
+        const updatedCandidate: CandidateWithStatus = {
+          ...currentCandidate,
+          ...payload,
+          localStatus: currentCandidate.localStatus || "Pending",
+          isDraft: currentCandidate.isDraft ?? true,
+          updated_at: new Date().toISOString(),
+        } as CandidateWithStatus;
+
+        console.log(`✏️ Updating ${currentCandidate.isDraft ? 'draft' : 'test distribution'} candidate with ID: ${payload.id}`);
+
+        // Update state dan localStorage dalam satu operasi menggunakan functional update
+        setCandidates((prevCandidates) => {
+          // Gunakan sourceCandidates yang sudah kita load sebagai source of truth
+          // Jika sourceCandidates kosong (tidak mungkin karena sudah di-check di atas),
+          // gunakan prevCandidates sebagai fallback
+          const candidatesToUpdate = sourceCandidates.length > 0 ? sourceCandidates : prevCandidates;
+          const updatedList = candidatesToUpdate.map((c) => (c.id === payload.id ? updatedCandidate : c));
           
-          // Update state dengan data terbaru dari backend
-          const updatedList = candidates.map((c) => (c.id === payload.id ? withStatus : c));
-          setCandidates(updatedList);
-          
-          // Simpan semua candidates (termasuk yang sudah di-update) ke localStorage
-          // untuk memastikan data tidak hilang saat refresh
+          // Simpan ke localStorage
           if (storageKey) {
-            // Pastikan data tersimpan dengan benar
             writeDrafts(updatedList);
             console.log(`💾 Saved ${updatedList.length} candidates to localStorage after update`);
           }
           
-          if (selected?.id === payload.id) setSelected(withStatus);
-          
-          console.log(`✅ Candidate updated in state and localStorage:`, withStatus);
-          return withStatus;
-        }
+          return updatedList;
+        });
+
+        console.log(`✅ Candidate updated in state and localStorage:`, updatedCandidate);
+        
+        // Reset loading SETELAH state update selesai
+        // Pastikan loading di-reset sebelum return untuk menghindari freeze
+        setLoading(false);
+        
+        // Return updated candidate
+        return updatedCandidate;
       } catch (err) {
         console.error('❌ Error updating candidate:', err);
         const msg = err instanceof Error ? err.message : String(err);
         setError(msg);
-        throw err;
-      } finally {
         setLoading(false);
+        throw err;
       }
     },
-    [selected?.id, candidates, storageKey]
+    [storageKey]
   );
 
   /** Hapus kandidat */
@@ -288,14 +326,22 @@ export function useCandidates(testId?: number, options?: { autoLoad?: boolean })
 
   /** Auto load candidates yang sudah di-add untuk test ini (bisa dimatikan) */
   useEffect(() => {
+    if (!testId) return;
+    
     const shouldAutoLoad = options?.autoLoad !== false;
-    if (shouldAutoLoad && testId) {
+    if (shouldAutoLoad) {
       console.log(`🔄 Auto-loading candidates for test ${testId}`);
       refreshCandidates();
-    } else if (!shouldAutoLoad) {
+    } else {
+      // Meskipun autoLoad: false, kita tetap load dari localStorage
+      // untuk memastikan candidates tersedia untuk edit
       const drafts = readDrafts();
-      setCandidates(drafts);
-      console.log(`ℹ️ Auto-load disabled, loaded ${drafts.length} drafts from storage`);
+      if (drafts.length > 0) {
+        setCandidates(drafts);
+        console.log(`ℹ️ Auto-load disabled, loaded ${drafts.length} drafts from storage`);
+      } else {
+        console.log(`ℹ️ Auto-load disabled, no drafts found in storage`);
+      }
     }
   }, [testId, refreshCandidates, options?.autoLoad]);
 

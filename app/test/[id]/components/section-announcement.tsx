@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { Clock, CheckCircle } from "lucide-react";
 
 interface SectionAnnouncementProps {
   sectionType: string;
@@ -18,17 +17,7 @@ export function SectionAnnouncement({
   questionCount, 
   onStart 
 }: SectionAnnouncementProps) {
-  const [countdown, setCountdown] = useState(30); // 30 detik countdown
-  const [canStart, setCanStart] = useState(false);
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setCanStart(true);
-    }
-  }, [countdown]);
+  // Removed countdown timer - user can start test immediately
 
   const getSectionInfo = (type: string) => {
     switch (type.toLowerCase()) {
@@ -155,28 +144,14 @@ export function SectionAnnouncement({
             </div>
           </div>
 
-          {/* Countdown Timer */}
-          <div className="text-center">
-            <div className="text-4xl font-bold text-orange-600 mb-2">
-              {countdown > 0 ? countdown : 'Ready!'}
-            </div>
-            <p className="text-gray-600">
-              {countdown > 0 
-                ? `Test will start in ${countdown} seconds...` 
-                : 'Click the button below to start the test'
-              }
-            </p>
-          </div>
-
           {/* Start Button */}
           <div className="flex justify-center">
             <Button 
               onClick={onStart}
-              disabled={!canStart}
               size="lg"
               className="px-8 py-3 text-lg font-semibold"
             >
-              {canStart ? 'Start Test' : 'Preparing...'}
+              Start Test
             </Button>
           </div>
 

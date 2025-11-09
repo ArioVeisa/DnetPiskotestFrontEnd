@@ -84,28 +84,28 @@ export const convertApiDataToStats = (
   apiData: DashboardApiResponse["data"]
 ): StatCard[] => [
   {
-    title: "Total Kandidat",
+    title: "Total Candidates",
     value: apiData.summary.total_candidates,
     change: 0, // API tidak menyediakan perubahan
     changeLabel: "",
     icon: <Users className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Tes Berlangsung",
+    title: "Ongoing Tests",
     value: apiData.summary.total_tests_in_progress,
     change: 0,
     changeLabel: "",
     icon: <Clock className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Tes Selesai",
+    title: "Completed Tests",
     value: apiData.summary.total_tests_completed,
     change: 0,
     changeLabel: "",
     icon: <CheckCircle className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Tes Pending",
+    title: "Pending Tests",
     value: apiData.summary.total_tests_pending,
     change: 0,
     changeLabel: "",
@@ -116,28 +116,28 @@ export const convertApiDataToStats = (
 // Fallback dummy data generators (untuk development)
 export const getStats = (): StatCard[] => [
   {
-    title: "Total Kandidat",
+    title: "Total Candidates",
     value: 0,
     change: 0,
     changeLabel: "",
     icon: <Users className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Tes Berlangsung",
+    title: "Ongoing Tests",
     value: 0,
     change: 0,
     changeLabel: "",
     icon: <Clock className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Tes Selesai",
+    title: "Completed Tests",
     value: 0,
     change: 0,
     changeLabel: "",
     icon: <CheckCircle className="w-5 h-5 text-blue-500" />,
   },
   {
-    title: "Tes Pending",
+    title: "Pending Tests",
     value: 0,
     change: 0,
     changeLabel: "",
@@ -205,17 +205,17 @@ export const getLatestTests = (): TestActivity[] => [
 
 export const getQuickActions = (): QuickAction[] => [
   {
-    label: "Setup Paket Tes",
+    label: "Set Up Test Package",
     icon: <Plus className="w-5 h-5" />,
     path: "/test-packages", // 👈 arahkan ke halaman test packages
   },
   {
-    label: "Kelola Soal",
+    label: "Manage Questions",
     icon: <FileText className="w-5 h-5" />,
     path: "/questions-bank", // 👈 halaman manajemen soal
   },
   {
-    label: "Lihat Laporan",
+    label: "View Report",
     icon: <BarChart2 className="w-5 h-5" />,
     path: "/results", // 👈 halaman laporan
   },

@@ -58,7 +58,7 @@ interface QuizPageProps {
   questions: Question[];
   test: Test;
   timer: number; // detik
-  onFinish: (answers?: Record<number, unknown>) => void;
+  onFinish: (answers?: Record<number, unknown>, skipToNextTest?: boolean) => void;
   onExpire: () => void;
 }
 
@@ -70,14 +70,29 @@ export function QuizPage({
   onFinish,
   onExpire,
 }: QuizPageProps) {
-  const { timeLeft, start, reset } = useQuizTimer(timer, onExpire);
   const [answers, setAnswers] = useState<Record<number, string | DiscAnswer>>({});
   const [flags, setFlags] = useState<Record<number, boolean>>({});
   const [showReminder, setShowReminder] = useState(false);
   const [current, setCurrent] = useState(0);
+  const [timeExpired, setTimeExpired] = useState(false);
+  const [showTimeOverDialog, setShowTimeOverDialog] = useState(false);
 
   // Local cache key untuk menyimpan jawaban
   const cacheKey = `quiz_answers_${questions[0]?.id || 'unknown'}`;
+
+  // Handle timer expiration - ketika waktu habis, tampilkan popup dan tombol Finish
+  const handleTimerExpire = () => {
+    setTimeExpired(true);
+    setShowTimeOverDialog(true);
+    
+    // Save answers terlebih dahulu ke state (melalui onFinish dengan skipToNextTest = true)
+    // skipToNextTest = true berarti hanya simpan answers, tidak ubah step
+    if (Object.keys(answers).length > 0) {
+      onFinish(answers, true); // true = skipToNextTest, hanya save answers
+    }
+  };
+
+  const { timeLeft, start, reset } = useQuizTimer(timer, handleTimerExpire);
 
   /* Load answers from local storage on mount */
   useEffect(() => {
@@ -157,6 +172,22 @@ export function QuizPage({
   };
 
   const handleFinishClick = () => {
+    // Jika waktu habis, langsung submit tanpa validasi
+    if (timeExpired) {
+      // Clear cache setelah test selesai
+      try {
+        localStorage.removeItem(cacheKey);
+      } catch (error) {
+        // Ignore cache errors
+      }
+      onFinish(answers);
+      // Setelah submit, trigger onExpire untuk skip ke test berikutnya
+      setTimeout(() => {
+        onExpire();
+      }, 100);
+      return;
+    }
+
     const hasUnanswered = questions.some((question, i) => {
       const answerKey = question.id;
       const answer = answerKey ? answers[answerKey] : undefined;
@@ -228,7 +259,7 @@ export function QuizPage({
             onPrevious={() => {}} // Disabled - no previous button
             onNext={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
             canGoPrevious={false} // Always false - no previous allowed
-            canGoNext={safeIndex < questions.length - 1}
+            canGoNext={safeIndex < questions.length - 1 && !timeExpired}
           />
         ) : (
           <div className="bg-white rounded-2xl shadow p-6">
@@ -278,42 +309,50 @@ export function QuizPage({
         )}
 
         {/* Bottom actions */}
-        <div className="flex flex-wrap gap-2 mt-6">
-          <div className="flex flex-wrap gap-2 mt-6">
-            <Button
-              variant={currentQuestion.id && flags[currentQuestion.id] ? undefined : "outline"}
-              size="sm"
-              onClick={() => toggleFlag(safeIndex)}
-              className={[
-                "flex items-center gap-2",
-                currentQuestion.id && flags[currentQuestion.id]
-                  ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
-                  : "",
-              ].join(" ")}
-            >
-              <Flag
-                className={`w-4 h-4 ${
-                  currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
-                }`}
-              />
-              <span className={currentQuestion.id && flags[currentQuestion.id] ? "text-white" : ""}>
-                Mark for Review
-              </span>
-            </Button>
-            {currentQuestion.questionType !== 'DISC' && (
-              <div className="ml-auto">
+        <div className="flex flex-wrap gap-2 mt-6 justify-between items-center">
+          {!timeExpired && (
+            <>
+              <Button
+                variant={currentQuestion.id && flags[currentQuestion.id] ? undefined : "outline"}
+                size="sm"
+                onClick={() => toggleFlag(safeIndex)}
+                className={[
+                  "flex items-center gap-2",
+                  currentQuestion.id && flags[currentQuestion.id]
+                    ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
+                    : "",
+                ].join(" ")}
+              >
+                <Flag
+                  className={`w-4 h-4 ${
+                    currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
+                  }`}
+                />
+                <span className={currentQuestion.id && flags[currentQuestion.id] ? "text-white" : ""}>
+                  Mark for Review
+                </span>
+              </Button>
+              {currentQuestion.questionType !== 'DISC' && (
                 <Button
                   size="sm"
                   onClick={() =>
                     setCurrent((c) => Math.min(questions.length - 1, c + 1))
                   }
-                  disabled={safeIndex === questions.length - 1}
+                  disabled={safeIndex === questions.length - 1 || timeExpired}
                 >
                   Next
                 </Button>
-              </div>
-            )}
-          </div>
+              )}
+            </>
+          )}
+          {timeExpired && (
+            <Button
+              onClick={handleFinishClick}
+              className="w-full bg-red-500 hover:bg-red-600 text-white"
+            >
+              Finish Test
+            </Button>
+          )}
         </div>
       </div>
 
@@ -370,7 +409,7 @@ export function QuizPage({
               }
 
               return (
-                <button key={i} className={style} onClick={() => setCurrent(i)}>
+                <button key={i} className={style} onClick={() => !timeExpired && setCurrent(i)} disabled={timeExpired}>
                   {i + 1}
                 </button>
               );
@@ -391,13 +430,22 @@ export function QuizPage({
             </div>
           </div>
         </div>
-        {(
-          // Sembunyikan tombol Finish untuk DISC/CAAS sampai semua terisi
-          (isDisc || isCaas) ? isAllAnswered() : true
-        ) && (
+        {!timeExpired && (
+          // Sembunyikan tombol Finish untuk DISC/CAAS/Fast Accuracy sampai semua terisi
+          (isDisc || isCaas || isFast) ? isAllAnswered() : true
+        ) && !timeExpired && (
           <Button
             onClick={handleFinishClick}
             className="mt-4 w-full"
+            variant="default"
+          >
+            Finish Test
+          </Button>
+        )}
+        {timeExpired && (
+          <Button
+            onClick={handleFinishClick}
+            className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white"
             variant="default"
           >
             Finish Test
@@ -442,6 +490,28 @@ export function QuizPage({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Time Over Dialog */}
+      <Dialog open={showTimeOverDialog} onOpenChange={setShowTimeOverDialog}>
+        <DialogContent className="max-w-md">
+          <DialogTitle className="sr-only">Time is Over</DialogTitle>
+          <div className="flex flex-col items-center py-4">
+            <div className="bg-red-100 rounded-full p-4 mb-4 flex items-center justify-center">
+              <AlertTriangle className="w-12 h-12 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Time is Over</h3>
+            <p className="text-gray-600 text-center mb-6">
+              The test time has expired. Please click the "Finish Test" button to submit your answers.
+            </p>
+            <Button
+              onClick={() => setShowTimeOverDialog(false)}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

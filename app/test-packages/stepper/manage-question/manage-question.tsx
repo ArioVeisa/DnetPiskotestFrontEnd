@@ -41,6 +41,7 @@ type ManageQuestionsProps = {
   testId: number;
   sectionIds: Record<QuestionType, number>;
   token: string; // Required berdasarkan service
+  hideNavigation?: boolean;
 };
 
 /* ============================================================================
@@ -55,6 +56,7 @@ export default function ManageQuestions({
   testId,
   sectionIds,
   token,
+  hideNavigation = false,
 }: ManageQuestionsProps) {
   const [activeType, setActiveType] = useState<QuestionType>(allowedTypes[0]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -280,63 +282,90 @@ export default function ManageQuestions({
         </p>
       ) : (
         <div className="space-y-3">
-          {questions.map((q, idx) => (
-            <div
-              key={q.id}
-              className="rounded-xl border bg-white px-3 sm:px-4 py-3"
-            >
-              <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground mb-1">
-                <div className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[10px]">
-                  {idx + 1}
-                </div>
-                <span>Question:</span>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm sm:text-base font-medium">
-                  {q.question_text || "Soal tidak ada"}
-                </p>
-                {editMode && (
-                  <div className="shrink-0 flex gap-1">
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="w-8 h-8"
-                      onClick={() => handleDelete(q.id)}
-                    >
-                      <Trash className="w-4 h-4" />
-                    </Button>
+          {questions.map((q, idx) => {
+            // For DISC questions, show first option text instead of question_text to avoid duplicate appearance
+            const displayText = 
+              activeType === "DISC" && q.options && Object.keys(q.options).length > 0
+                ? Object.values(q.options)[0]
+                : q.question_text || "Soal tidak ada";
+            
+            return (
+              <div
+                key={q.id}
+                className="rounded-xl border bg-white px-3 sm:px-4 py-3"
+              >
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground mb-1">
+                  <div className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[10px]">
+                    {idx + 1}
                   </div>
-                )}
+                  <span>Question:</span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm sm:text-base font-medium">
+                    {displayText}
+                  </p>
+                  {editMode && (
+                    <div className="shrink-0 flex gap-1">
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="w-8 h-8"
+                        onClick={() => handleDelete(q.id)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* FOOTER */}
-      <div
-        className={cn(
-          "bg-white border-t py-3 px-8 flex justify-end gap-3 transition-all duration-300",
-          isScrolled
-            ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
-            : "relative mt-8"
-        )}
-      >
-        <Button variant="outline" type="button" onClick={onBack}>
-          Back
-        </Button>
-        <Button
-          type="button"
-          onClick={async () => {
-            const hasEmpty = Object.values(sectionIds).some((sid) => !sid);
-            if (hasEmpty) return;
-            const ok = await syncAllSections();
-            if (ok) onNext();
-          }}
+      {/* FOOTER - Hidden jika hideNavigation = true */}
+      {!hideNavigation && (
+        <div
+          className={cn(
+            "bg-white border-t py-3 px-8 flex justify-end gap-3 transition-all duration-300",
+            isScrolled
+              ? "fixed bottom-0 left-[260px] right-0 shadow-md z-40"
+              : "relative mt-8"
+          )}
         >
-          Next
-        </Button>
-      </div>
+          <Button variant="outline" type="button" onClick={onBack}>
+            Back
+          </Button>
+          <Button
+            type="button"
+            onClick={async () => {
+              const hasEmpty = Object.values(sectionIds).some((sid) => !sid);
+              if (hasEmpty) return;
+              const ok = await syncAllSections();
+              if (ok) onNext();
+            }}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+      {/* Hidden navigation button untuk fixed navigation di parent */}
+      {hideNavigation && (
+        <div style={{ display: 'none' }}>
+          <Button
+            type="button"
+            data-manage-questions-next
+            onClick={async () => {
+              const hasEmpty = Object.values(sectionIds).some((sid) => !sid);
+              if (hasEmpty) return;
+              const ok = await syncAllSections();
+              if (ok) onNext();
+            }}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* DIALOGS - REVISED SESUAI SERVICE */}
       <AddQuestionDialog

@@ -6,11 +6,9 @@ import { Button } from "@/components/ui/button";
 import {
   UserPlus,
   MoreVertical,
-  Eye,
   Trash2,
   Loader2,
   Check,
-  Mail,
   Upload,
 } from "lucide-react";
 import {
@@ -18,7 +16,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 import SessionDate from "./dialogs/session-date";
@@ -36,7 +33,6 @@ import type {
 
 // dialogs
 import AddCandidateDialog from "./dialogs/add-candidates-dialog";
-import CandidateDetailDialog from "./dialogs/candidate-detail-dialog";
 import ImportCandidatesDialog from "./dialogs/import-candidates-dialog";
 
 /* =============================
@@ -75,9 +71,7 @@ export default function CandidatesDistributions({
   const [sessionEnd, setSessionEnd] = useState<Date | null>(null);
   const [sentAll, setSentAll] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [selected, setSelected] = useState<Candidate | null>(null);
 
   // Load session settings from localStorage on mount
   useEffect(() => {
@@ -151,6 +145,25 @@ export default function CandidatesDistributions({
     createDistribution,
   } = useCreateDistribution();
 
+  // Load candidates from localStorage on mount (karena autoLoad: false)
+  useEffect(() => {
+    if (testPackageId) {
+      const storageKey = `draft_candidates_${testPackageId}`;
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          const drafts = JSON.parse(raw);
+          if (Array.isArray(drafts) && drafts.length > 0) {
+            // Candidates akan di-load oleh hook, tapi kita pastikan data tersedia
+            console.log(`📋 Found ${drafts.length} candidates in localStorage for test ${testPackageId}`);
+          }
+        }
+      } catch (err) {
+        console.error('Error reading candidates from localStorage:', err);
+      }
+    }
+  }, [testPackageId]);
+
   // Load sentAll state from localStorage after candidates are loaded
   useEffect(() => {
     const savedSentAll = localStorage.getItem(`sent_all_${testPackageId}`);
@@ -170,18 +183,6 @@ export default function CandidatesDistributions({
       setSentAll(false);
     }
   }, [candidates.length, sentAll]);
-
-  // status style
-  const STATUS_STYLE: Record<string, string> = {
-    Pending: "border-blue-200 bg-blue-50 text-blue-600",
-    Invited: "border-green-200 bg-green-50 text-green-600",
-  };
-
-  function getStatus(
-    candidate: CandidateWithStatus
-  ): keyof typeof STATUS_STYLE {
-    return candidate.localStatus ?? "Pending";
-  }
 
   function formatDate(date: Date | null): string | undefined {
     if (!date) return undefined;
@@ -231,20 +232,30 @@ export default function CandidatesDistributions({
       const candidateIds = await saveDraftsTo(newDistributionId);
       console.log('📧 Sending invitations to candidates:', candidateIds);
       
-      await sendInvite({
-        candidate_ids: candidateIds,
-        test_distribution_id: newDistributionId, // kirim ID distribusi sesuai backend
-        custom_message: "Anda diundang untuk mengikuti tes psikotes.",
-        token: localStorage.getItem('token') || '',
-      });
+      try {
+        await sendInvite({
+          candidate_ids: candidateIds,
+          test_distribution_id: newDistributionId, // kirim ID distribusi sesuai backend
+          custom_message: "Anda diundang untuk mengikuti tes psikotes.",
+          token: localStorage.getItem('token') || '',
+        });
 
-      setSentAll(true); // ✅ cukup ini
-      
-      // Trigger refresh di parent component setelah berhasil send all
-      // Parent akan menangani refresh data dan kembali ke halaman utama
+        setSentAll(true); // ✅ Set sentAll setelah berhasil
+        console.log('✅ Invitations sent successfully');
+      } catch (inviteError) {
+        console.error('❌ Error sending invitations:', inviteError);
+        // Tampilkan error message ke user
+        const errorMessage = inviteError instanceof Error 
+          ? inviteError.message 
+          : 'Gagal mengirim undangan email. Silakan coba lagi.';
+        alert(errorMessage);
+        // Jangan set sentAll jika gagal
+        throw inviteError; // Re-throw untuk ditangani di catch block luar
+      }
     } catch (error) {
       console.error('❌ Error in handleSendAll:', error);
-      // Error sudah ditangani di hook
+      // Error sudah ditangani, loading state akan direset oleh hook
+      // Jangan set sentAll jika ada error
     }
   }
 
@@ -323,20 +334,13 @@ export default function CandidatesDistributions({
         !candidateLoading && (
           <div className="flex flex-col space-y-3 mb-10">
             {candidates.map((c) => {
-              const status = getStatus(c);
               return (
                 <div
                   key={c.id}
                   className="relative flex flex-col sm:flex-row items-start sm:items-center bg-white border rounded-xl px-4 py-3 w-full hover:bg-blue-50 gap-3"
                 >
-                  {/* Row actions & status */}
+                  {/* Row actions */}
                   <div className="absolute right-3 top-3 flex items-center gap-2">
-                    <span
-                      className={`hidden sm:inline-block px-2 py-[2px] rounded-md text-[11px] font-medium ${STATUS_STYLE[status]}`}
-                    >
-                      {status}
-                    </span>
-
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -351,50 +355,13 @@ export default function CandidatesDistributions({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelected(c);
-                            setDetailOpen(true);
-                          }}
-                          disabled={sentAll || candidateLoading}
-                        >
-                          <Eye className="w-4 h-4 mr-2" /> View / Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
                           onClick={async (e) => {
                             e.stopPropagation();
                             try {
-                              await sendInvite({
-                                candidate_ids: [c.id],
-                                test_distribution_id: testPackageId, // ini mungkin salah jika packageId bukan distributionId
-                                custom_message:
-                                  "Pengiriman ulang undangan tes psikotes.",
-                                token: localStorage.getItem('token') || '',
-                              });
-                              alert("Undangan berhasil dikirim ulang!");
-                            } catch {
-                              alert("Gagal mengirim ulang undangan");
-                            }
-                          }}
-                          disabled={inviteLoading || candidateLoading}
-                        >
-                          <Mail className="w-4 h-4 mr-2" />
-                          {inviteLoading ? "Sending..." : "Send Invite"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (
-                              confirm("Yakin ingin menghapus kandidat ini?")
-                            ) {
-                              try {
-                                await removeCandidate(c.id);
-                                console.log(`✅ Kandidat ${c.name} berhasil dihapus`);
-                              } catch (error) {
-                                console.error('❌ Error deleting candidate:', error);
-                                alert('Gagal menghapus kandidat');
-                              }
+                              await removeCandidate(c.id);
+                              console.log(`✅ Kandidat ${c.name} berhasil dihapus`);
+                            } catch (error) {
+                              console.error('❌ Error deleting candidate:', error);
                             }
                           }}
                           className="text-red-600"
@@ -422,15 +389,6 @@ export default function CandidatesDistributions({
                         {c.position} • {c.department}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Status mobile */}
-                  <div className="sm:hidden mt-1">
-                    <span
-                      className={`inline-block px-2 py-[2px] rounded-md text-[11px] font-medium ${STATUS_STYLE[status]}`}
-                    >
-                      {status}
-                    </span>
                   </div>
                 </div>
               );
@@ -466,21 +424,69 @@ export default function CandidatesDistributions({
 
       {/* ===== INVITE RESULT ===== */}
       {inviteResult && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h4 className="font-semibold text-green-800 mb-2">
+        <div className={`mb-6 p-4 border rounded-lg ${
+          inviteResult.success 
+            ? inviteResult.failed_count && inviteResult.failed_count > 0
+              ? 'bg-yellow-50 border-yellow-200'
+              : 'bg-green-50 border-green-200'
+            : 'bg-red-50 border-red-200'
+        }`}>
+          <h4 className={`font-semibold mb-2 ${
+            inviteResult.success 
+              ? inviteResult.failed_count && inviteResult.failed_count > 0
+                ? 'text-yellow-800'
+                : 'text-green-800'
+              : 'text-red-800'
+          }`}>
             Invitation Results:
           </h4>
-          <p className="text-green-700">{inviteResult.message}</p>
-          {inviteResult.data && (
+          <p className={
+            inviteResult.success 
+              ? inviteResult.failed_count && inviteResult.failed_count > 0
+                ? 'text-yellow-700'
+                : 'text-green-700'
+              : 'text-red-700'
+          }>{inviteResult.message}</p>
+          
+          {/* Warning message (e.g., MAIL_MAILER=log) */}
+          {inviteResult.warning && (
+            <div className="mt-3 p-3 bg-orange-100 border border-orange-300 rounded">
+              <p className="text-sm font-semibold text-orange-800">⚠️ Warning:</p>
+              <p className="text-sm text-orange-700">{inviteResult.warning}</p>
+            </div>
+          )}
+          
+          {/* Success count */}
+          {inviteResult.success_count !== undefined && inviteResult.success_count > 0 && (
             <div className="mt-2">
               <p className="text-sm text-green-600">
-                Successfully invited: {inviteResult.data.length} candidates
+                ✅ Successfully invited: {inviteResult.success_count} candidates
               </p>
-              {inviteResult.duplicate && inviteResult.duplicate.length > 0 && (
-                <p className="text-sm text-yellow-600">
-                  Skipped: {inviteResult.duplicate.length} candidates (already invited)
-                </p>
-              )}
+            </div>
+          )}
+          
+          {/* Failed emails */}
+          {inviteResult.failed_count !== undefined && inviteResult.failed_count > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-semibold text-red-700 mb-2">
+                ❌ Failed to send email to {inviteResult.failed_count} candidate(s):
+              </p>
+              <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                {inviteResult.failed_emails?.map((failed, index) => (
+                  <li key={index}>
+                    <span className="font-medium">{failed.name}</span> ({failed.email}): {failed.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {/* Duplicate candidates */}
+          {inviteResult.duplicate && inviteResult.duplicate.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm text-yellow-600">
+                ⚠️ Skipped: {inviteResult.duplicate.length} candidates (already invited)
+              </p>
             </div>
           )}
         </div>
@@ -541,51 +547,6 @@ export default function CandidatesDistributions({
         saving={candidateLoading}
         error={candidateError}
         fieldErrors={candidateFieldErrors}
-      />
-
-      <CandidateDetailDialog
-        open={detailOpen}
-        onOpenChange={(open) => {
-          setDetailOpen(open);
-          if (!open) {
-            setSelected(null);
-            setError(null); // Clear error when dialog closes
-          }
-        }}
-        candidate={selected}
-        onSave={async (payload: CreateCandidatePayload) => {
-          // pastikan selected ada (harus ada karena dialog dibuka untuk kandidat tertentu)
-          if (!selected) return;
-
-          try {
-            console.log('💾 Updating candidate:', selected.id, payload);
-            const updated = await updateCandidate({
-              id: selected.id, // id diambil dari selected (backend butuh id)
-              name: payload.name,
-              email: payload.email,
-              phone_number: payload.phone_number,
-              position: payload.position,
-              department: payload.department,
-              birth_date: payload.birth_date,
-              gender: payload.gender as "male" | "female",
-            });
-            console.log('✅ Candidate updated successfully:', updated);
-            
-            // Data sudah di-update di state dan localStorage oleh updateCandidate
-            // Trigger re-render kandidat list saja dengan mengubah key
-            setCandidateListKey(prev => prev + 1);
-            
-            setDetailOpen(false);
-            setSelected(null);
-            setError(null); // Clear any errors
-          } catch (err) {
-            console.error('❌ Error updating candidate:', err);
-            setError(err instanceof Error ? err.message : String(err));
-            // Don't close dialog on error, let user see the error
-          }
-        }}
-        saving={candidateLoading}
-        error={candidateError}
       />
 
       <ImportCandidatesDialog

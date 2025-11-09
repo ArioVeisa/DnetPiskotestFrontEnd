@@ -58,6 +58,8 @@ export interface Candidate {
   phone: string;
   status: string;
   tests: TestInfo[];
+  startDate?: string; // Session start date/time
+  endDate?: string;   // Session end date/time
 }
 
 /* ==============================
@@ -70,6 +72,8 @@ interface BackendTest {
   icon_path?: string | null;
   started_date: string;
   duration_minutes?: number;
+  start_date?: string; // Session start date/time
+  end_date?: string;   // Session end date/time
 }
 
 interface BackendSection {
@@ -96,6 +100,8 @@ interface CandidateResponse {
   sections?: BackendSection[];
   questions?: BackendQuestion[];
   started_at?: string;
+  start_date?: string; // Session start date/time from test distribution
+  end_date?: string;   // Session end date/time from test distribution
 }
 
 /* ==============================
@@ -152,18 +158,29 @@ export const candidateService = {
         phone: data.candidate.phone_number,
         status: data.candidate.status ?? "pending",
         tests,
+        startDate: data.start_date || data.test?.start_date,
+        endDate: data.end_date || data.test?.end_date,
       };
 
       return candidate;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        // Handle test already completed
-        if (
-          error.response?.status === 403 &&
-          error.response?.data?.status === "completed"
-        ) {
-          // console.log("🔍 Test already completed, throwing TEST_COMPLETED error"); // Debug logging removed
-          throw new Error(`TEST_COMPLETED:${error.response.data.completed_at}`);
+        // Handle test session time validation errors from backend
+        if (error.response?.status === 403) {
+          const errorData = error.response.data;
+          
+          // Handle session time validation errors
+          if (errorData?.error === 'TEST_NOT_STARTED' || errorData?.error === 'TEST_SESSION_ENDED') {
+            // Throw error with start_date and end_date for frontend validation
+            throw new Error(`SESSION_TIME_ERROR:${errorData.start_date || ''}:${errorData.end_date || ''}:${errorData.message || 'Test session time validation failed'}`);
+          }
+          
+          // Handle test already completed
+          if (errorData?.status === "completed" || error.response?.status === 403) {
+            // console.log("🔍 Test already completed, throwing TEST_COMPLETED error"); // Debug logging removed
+            const completedAt = errorData?.completed_at || new Date().toISOString();
+            throw new Error(`TEST_COMPLETED:${completedAt}`);
+          }
         }
 
         // Log other errors (silenced in production)

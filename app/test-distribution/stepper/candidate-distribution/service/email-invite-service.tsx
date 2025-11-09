@@ -38,6 +38,13 @@ export interface InviteResponse {
   data?: InvitedCandidate[];
   success_count?: number;
   total_requested?: number;
+  failed_count?: number;
+  failed_emails?: Array<{
+    email: string;
+    name: string;
+    reason: string;
+  }>;
+  warning?: string;
   duplicate?: DuplicateCandidate[];
 }
 
@@ -49,9 +56,14 @@ export const emailInviteService = {
     try {
       console.log("📧 Email invite payload:", payload);
 
+      // Use public endpoint to avoid CORS issues
+      // Add timeout to prevent hanging (60 seconds)
       const res = await api.post<InviteResponse>(
-        "/candidate-tests/invite",
-        payload
+        "/candidate-tests-public/invite",
+        payload,
+        {
+          timeout: 60000, // 60 seconds timeout
+        }
       );
 
       console.log("✅ Email invite response:", res.data);
@@ -62,6 +74,12 @@ export const emailInviteService = {
       if (axios.isAxiosError(error)) {
         console.error("❌ Response data:", error.response?.data);
         console.error("❌ Response status:", error.response?.status);
+        console.error("❌ Error code:", error.code);
+
+        // Handle network errors (CORS, timeout, etc.)
+        if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+          throw new Error("Request timeout atau masalah koneksi. Silakan coba lagi.");
+        }
 
         // Jangan tampilkan error SQL ke user
         const responseData = error.response?.data as Record<string, unknown>;
@@ -76,6 +94,8 @@ export const emailInviteService = {
         } else if (error.response?.status === 422) {
           // Untuk error validasi, berikan pesan yang lebih spesifik
           message = "Data yang dikirim tidak valid. Silakan periksa kembali.";
+        } else if (error.response?.status === 403) {
+          message = "Akses ditolak. Silakan login kembali.";
         }
         
         throw new Error(message);

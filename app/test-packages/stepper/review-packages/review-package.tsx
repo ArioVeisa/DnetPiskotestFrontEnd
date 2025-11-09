@@ -56,6 +56,8 @@ type PublishTestPageProps = {
   token?: string;
   onPublishSuccess: () => void;
   onBack: () => void;
+  hideNavigation?: boolean;
+  onPublishStateChange?: (loading: boolean, disabled: boolean) => void;
 };
 
 type UIItem = {
@@ -153,6 +155,8 @@ export default function PublishTestPage({
   token,
   onPublishSuccess,
   onBack,
+  hideNavigation = false,
+  onPublishStateChange,
 }: PublishTestPageProps) {
   const [tests, setTests] = useState<TestItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -229,6 +233,14 @@ export default function PublishTestPage({
     tests.length > 0 &&
     tests.some((test) => test.questions > 0 && test.duration > 0);
 
+  // Update parent state untuk fixed navigation
+  useEffect(() => {
+    if (onPublishStateChange) {
+      const isDisabled = loading || !hasValidTests || tests.length === 0 || loadingData;
+      onPublishStateChange(loading, isDisabled);
+    }
+  }, [loading, hasValidTests, tests.length, loadingData, onPublishStateChange]);
+
   return (
     <div className="w-full sm:px-2 md:px-4 lg:px-8 py-4 space-y-4">
       {/* HEADER */}
@@ -303,34 +315,48 @@ export default function PublishTestPage({
         </>
       )}
 
-      {/* NAVIGATION */}
-      <div className="flex justify-end gap-3 pt-8">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          disabled={loading || loadingData}
-          className="min-w-[90px] px-6 py-2"
-        >
-          Back
-        </Button>
-        <Button
-          onClick={handlePublish}
-          disabled={loading || !hasValidTests || tests.length === 0}
-          className="min-w-[90px] px-6 py-2"
-        >
-          {loading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Publishing...
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Save Package
-            </>
-          )}
-        </Button>
-      </div>
+      {/* NAVIGATION - Hidden jika hideNavigation = true */}
+      {!hideNavigation && (
+        <div className="flex justify-end gap-3 pt-8">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            disabled={loading || loadingData}
+            className="min-w-[90px] px-6 py-2"
+          >
+            Back
+          </Button>
+          <Button
+            onClick={handlePublish}
+            disabled={loading || !hasValidTests || tests.length === 0}
+            className="min-w-[90px] px-6 py-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Publishing...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Save Package
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+      {/* Hidden navigation button untuk fixed navigation di parent */}
+      {hideNavigation && (
+        <div style={{ display: 'none' }}>
+          <Button
+            data-publish-package
+            onClick={handlePublish}
+            disabled={loading || !hasValidTests || tests.length === 0 || loadingData}
+          >
+            Save Package
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

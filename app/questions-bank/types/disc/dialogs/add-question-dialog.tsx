@@ -66,11 +66,9 @@ export default function AddQuestionDialog({
     let errorMsg = "";
 
     if (!opt.text.trim()) {
-      errorMsg = "Teks jawaban wajib diisi";
+      errorMsg = "Answer text is required";
     } else if (!opt.dimensionMost || !opt.dimensionLeast) {
-      errorMsg = "Dimensi Most & Least wajib diisi";
-    } else if (opt.dimensionMost === opt.dimensionLeast) {
-      errorMsg = "Most dan Least tidak boleh sama";
+      errorMsg = "Most & Least dimensions are required";
     }
 
     setErrors((prev) => {
@@ -87,12 +85,12 @@ export default function AddQuestionDialog({
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    // validasi ulang semua opsi
+    // Validate all options again
     options.forEach((opt) => validateOption(opt));
 
     if (Object.keys(errors).length > 0) {
       alert(
-        "Periksa kembali input: semua teks & dimensi wajib diisi dan valid."
+        "Please check your input: all texts & dimensions must be filled and valid."
       );
       return;
     }
@@ -101,18 +99,17 @@ export default function AddQuestionDialog({
       (opt) =>
         opt.text.trim() !== "" &&
         opt.dimensionMost &&
-        opt.dimensionLeast &&
-        opt.dimensionMost !== opt.dimensionLeast
+        opt.dimensionLeast
     );
 
     if (!allFilled) {
-      alert("Pastikan semua opsi dan dimensi sudah diisi dengan benar.");
+      alert("Please ensure all options and dimensions are filled correctly.");
       return;
     }
 
     const payload: Omit<Question, "id"> = {
       type: activeType,
-      text: "-", // placeholder karena kolom pertanyaan dihapus
+      text: "-", // placeholder since question column is removed
       mediaUrl: mediaFile ? URL.createObjectURL(mediaFile) : undefined,
       mediaType: mediaFile ? "image" : undefined,
       category: category || "1",
@@ -122,7 +119,7 @@ export default function AddQuestionDialog({
 
     await onSave(payload);
 
-    // reset form
+    // Reset form
     setMediaFile(null);
     setOptions([
       { id: "1", text: "", dimensionMost: "", dimensionLeast: "" },
@@ -140,8 +137,7 @@ export default function AddQuestionDialog({
       (opt) =>
         opt.text.trim() !== "" &&
         opt.dimensionMost &&
-        opt.dimensionLeast &&
-        opt.dimensionMost !== opt.dimensionLeast
+        opt.dimensionLeast
     ) && Object.keys(errors).length === 0;
 
   return (
@@ -153,7 +149,7 @@ export default function AddQuestionDialog({
               Add Question {activeType}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              Masukkan pilihan jawaban & dimensi (Most / Least)
+              Enter answer choices & dimensions (Most / Least)
             </DialogDescription>
           </DialogHeader>
 
@@ -162,7 +158,7 @@ export default function AddQuestionDialog({
               onSubmit={handleSave}
               className="px-4 sm:px-6 pb-6 pt-2 space-y-4"
             >
-              {/* Pilihan Jawaban */}
+              {/* Answer Choices */}
               <div className="space-y-2">
                 <div className="space-y-3">
                   {options.map((opt, idx) => (
@@ -171,9 +167,9 @@ export default function AddQuestionDialog({
                       className="rounded-md border px-3 py-2 bg-gray-50 text-sm"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        {/* Input jawaban manual */}
+                        {/* Manual answer input */}
                         <Input
-                          placeholder={`Pertanyaan ${idx + 1}`}
+                          placeholder={`Option ${idx + 1}`}
                           value={opt.text}
                           onChange={(e) =>
                             handleOptionChange(idx, "text", e.target.value)
