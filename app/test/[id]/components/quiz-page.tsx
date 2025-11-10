@@ -65,7 +65,7 @@ interface QuizPageProps {
 /* ---------------- Main Component ---------------- */
 export function QuizPage({
   questions,
-  test,
+  test: _test, // Accepted but not used in component
   timer,
   onFinish,
   onExpire,
@@ -105,7 +105,7 @@ export function QuizPage({
         setAnswers(parsedAnswers);
         // console.log("✅ Loaded answers from cache:", parsedAnswers); // Debug logging removed
       }
-    } catch (error) {
+    } catch {
       // console.error("❌ Error loading answers from cache:", error); // Debug logging removed
     }
   }, [cacheKey]);
@@ -115,7 +115,7 @@ export function QuizPage({
     try {
       localStorage.setItem(cacheKey, JSON.stringify(answers));
       // console.log("💾 Saved answers to cache:", answers); // Debug logging removed
-    } catch (error) {
+    } catch {
       // console.error("❌ Error saving answers to cache:", error); // Debug logging removed
     }
   }, [answers, cacheKey]);
@@ -127,70 +127,15 @@ export function QuizPage({
     // eslint-disable-next-line
   }, [timer]);
 
-  /* Guard: kalau gak ada soal */
-  if (!questions || questions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-gray-500">No questions available for this test.</p>
-      </div>
-    );
-  }
-
-  /* Helper */
-  const handleAnswer = (idx: number, val: string | DiscAnswer) => {
-    const question = questions[idx];
-    // console.log("🔍 handleAnswer called:", { idx, val, question }); // Debug logging removed
-    const answerKey = question?.id; // Use question.id as key instead of array index
-    // console.log("🔍 Answer key:", answerKey); // Debug logging removed
-    if (answerKey) {
-      setAnswers((a) => ({ ...a, [answerKey]: val }));
-      // console.log("🔍 Answer saved with key:", answerKey, "value:", val); // Debug logging removed
-    } else {
-      // console.log("❌ No answer key found for question:", question); // Debug logging removed
-    }
-  };
-
-  const toggleFlag = (idx: number) => {
-    const question = questions[idx];
-    const flagKey = question?.id;
-    if (flagKey) {
-      setFlags((f) => ({ ...f, [flagKey]: !f[flagKey] }));
-    }
-  };
-
-  // Determine question type
-  const isDisc = questions[0]?.questionType === 'DISC';
-  const isCaas = questions[0]?.questionType === 'CAAS';
-  const isFast = questions[0]?.questionType === 'teliti' || questions[0]?.questionType === 'Fast Accuracy';
-
-  // Scroll to question for Fast Accuracy
-  const scrollToQuestion = (idx: number) => {
-    const question = questions[idx];
-    const questionId = question?.id;
-    const ref = questionId ? questionRefs.current[questionId] : questionRefs.current[idx];
-    
-    if (ref) {
-      ref.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center' 
-      });
-      setCurrent(idx); // Update current for sidebar highlighting
-    }
-  };
-
-  // Handle navigation click
-  const handleNavigationClick = (idx: number) => {
-    if (timeExpired) return;
-    if (isFast) {
-      scrollToQuestion(idx);
-    } else {
-      setCurrent(idx);
-    }
-  };
+  // Determine question type - safe access
+  const isDisc = questions && questions.length > 0 && questions[0]?.questionType === 'DISC';
+  const isCaas = questions && questions.length > 0 && questions[0]?.questionType === 'CAAS';
+  const isFast = questions && questions.length > 0 && (questions[0]?.questionType === 'teliti' || questions[0]?.questionType === 'Fast Accuracy');
 
   // Track visible question for Fast Accuracy scroll view
+  // Must be called before early return to comply with React Hooks rules
   useEffect(() => {
-    if (!isFast || !scrollContainerRef.current) return;
+    if (!isFast || !scrollContainerRef.current || !questions || questions.length === 0) return;
 
     let observer: IntersectionObserver | null = null;
 
@@ -249,7 +194,63 @@ export function QuizPage({
         observer.disconnect();
       }
     };
-  }, [isFast, questions.length]);
+  }, [isFast, questions?.length]);
+
+  /* Guard: kalau gak ada soal - must be after all hooks */
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <p className="text-gray-500">No questions available for this test.</p>
+      </div>
+    );
+  }
+
+  /* Helper */
+  const handleAnswer = (idx: number, val: string | DiscAnswer) => {
+    const question = questions[idx];
+    // console.log("🔍 handleAnswer called:", { idx, val, question }); // Debug logging removed
+    const answerKey = question?.id; // Use question.id as key instead of array index
+    // console.log("🔍 Answer key:", answerKey); // Debug logging removed
+    if (answerKey) {
+      setAnswers((a) => ({ ...a, [answerKey]: val }));
+      // console.log("🔍 Answer saved with key:", answerKey, "value:", val); // Debug logging removed
+    } else {
+      // console.log("❌ No answer key found for question:", question); // Debug logging removed
+    }
+  };
+
+  const toggleFlag = (idx: number) => {
+    const question = questions[idx];
+    const flagKey = question?.id;
+    if (flagKey) {
+      setFlags((f) => ({ ...f, [flagKey]: !f[flagKey] }));
+    }
+  };
+
+  // Scroll to question for Fast Accuracy
+  const scrollToQuestion = (idx: number) => {
+    const question = questions[idx];
+    const questionId = question?.id;
+    const ref = questionId ? questionRefs.current[questionId] : questionRefs.current[idx];
+    
+    if (ref) {
+      ref.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      setCurrent(idx); // Update current for sidebar highlighting
+    }
+  };
+
+  // Handle navigation click
+  const handleNavigationClick = (idx: number) => {
+    if (timeExpired) return;
+    if (isFast) {
+      scrollToQuestion(idx);
+    } else {
+      setCurrent(idx);
+    }
+  };
 
   const isAllAnswered = () => {
     return questions.every((question) => {
@@ -268,7 +269,7 @@ export function QuizPage({
       // Clear cache setelah test selesai
       try {
         localStorage.removeItem(cacheKey);
-      } catch (error) {
+      } catch {
         // Ignore cache errors
       }
       onFinish(answers);
@@ -279,7 +280,7 @@ export function QuizPage({
       return;
     }
 
-    const hasUnanswered = questions.some((question, i) => {
+    const hasUnanswered = questions.some((question) => {
       const answerKey = question.id;
       const answer = answerKey ? answers[answerKey] : undefined;
       if (question.questionType === 'DISC') {
@@ -299,7 +300,7 @@ export function QuizPage({
       try {
         localStorage.removeItem(cacheKey);
         // console.log("🗑️ Cleared answers cache after test completion"); // Debug logging removed
-      } catch (error) {
+      } catch {
         // console.error("❌ Error clearing cache:", error); // Debug logging removed
       }
       onFinish(answers);
