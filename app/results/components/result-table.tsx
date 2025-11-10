@@ -48,12 +48,6 @@ export function ResultTable({
   };
 
   const handleDelete = async (candidateId: string) => {
-    const confirmed = window.confirm(
-      `Apakah Anda yakin ingin menghapus hasil tes untuk kandidat ini?\n\nTindakan ini tidak dapat dibatalkan.`
-    );
-
-    if (!confirmed) return;
-
     try {
       setDeletingId(candidateId);
       await onDelete(candidateId);

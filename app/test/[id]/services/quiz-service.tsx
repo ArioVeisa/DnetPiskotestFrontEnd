@@ -166,22 +166,41 @@ const quizService = {
       return res.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        // console.error("❌ Submit test error:", {
-        //   status: error.response?.status,
-        //   data: error.response?.data,
-        //   message: error.message,
-        // });
+        const errorData = error.response?.data as { message?: string; success?: boolean } | undefined;
+        const errorMessage = errorData?.message || '';
+        const status = error.response?.status;
         
-        // Handle specific error cases gracefully
-        const errorMessage = (error.response?.data as { message?: string })?.message;
-        if (errorMessage && errorMessage.includes("sudah disubmit")) {
-          // Test already submitted - this is not really an error for the user
-          throw new Error("Test already completed");
+        // Handle test already submitted - this is success, not an error
+        if (status === 400 && (errorMessage.includes("sudah disubmit") || errorMessage.includes("already submitted"))) {
+          // Return success response for already submitted tests
+          return {
+            success: true,
+            message: 'Test already completed',
+            completion_time: new Date().toISOString(),
+            confirmation_code: '',
+            candidate_test_id: 0
+          };
         }
-        throw new Error("Failed to submit test. Please try again.");
+        
+        // Handle validation errors
+        if (status === 422) {
+          throw new Error(errorMessage || 'Validation error. Please check your answers.');
+        }
+        
+        // Handle token expired or invalid
+        if (status === 404) {
+          throw new Error('Test link is invalid or has expired.');
+        }
+        
+        // Handle other errors
+        throw new Error(errorMessage || "Failed to submit test. Please try again.");
       }
       
-      // console.error("❌ Unknown submit test error:", error); // Debug logging removed
+      // Handle network errors or other exceptions
+      if (error instanceof Error) {
+        throw error;
+      }
+      
       throw new Error("Terjadi error tidak dikenal saat submit test");
     }
   },

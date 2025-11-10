@@ -35,6 +35,12 @@ export function DiscQuestionCard({
   canGoNext,
 }: DiscQuestionCardProps) {
   const handleMostSelect = (optionId: string) => {
+    // Validasi: most dan least tidak boleh sama
+    // Jika user memilih MOST untuk option yang sudah dipilih LEAST, clear LEAST terlebih dahulu
+    if (answer?.least === optionId) {
+      return; // Jangan izinkan memilih MOST jika LEAST sudah dipilih untuk option yang sama
+    }
+    
     const newAnswer: DiscAnswer = {
       most: optionId,
       least: answer?.least || ""
@@ -44,6 +50,7 @@ export function DiscQuestionCard({
 
   const handleLeastSelect = (optionId: string) => {
     // Validasi: most dan least tidak boleh sama
+    // Jika user memilih LEAST untuk option yang sudah dipilih MOST, jangan izinkan
     if (answer?.most === optionId) {
       return;
     }
@@ -57,6 +64,8 @@ export function DiscQuestionCard({
 
   const isMostSelected = (optionId: string) => answer?.most === optionId;
   const isLeastSelected = (optionId: string) => answer?.least === optionId;
+  const isMostDisabled = (optionId: string) => answer?.least === optionId; // Disable MOST jika LEAST sudah dipilih
+  const isLeastDisabled = (optionId: string) => answer?.most === optionId; // Disable LEAST jika MOST sudah dipilih
 
   return (
     <Card className="flex-1">
@@ -106,11 +115,14 @@ export function DiscQuestionCard({
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleMostSelect(option.id)}
+                      disabled={isMostDisabled(option.id)}
                       className={`
                         w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
                         ${isMostSelected(option.id)
                           ? "bg-blue-500 border-blue-500 text-white"
-                          : "border-gray-300 hover:border-blue-400"
+                          : isMostDisabled(option.id)
+                          ? "border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed"
+                          : "border-gray-300 hover:border-blue-400 cursor-pointer"
                         }
                       `}
                     >
@@ -122,15 +134,16 @@ export function DiscQuestionCard({
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleLeastSelect(option.id)}
+                      disabled={isLeastDisabled(option.id)}
                       className={`
                         w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
                         ${isLeastSelected(option.id)
                           ? "bg-red-500 border-red-500 text-white"
-                          : "border-gray-300 hover:border-red-400"
+                          : isLeastDisabled(option.id)
+                          ? "border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed"
+                          : "border-gray-300 hover:border-red-400 cursor-pointer"
                         }
-                        ${answer?.most === option.id ? "opacity-50 cursor-not-allowed" : ""}
                       `}
-                      disabled={!!(answer?.most === option.id)}
                     >
                       {isLeastSelected(option.id) && (
                         <span className="w-2 h-2 rounded-full bg-white" />

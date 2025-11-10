@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Question, DiscAnswer } from "./question-card";
 import { DiscQuestionCard } from "./disc-question-card";
 import { useQuizTimer } from "../hooks/use-quiz-timer";
@@ -76,6 +76,8 @@ export function QuizPage({
   const [current, setCurrent] = useState(0);
   const [timeExpired, setTimeExpired] = useState(false);
   const [showTimeOverDialog, setShowTimeOverDialog] = useState(false);
+  const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Local cache key untuk menyimpan jawaban
   const cacheKey = `quiz_answers_${questions[0]?.id || 'unknown'}`;
@@ -156,9 +158,98 @@ export function QuizPage({
     }
   };
 
+  // Determine question type
   const isDisc = questions[0]?.questionType === 'DISC';
   const isCaas = questions[0]?.questionType === 'CAAS';
   const isFast = questions[0]?.questionType === 'teliti' || questions[0]?.questionType === 'Fast Accuracy';
+
+  // Scroll to question for Fast Accuracy
+  const scrollToQuestion = (idx: number) => {
+    const question = questions[idx];
+    const questionId = question?.id;
+    const ref = questionId ? questionRefs.current[questionId] : questionRefs.current[idx];
+    
+    if (ref) {
+      ref.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      setCurrent(idx); // Update current for sidebar highlighting
+    }
+  };
+
+  // Handle navigation click
+  const handleNavigationClick = (idx: number) => {
+    if (timeExpired) return;
+    if (isFast) {
+      scrollToQuestion(idx);
+    } else {
+      setCurrent(idx);
+    }
+  };
+
+  // Track visible question for Fast Accuracy scroll view
+  useEffect(() => {
+    if (!isFast || !scrollContainerRef.current) return;
+
+    let observer: IntersectionObserver | null = null;
+
+    const setupObserver = () => {
+      if (!scrollContainerRef.current) return;
+
+      // Cleanup previous observer
+      if (observer) {
+        observer.disconnect();
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          // Find the question that is most visible in the viewport
+          const visibleEntries = entries.filter(e => e.isIntersecting && e.intersectionRatio > 0.3);
+          if (visibleEntries.length === 0) return;
+
+          let mostVisibleEntry = visibleEntries[0];
+          let maxRatio = visibleEntries[0].intersectionRatio;
+
+          visibleEntries.forEach((entry) => {
+            if (entry.intersectionRatio > maxRatio) {
+              maxRatio = entry.intersectionRatio;
+              mostVisibleEntry = entry;
+            }
+          });
+
+          // Update current question based on visible question
+          const questionElement = mostVisibleEntry.target as HTMLElement;
+          const questionIndex = parseInt(questionElement.dataset.questionIndex || '0', 10);
+          if (!isNaN(questionIndex) && questionIndex >= 0) {
+            setCurrent(questionIndex);
+          }
+        },
+        {
+          root: scrollContainerRef.current,
+          rootMargin: '-30% 0px -30% 0px',
+          threshold: [0, 0.25, 0.5, 0.75, 1],
+        }
+      );
+
+      // Observe all question elements
+      Object.values(questionRefs.current).forEach((ref) => {
+        if (ref) {
+          observer?.observe(ref);
+        }
+      });
+    };
+
+    // Wait for refs to be set, then setup observer
+    const timer = setTimeout(setupObserver, 200);
+
+    return () => {
+      clearTimeout(timer);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [isFast, questions.length]);
 
   const isAllAnswered = () => {
     return questions.every((question) => {
@@ -219,141 +310,176 @@ export function QuizPage({
   const safeIndex = Math.min(Math.max(current, 0), questions.length - 1);
   const currentQuestion = questions[safeIndex];
   
-  // Debug logging
-  // console.log("🔍 Current question:", currentQuestion); // Debug logging removed
-  // console.log("🔍 Question type:", currentQuestion?.questionType); // Debug logging removed
-  // console.log("🔍 Disc options:", currentQuestion?.discOptions); // Debug logging removed
+  // Render single question (for DISC/CAAS)
+  const renderSingleQuestion = (question: Question, idx: number) => {
+    const questionKey = question.id || idx;
+    const answerKey = question.id;
+    const currentAnswer = answerKey ? answers[answerKey] : undefined;
+    const isFlagged = answerKey ? flags[answerKey] || false : false;
+
+    if ((question.questionType === 'DISC' && question.discOptions) || 
+        (question.options && question.options.length === 4 && 
+         question.text && question.text.toLowerCase().includes('most') && 
+         question.text.toLowerCase().includes('least'))) {
+      return (
+        <DiscQuestionCard
+          key={questionKey}
+          question={{
+            text: question.text,
+            discOptions: question.discOptions || 
+              question.options.map((opt, index) => ({
+                id: index.toString(),
+                text: opt,
+                dimensionMost: '*',
+                dimensionLeast: '*'
+              }))
+          }}
+          answer={(() => {
+            const answer = answerKey ? answers[answerKey] : undefined;
+            return typeof answer === 'object' ? answer as DiscAnswer : null;
+          })()}
+          onAnswer={(answer) => handleAnswer(idx, answer)}
+          onToggleFlag={() => toggleFlag(idx)}
+          isFlagged={isFlagged}
+          questionNumber={idx + 1}
+          totalQuestions={questions.length}
+          onPrevious={() => {}} // Disabled - no previous button
+          onNext={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
+          canGoPrevious={false} // Always false - no previous allowed
+          canGoNext={idx < questions.length - 1 && !timeExpired}
+        />
+      );
+    } else {
+      return (
+        <div key={questionKey} className="bg-white rounded-2xl shadow p-6">
+          <div className="mb-1 text-xs text-gray-400">
+            Question {idx + 1}/{questions.length}
+          </div>
+          <div className="font-semibold text-[1.1rem] mb-4 leading-relaxed">
+            {question.text}
+          </div>
+          <div className="space-y-3 mb-6">
+            {question.options.map((opt, i) => {
+              const optId = question.optionIds?.[i] ?? opt;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleAnswer(idx, optId)}
+                  disabled={isFast && !!currentAnswer}
+                  className={[
+                    "w-full flex items-center px-4 py-3 rounded-lg border text-left transition",
+                    currentAnswer === optId
+                      ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
+                      : "border-gray-200 hover:bg-gray-50",
+                    isFast && currentAnswer ? "opacity-75 cursor-not-allowed" : "",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "inline-flex items-center justify-center w-5 h-5 mr-3 border rounded-full transition",
+                      currentAnswer === optId
+                        ? "bg-blue-500 border-blue-500"
+                        : "border-gray-300",
+                    ].join(" ")}
+                  >
+                    {currentAnswer === optId && (
+                      <span className="w-3 h-3 rounded-full bg-white block" />
+                    )}
+                  </span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row gap-8 items-start justify-stretch p-4">
       {/* Main Card */}
       <div className="flex-1">
-        {(currentQuestion.questionType === 'DISC' && currentQuestion.discOptions) || 
-         (currentQuestion.options && currentQuestion.options.length === 4 && 
-          currentQuestion.text && currentQuestion.text.toLowerCase().includes('most') && 
-          currentQuestion.text.toLowerCase().includes('least')) ? (
-          <DiscQuestionCard
-            question={{
-              text: currentQuestion.text,
-              discOptions: currentQuestion.discOptions || 
-                currentQuestion.options.map((opt, index) => ({
-                  id: index.toString(),
-                  text: opt,
-                  dimensionMost: '*',
-                  dimensionLeast: '*'
-                }))
-            }}
-            answer={(() => {
-              const answerKey = currentQuestion.id;
-              const answer = answerKey ? answers[answerKey] : undefined;
-              return typeof answer === 'object' ? answer as DiscAnswer : null;
-            })()}
-            onAnswer={(answer) => handleAnswer(safeIndex, answer)}
-            onToggleFlag={() => toggleFlag(safeIndex)}
-            isFlagged={(() => {
-              const flagKey = currentQuestion.id;
-              return flagKey ? flags[flagKey] || false : false;
-            })()}
-            questionNumber={safeIndex + 1}
-            totalQuestions={questions.length}
-            onPrevious={() => {}} // Disabled - no previous button
-            onNext={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
-            canGoPrevious={false} // Always false - no previous allowed
-            canGoNext={safeIndex < questions.length - 1 && !timeExpired}
-          />
+        {isFast ? (
+          /* Scroll view for Fast Accuracy - show all questions */
+          <div 
+            ref={scrollContainerRef}
+            className="max-h-[calc(100vh-200px)] overflow-y-auto space-y-6 pr-2"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            {questions.map((question, idx) => {
+              const questionKey = question.id || idx;
+              return (
+                <div
+                  key={questionKey}
+                  ref={(el) => {
+                    if (question.id) {
+                      questionRefs.current[question.id] = el;
+                    } else {
+                      questionRefs.current[idx] = el;
+                    }
+                  }}
+                  id={`question-${questionKey}`}
+                  data-question-index={idx}
+                >
+                  {renderSingleQuestion(question, idx)}
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow p-6">
-            <div className="mb-1 text-xs text-gray-400">
-              Question {safeIndex + 1}/{questions.length}
-            </div>
-            <div className="font-semibold text-[1.1rem] mb-4 leading-relaxed">
-              {currentQuestion.text}
-            </div>
-            <div className="space-y-3 mb-6">
-              {currentQuestion.options.map((opt, i) => {
-                const optId = currentQuestion.optionIds?.[i] ?? opt; // gunakan id jika tersedia
-                const answerKey = currentQuestion.id;
-                const currentAnswer = answerKey ? answers[answerKey] : undefined;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleAnswer(safeIndex, optId)}
-                    disabled={isFast && !!currentAnswer} // Hanya Fast Accuracy yang terkunci setelah jawab
+          /* Single question view for DISC/CAAS - with Next button */
+          <>
+            {renderSingleQuestion(currentQuestion, safeIndex)}
+            {/* Bottom actions for DISC/CAAS */}
+            <div className="flex flex-wrap gap-2 mt-6 justify-between items-center">
+              {!timeExpired && (
+                <>
+                  <Button
+                    variant={currentQuestion.id && flags[currentQuestion.id] ? undefined : "outline"}
+                    size="sm"
+                    onClick={() => toggleFlag(safeIndex)}
                     className={[
-                      "w-full flex items-center px-4 py-3 rounded-lg border text-left transition",
-                      currentAnswer === optId
-                        ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
-                        : "border-gray-200 hover:bg-gray-50",
-                      isFast && currentAnswer ? "opacity-75 cursor-not-allowed" : "",
+                      "flex items-center gap-2",
+                      currentQuestion.id && flags[currentQuestion.id]
+                        ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
+                        : "",
                     ].join(" ")}
                   >
-                    <span
-                      className={[
-                        "inline-flex items-center justify-center w-5 h-5 mr-3 border rounded-full transition",
-                      currentAnswer === optId
-                          ? "bg-blue-500 border-blue-500"
-                          : "border-gray-300",
-                      ].join(" ")}
-                    >
-                      {currentAnswer === optId && (
-                        <span className="w-3 h-3 rounded-full bg-white block" />
-                      )}
+                    <Flag
+                      className={`w-4 h-4 ${
+                        currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
+                      }`}
+                    />
+                    <span className={currentQuestion.id && flags[currentQuestion.id] ? "text-white" : ""}>
+                      Mark for Review
                     </span>
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Bottom actions */}
-        <div className="flex flex-wrap gap-2 mt-6 justify-between items-center">
-          {!timeExpired && (
-            <>
-              <Button
-                variant={currentQuestion.id && flags[currentQuestion.id] ? undefined : "outline"}
-                size="sm"
-                onClick={() => toggleFlag(safeIndex)}
-                className={[
-                  "flex items-center gap-2",
-                  currentQuestion.id && flags[currentQuestion.id]
-                    ? "bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-400"
-                    : "",
-                ].join(" ")}
-              >
-                <Flag
-                  className={`w-4 h-4 ${
-                    currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
-                  }`}
-                />
-                <span className={currentQuestion.id && flags[currentQuestion.id] ? "text-white" : ""}>
-                  Mark for Review
-                </span>
-              </Button>
-              {currentQuestion.questionType !== 'DISC' && (
+                  </Button>
+                  {currentQuestion.questionType !== 'DISC' && (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        setCurrent((c) => Math.min(questions.length - 1, c + 1))
+                      }
+                      disabled={safeIndex === questions.length - 1 || timeExpired}
+                    >
+                      Next
+                    </Button>
+                  )}
+                </>
+              )}
+              {timeExpired && (
                 <Button
-                  size="sm"
-                  onClick={() =>
-                    setCurrent((c) => Math.min(questions.length - 1, c + 1))
-                  }
-                  disabled={safeIndex === questions.length - 1 || timeExpired}
+                  onClick={handleFinishClick}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white"
                 >
-                  Next
+                  Finish Test
                 </Button>
               )}
-            </>
-          )}
-          {timeExpired && (
-            <Button
-              onClick={handleFinishClick}
-              className="w-full bg-red-500 hover:bg-red-600 text-white"
-            >
-              Finish Test
-            </Button>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Sidebar */}
@@ -384,12 +510,12 @@ export function QuizPage({
               let style =
                 "w-8 h-8 rounded flex items-center justify-center border cursor-pointer transition";
               
-              // Prioritas: Current > Flagged > Answered > Default
+              // Prioritas: Current > Flagged (hanya untuk non-Fast) > Answered > Default
               if (i === safeIndex) {
                 // Current question selalu biru
                 style += " bg-blue-500 text-white font-bold border-blue-500";
-              } else if (question.id && flags[question.id]) {
-                // Flagged question selalu kuning (bahkan jika sudah dijawab)
+              } else if (!isFast && question.id && flags[question.id]) {
+                // Flagged question selalu kuning (hanya untuk DISC/CAAS, bukan Fast Accuracy)
                 style += " bg-yellow-400 text-white border-yellow-400";
               } else if (question.id && answers[question.id]) {
                 // Check if answer is complete based on question type
@@ -409,7 +535,12 @@ export function QuizPage({
               }
 
               return (
-                <button key={i} className={style} onClick={() => !timeExpired && setCurrent(i)} disabled={timeExpired}>
+                <button 
+                  key={i} 
+                  className={style} 
+                  onClick={() => handleNavigationClick(i)} 
+                  disabled={timeExpired}
+                >
                   {i + 1}
                 </button>
               );
@@ -424,10 +555,12 @@ export function QuizPage({
               <span className="w-2 h-2 rounded-full bg-blue-500" /> Current
               Question
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-yellow-400" /> Marked for
-              Review
-            </div>
+            {!isFast && (
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-yellow-400" /> Marked for
+                Review
+              </div>
+            )}
           </div>
         </div>
         {!timeExpired && (
