@@ -109,8 +109,11 @@ export default function ManageQuestions({
 
   const hasEmptyConfig = Object.values(sectionIds).some((sid) => !sid);
   if (hasEmptyConfig) {
-    alert("⚠️ Ada section lain yang belum dikonfigurasi.");
+    return <div className="text-red-600 p-4">⚠️ Ada section yang belum dikonfigurasi.</div>;
   }
+
+  // Validasi durasi: cek apakah durasi aktif tab sudah diisi
+  const isDurationValid = duration !== "" && duration !== "0" && Number(duration) > 0;
 
   const existingIds = questions.map((q) => Number(q.id));
 
@@ -226,12 +229,18 @@ export default function ManageQuestions({
             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="E.g. 30"
-              className="pl-9 text-sm"
+              className={cn(
+                "pl-9 text-sm",
+                !isDurationValid && "border-red-400 focus-visible:ring-red-400"
+              )}
               value={duration}
               onChange={(e) => setDuration(e.target.value.replace(/\D/, ""))}
               inputMode="numeric"
             />
           </div>
+          {!isDurationValid && (
+            <p className="text-red-500 text-xs mt-1">⚠️ Durasi wajib diisi (menit)</p>
+          )}
         </div>
         <div>
           <div>
@@ -284,11 +293,11 @@ export default function ManageQuestions({
         <div className="space-y-3">
           {questions.map((q, idx) => {
             // For DISC questions, show first option text instead of question_text to avoid duplicate appearance
-            const displayText = 
+            const displayText =
               activeType === "DISC" && q.options && Object.keys(q.options).length > 0
                 ? Object.values(q.options)[0]
                 : q.question_text || "Soal tidak ada";
-            
+
             return (
               <div
                 key={q.id}
@@ -341,6 +350,10 @@ export default function ManageQuestions({
             onClick={async () => {
               const hasEmpty = Object.values(sectionIds).some((sid) => !sid);
               if (hasEmpty) return;
+              if (!isDurationValid) {
+                alert(`⚠️ Harap isi durasi untuk tab ${getTypeLabel(activeType)} terlebih dahulu.`);
+                return;
+              }
               const ok = await syncAllSections();
               if (ok) onNext();
             }}
@@ -358,6 +371,10 @@ export default function ManageQuestions({
             onClick={async () => {
               const hasEmpty = Object.values(sectionIds).some((sid) => !sid);
               if (hasEmpty) return;
+              if (!isDurationValid) {
+                alert(`⚠️ Harap isi durasi untuk tab ${getTypeLabel(activeType)} terlebih dahulu.`);
+                return;
+              }
               const ok = await syncAllSections();
               if (ok) onNext();
             }}

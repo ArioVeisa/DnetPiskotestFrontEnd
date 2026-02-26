@@ -73,6 +73,8 @@ export function QuizPage({
   const [answers, setAnswers] = useState<Record<number, string | DiscAnswer>>({});
   const [flags, setFlags] = useState<Record<number, boolean>>({});
   const [showReminder, setShowReminder] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // ✅ BARU
+  const [hasUnansweredOnFinish, setHasUnansweredOnFinish] = useState(false); // ✅ BARU
   const [current, setCurrent] = useState(0);
   const [timeExpired, setTimeExpired] = useState(false);
   const [showTimeOverDialog, setShowTimeOverDialog] = useState(false);
@@ -86,7 +88,7 @@ export function QuizPage({
   const handleTimerExpire = () => {
     setTimeExpired(true);
     setShowTimeOverDialog(true);
-    
+
     // Save answers terlebih dahulu ke state (melalui onFinish dengan skipToNextTest = true)
     // skipToNextTest = true berarti hanya simpan answers, tidak ubah step
     if (Object.keys(answers).length > 0) {
@@ -232,11 +234,11 @@ export function QuizPage({
     const question = questions[idx];
     const questionId = question?.id;
     const ref = questionId ? questionRefs.current[questionId] : questionRefs.current[idx];
-    
+
     if (ref) {
-      ref.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center' 
+      ref.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
       });
       setCurrent(idx); // Update current for sidebar highlighting
     }
@@ -264,19 +266,11 @@ export function QuizPage({
   };
 
   const handleFinishClick = () => {
-    // Jika waktu habis, langsung submit tanpa validasi
+    // Jika waktu habis, langsung submit tanpa konfirmasi
     if (timeExpired) {
-      // Clear cache setelah test selesai
-      try {
-        localStorage.removeItem(cacheKey);
-      } catch {
-        // Ignore cache errors
-      }
+      try { localStorage.removeItem(cacheKey); } catch { /* ignore */ }
       onFinish(answers);
-      // Setelah submit, trigger onExpire untuk skip ke test berikutnya
-      setTimeout(() => {
-        onExpire();
-      }, 100);
+      setTimeout(() => { onExpire(); }, 100);
       return;
     }
 
@@ -284,33 +278,32 @@ export function QuizPage({
       const answerKey = question.id;
       const answer = answerKey ? answers[answerKey] : undefined;
       if (question.questionType === 'DISC') {
-        // Untuk DISC, pastikan most dan least sudah dipilih
         return !answer || typeof answer === 'string' || !answer.most || !answer.least;
       } else {
-        // Untuk tipe lain, pastikan ada jawaban
         return !answer;
       }
     });
-    
+
     // Untuk DISC & CAAS, tidak boleh submit jika belum lengkap
     if (hasUnanswered && (isDisc || isCaas)) {
       setShowReminder(true);
     } else {
-      // Clear cache setelah test selesai
-      try {
-        localStorage.removeItem(cacheKey);
-        // console.log("🗑️ Cleared answers cache after test completion"); // Debug logging removed
-      } catch {
-        // console.error("❌ Error clearing cache:", error); // Debug logging removed
-      }
-      onFinish(answers);
+      // ✅ Tampilkan confirmation modal terlebih dahulu
+      setHasUnansweredOnFinish(hasUnanswered);
+      setShowConfirmModal(true);
     }
+  };
+
+  const handleConfirmFinish = () => {
+    setShowConfirmModal(false);
+    try { localStorage.removeItem(cacheKey); } catch { /* ignore */ }
+    onFinish(answers);
   };
 
   /* Pastikan current selalu valid */
   const safeIndex = Math.min(Math.max(current, 0), questions.length - 1);
   const currentQuestion = questions[safeIndex];
-  
+
   // Render single question (for DISC/CAAS)
   const renderSingleQuestion = (question: Question, idx: number) => {
     const questionKey = question.id || idx;
@@ -318,16 +311,16 @@ export function QuizPage({
     const currentAnswer = answerKey ? answers[answerKey] : undefined;
     const isFlagged = answerKey ? flags[answerKey] || false : false;
 
-    if ((question.questionType === 'DISC' && question.discOptions) || 
-        (question.options && question.options.length === 4 && 
-         question.text && question.text.toLowerCase().includes('most') && 
-         question.text.toLowerCase().includes('least'))) {
+    if ((question.questionType === 'DISC' && question.discOptions) ||
+      (question.options && question.options.length === 4 &&
+        question.text && question.text.toLowerCase().includes('most') &&
+        question.text.toLowerCase().includes('least'))) {
       return (
         <DiscQuestionCard
           key={questionKey}
           question={{
             text: question.text,
-            discOptions: question.discOptions || 
+            discOptions: question.discOptions ||
               question.options.map((opt, index) => ({
                 id: index.toString(),
                 text: opt,
@@ -344,7 +337,7 @@ export function QuizPage({
           isFlagged={isFlagged}
           questionNumber={idx + 1}
           totalQuestions={questions.length}
-          onPrevious={() => {}} // Disabled - no previous button
+          onPrevious={() => { }} // Disabled - no previous button
           onNext={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
           canGoPrevious={false} // Always false - no previous allowed
           canGoNext={idx < questions.length - 1 && !timeExpired}
@@ -404,7 +397,7 @@ export function QuizPage({
       <div className="flex-1">
         {isFast ? (
           /* Scroll view for Fast Accuracy - show all questions */
-          <div 
+          <div
             ref={scrollContainerRef}
             className="max-h-[calc(100vh-200px)] overflow-y-auto space-y-6 pr-2"
             style={{ scrollBehavior: 'smooth' }}
@@ -449,9 +442,8 @@ export function QuizPage({
                     ].join(" ")}
                   >
                     <Flag
-                      className={`w-4 h-4 ${
-                        currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
-                      }`}
+                      className={`w-4 h-4 ${currentQuestion.id && flags[currentQuestion.id] ? "text-white" : "text-yellow-500"
+                        }`}
                     />
                     <span className={currentQuestion.id && flags[currentQuestion.id] ? "text-white" : ""}>
                       Mark for Review
@@ -510,7 +502,7 @@ export function QuizPage({
             {questions.map((question, i) => {
               let style =
                 "w-8 h-8 rounded flex items-center justify-center border cursor-pointer transition";
-              
+
               // Prioritas: Current > Flagged (hanya untuk non-Fast) > Answered > Default
               if (i === safeIndex) {
                 // Current question selalu biru
@@ -521,11 +513,11 @@ export function QuizPage({
               } else if (question.id && answers[question.id]) {
                 // Check if answer is complete based on question type
                 const answer = answers[question.id];
-                const isComplete = question.questionType === 'DISC' 
-                  ? typeof answer === 'object' && answer !== null && 
-                    (answer as DiscAnswer).most && (answer as DiscAnswer).least
+                const isComplete = question.questionType === 'DISC'
+                  ? typeof answer === 'object' && answer !== null &&
+                  (answer as DiscAnswer).most && (answer as DiscAnswer).least
                   : true; // For non-DISC, any answer is complete
-                
+
                 if (isComplete) {
                   style += " bg-green-500 text-white border-green-500";
                 } else {
@@ -536,10 +528,10 @@ export function QuizPage({
               }
 
               return (
-                <button 
-                  key={i} 
-                  className={style} 
-                  onClick={() => handleNavigationClick(i)} 
+                <button
+                  key={i}
+                  className={style}
+                  onClick={() => handleNavigationClick(i)}
                   disabled={timeExpired}
                 >
                   {i + 1}
@@ -565,17 +557,17 @@ export function QuizPage({
           </div>
         </div>
         {!timeExpired && (
-          // Sembunyikan tombol Finish untuk DISC/CAAS/Fast Accuracy sampai semua terisi
-          (isDisc || isCaas || isFast) ? isAllAnswered() : true
+          // Sembunyikan tombol Finish hanya untuk DISC/CAAS sampai semua terisi; Fast Accuracy selalu tampil
+          (isDisc || isCaas) ? isAllAnswered() : true
         ) && !timeExpired && (
-          <Button
-            onClick={handleFinishClick}
-            className="mt-4 w-full"
-            variant="default"
-          >
-            Finish Test
-          </Button>
-        )}
+            <Button
+              onClick={handleFinishClick}
+              className="mt-4 w-full"
+              variant="default"
+            >
+              Finish Test
+            </Button>
+          )}
         {timeExpired && (
           <Button
             onClick={handleFinishClick}
@@ -624,6 +616,62 @@ export function QuizPage({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* ✅ Confirm Finish Modal */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="max-w-md">
+          <DialogTitle className="sr-only">Konfirmasi Selesai</DialogTitle>
+          <div className="flex flex-col items-center py-4">
+            {hasUnansweredOnFinish ? (
+              <>
+                <div className="bg-yellow-100 rounded-full p-4 mb-4 flex items-center justify-center">
+                  <AlertTriangle className="w-12 h-12 text-yellow-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Soal Belum Selesai</h3>
+                <p className="text-gray-600 text-center mb-2">
+                  Masih ada soal yang <span className="font-semibold text-yellow-600">belum dijawab</span>.
+                </p>
+                <p className="text-gray-500 text-center text-sm mb-6">
+                  Apakah Anda yakin ingin mengakhiri tes sekarang?
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="bg-blue-100 rounded-full p-4 mb-4 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Selesaikan Tes?</h3>
+                <p className="text-gray-600 text-center mb-2">
+                  Semua soal telah dijawab. 🎉
+                </p>
+                <p className="text-gray-500 text-center text-sm mb-6">
+                  Apakah Anda yakin ingin mengakhiri dan mengirim jawaban?
+                </p>
+              </>
+            )}
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1"
+              >
+                Kembali
+              </Button>
+              <Button
+                onClick={handleConfirmFinish}
+                className={hasUnansweredOnFinish
+                  ? "flex-1 bg-yellow-500 hover:bg-yellow-600 text-white"
+                  : "flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                }
+              >
+                Ya, Selesaikan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Time Over Dialog */}
       <Dialog open={showTimeOverDialog} onOpenChange={setShowTimeOverDialog}>

@@ -2,22 +2,21 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useResultCandidates } from "./hooks/use-result-candidates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Chart, ChartConfiguration } from "chart.js/auto";
-import { Download } from "lucide-react";
+import { Download, AlertCircle, RefreshCw } from "lucide-react";
 import { generateDownloadContent } from "../../utils/generate-download-content";
 
 export default function ResultCandidatePage() {
   const params = useParams();
   const id = params.id as string;
-  const { data, loading, error } = useResultCandidates(id);
+  const { data, loading, error, retry } = useResultCandidates(id);
 
   const chartMostRef = useRef<HTMLCanvasElement>(null);
   const chartLeastRef = useRef<HTMLCanvasElement>(null);
@@ -50,7 +49,7 @@ export default function ResultCandidatePage() {
     const allValues = data.map(d => d.value);
     const minValue = Math.min(...allValues);
     const maxValue = Math.max(...allValues);
-    
+
     // Set Y-axis range sesuai dengan gambar Excel
     let yMin, yMax;
     if (title.includes("MOST")) {
@@ -94,7 +93,7 @@ export default function ResultCandidatePage() {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: { 
+          tooltip: {
             enabled: true,
             callbacks: {
               title: () => title,
@@ -112,11 +111,11 @@ export default function ResultCandidatePage() {
             }
           },
           y: {
-            grid: { 
+            grid: {
               color: "#f3f4f6"
             },
             border: { display: true, color: '#e5e7eb' },
-            ticks: { 
+            ticks: {
               stepSize: title.includes("MOST") ? 5 : 2, // Sesuai dengan gambar Excel
               color: '#374151',
               font: { size: 11 }
@@ -190,12 +189,36 @@ export default function ResultCandidatePage() {
   if (error && !data) {
     return (
       <div className="container mx-auto p-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error || "Gagal memuat data kandidat"}
-          </AlertDescription>
-        </Alert>
+        <Dialog open={true}>
+          <DialogContent className="max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+            <DialogTitle className="sr-only">Gagal Memuat Data</DialogTitle>
+            <div className="flex flex-col items-center py-6 gap-4">
+              <div className="bg-red-100 rounded-full p-4">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Gagal Memuat Data</h2>
+              <p className="text-gray-600 text-center text-sm">
+                {error}
+              </p>
+              <div className="flex gap-3 w-full mt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => window.history.back()}
+                >
+                  Kembali
+                </Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                  onClick={retry}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Coba Lagi
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -222,16 +245,6 @@ export default function ResultCandidatePage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Warning jika menggunakan dummy data */}
-      {error && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            ⚠️ Data yang ditampilkan adalah data demo karena API tidak tersedia. Error: {error}
-          </AlertDescription>
-        </Alert>
-      )}
-      
       {/* Profile Header */}
       <Card className="p-6">
         <div className="flex items-center justify-between">
@@ -376,7 +389,7 @@ export default function ResultCandidatePage() {
               const jobParts = job.split(' (');
               const title = jobParts[0];
               const subtitle = jobParts[1] ? jobParts[1].replace(')', '') : '';
-              
+
               return (
                 <div
                   key={index}
@@ -502,26 +515,26 @@ export default function ResultCandidatePage() {
               } catch (error) {
                 // Silent fail, use text fallback
               }
-              
+
               // Generate PDF content yang sama dengan view result
               const htmlContent = generateDownloadContent(data, logoBase64);
-              
+
               // Import html2pdf secara dinamis
               const html2pdf = (await import('html2pdf.js')).default;
-              
+
               const opt = {
                 margin: [0.5, 0.5, 0.5, 0.5],
                 filename: `${data.name.replace(/\s+/g, '_')}_psychotest_report.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
+                html2canvas: {
                   scale: 2,
                   useCORS: true, // Enable CORS untuk load logo
                   allowTaint: true, // Allow taint untuk load external images
                   backgroundColor: '#ffffff',
                 },
-                jsPDF: { 
-                  unit: 'in', 
-                  format: 'a4', 
+                jsPDF: {
+                  unit: 'in',
+                  format: 'a4',
                   orientation: 'portrait',
                   compress: true
                 },

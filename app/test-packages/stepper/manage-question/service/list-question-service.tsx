@@ -63,14 +63,23 @@ export interface TestWithSectionsResponse {
 /* ================================================================
  * MAPPER
  * ================================================================ */
+// Normalize question_type: 'disc' -> 'DISC', 'caas' -> 'CAAS', 'teliti' -> 'teliti'
+function normalizeQuestionType(qt: string): QuestionType {
+  const lower = qt.toLowerCase();
+  if (lower === 'disc') return 'DISC';
+  if (lower === 'caas') return 'CAAS';
+  return 'teliti';
+}
+
 function mapQuestion(raw: QuestionResponse): Question {
   const detail = raw.question_detail;
+  const normalizedType = normalizeQuestionType(raw.question_type);
 
   // Fallback text kalau question_text kosong
   const qText =
     detail?.question_text?.trim() ||
     raw.question_text?.trim() ||
-    `(${raw.question_type}) Soal #${raw.question_id ?? raw.id}`;
+    `(${normalizedType}) Soal #${raw.question_id ?? raw.id}`;
 
   const category = String(detail?.category_id ?? raw.category_id ?? "");
   const mediaPath = detail?.media_path ?? raw.media_path ?? undefined;
@@ -79,7 +88,7 @@ function mapQuestion(raw: QuestionResponse): Question {
 
   return {
     id: String(raw.id), // Gunakan test_question.id untuk delete, bukan question_id
-    type: raw.question_type,
+    type: normalizedType, // ✅ normalized type
     question_text: qText, // ✅ selalu ada isi
     category,
     mediaUrl: mediaPath ?? undefined,
@@ -116,9 +125,21 @@ export const listQuestionService = {
         `/tests-public/${testId}/with-sections`
       );
 
+      // 🔍 DEBUG: log raw API response
+      console.group(`[listQuestionService] getSectionQuestions(testId=${testId}, sectionId=${sectionId}, type=${type})`);
+      console.log("Raw sections from API:", res.data.data.sections.map(s => ({
+        section_id: s.section_id,
+        section_type: s.section_type,
+        questions_count: s.questions.length,
+        questions_types: s.questions.map(q => q.question_type),
+      })));
+      console.groupEnd();
+
       const section = res.data.data.sections.find(
         (s) => s.section_id === sectionId
       );
+
+      console.log(`[listQuestionService] Found section:`, section ? { section_id: section.section_id, section_type: section.section_type, questions_count: section.questions.length } : 'NOT FOUND');
 
       if (!section) {
         return { questions: [], duration_minutes: 0, question_count: 0 };
@@ -126,7 +147,10 @@ export const listQuestionService = {
 
       let data = section.questions;
       if (type) {
-        data = data.filter((q) => q.question_type === type);
+        const beforeFilter = data.length;
+        // ✅ Case-insensitive filter: 'disc' === 'DISC', 'caas' === 'CAAS'
+        data = data.filter((q) => q.question_type.toLowerCase() === type.toLowerCase());
+        console.log(`[listQuestionService] Filter by question_type='${type}' (case-insensitive): ${beforeFilter} -> ${data.length} questions`);
       }
 
       return {
@@ -138,7 +162,7 @@ export const listQuestionService = {
       if (axios.isAxiosError(error)) {
         throw new Error(
           (error.response?.data as { message?: string })?.message ??
-            "Gagal load pertanyaan dari test/section"
+          "Gagal load pertanyaan dari test/section"
         );
       }
       throw new Error("Terjadi error tidak dikenal saat load pertanyaan");

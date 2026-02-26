@@ -104,6 +104,10 @@ export default function AddQuestionDialog({
           await onSave(questionId, activeType);
         }
       }
+      
+      // Tunggu sebentar agar fetchQuestions selesai
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       onOpenChange(false); // close dialog setelah sukses
     } catch (error) {
       console.error("Error adding questions:", error);
