@@ -46,12 +46,20 @@ export function touchBank(id: string) {
   write(banks);
 }
 
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 export function seedBanksIfEmpty() {
   if (read().length) return;
   const now = Date.now();
   write([
     {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: "DISC",
       testType: "DISC",
       questions: [],
@@ -60,7 +68,7 @@ export function seedBanksIfEmpty() {
       updatedAt: now - 1000,
     },
     {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: "CAAS",
       testType: "CAAS",
       questions: [],
@@ -69,7 +77,7 @@ export function seedBanksIfEmpty() {
       updatedAt: now - 500,
     },
     {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: "Fast Accuracy",
       testType: "Fast Accuracy",
       questions: [],
