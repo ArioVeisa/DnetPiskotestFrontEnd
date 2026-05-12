@@ -129,20 +129,20 @@ export function useCandidateTest(token: string) {
         setCompletedAt(completedDate);
         setStep("test-completed");
       } else if (error instanceof Error && error.message.startsWith("SESSION_TIME_ERROR:")) {
-        // Handle session time validation error from backend
-        const parts = error.message.split(":");
-        if (parts.length >= 4) {
-          const startDate = parts[1] || undefined;
-          const endDate = parts[2] || undefined;
-          const message = parts.slice(3).join(":"); // Handle message that might contain colons
-          
+        try {
+          const rawPayload = error.message.replace("SESSION_TIME_ERROR:", "");
+          const parsed = JSON.parse(decodeURIComponent(rawPayload)) as {
+            startDate?: string;
+            endDate?: string;
+            message?: string;
+          };
+
           setSessionTimeError({
             show: true,
-            startDate,
-            endDate,
+            startDate: parsed.startDate || undefined,
+            endDate: parsed.endDate || undefined,
           });
-        } else {
-          // Fallback to frontend validation
+        } catch {
           setError("Test session time validation failed");
         }
       } else {

@@ -171,8 +171,12 @@ export const candidateService = {
           
           // Handle session time validation errors
           if (errorData?.error === 'TEST_NOT_STARTED' || errorData?.error === 'TEST_SESSION_ENDED') {
-            // Throw error with start_date and end_date for frontend validation
-            throw new Error(`SESSION_TIME_ERROR:${errorData.start_date || ''}:${errorData.end_date || ''}:${errorData.message || 'Test session time validation failed'}`);
+            // Encode payload so ISO datetime values with ':' are parsed safely on the client.
+            throw new Error(`SESSION_TIME_ERROR:${encodeURIComponent(JSON.stringify({
+              startDate: errorData.start_date || '',
+              endDate: errorData.end_date || '',
+              message: errorData.message || 'Test session time validation failed',
+            }))}`);
           }
           
           // Handle test already completed
