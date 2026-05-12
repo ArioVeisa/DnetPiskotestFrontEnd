@@ -184,13 +184,18 @@ export default function CandidatesDistributions({
     }
   }, [candidates.length, sentAll]);
 
-  function formatDate(date: Date | null): string | undefined {
+  function formatDateTime(date: Date | null): string | undefined {
     if (!date) return undefined;
-    // Bangun string tanggal lokal (YYYY-MM-DD) tanpa konversi timezone ke UTC
+
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+
+    // Kirim datetime lokal supaya backend menyimpan jam sesi persis seperti input user.
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
   }
 
   /* =========== actions =========== */
@@ -221,8 +226,8 @@ export default function CandidatesDistributions({
       const distributionResult = await createDistribution({
         test_id: testPackageId,
         session_name: 'Test Distribution Session', // Backend will generate name with date
-        start_date: formatDate(sessionStart)!,
-        end_date: formatDate(sessionEnd)!,
+        start_date: formatDateTime(sessionStart)!,
+        end_date: formatDateTime(sessionEnd)!,
       });
 
       const newDistributionId = distributionResult.data.id;

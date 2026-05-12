@@ -58,6 +58,7 @@ export async function fetchDistributions(): Promise<Distribution[]> {
         name: string;
         target_position?: string;
         started_date: string;
+        ended_date?: string | null;
         candidates_count: number;
         status: string;
         icon_path?: string | null;
@@ -68,7 +69,7 @@ export async function fetchDistributions(): Promise<Distribution[]> {
         testName: data.name,
         category: data.target_position || 'Managerial',
         startDate: data.started_date,
-        endDate: null, // Backend doesn't provide end_date
+        endDate: data.ended_date || null,
         candidatesTotal: data.candidates_count,
         status: data.status === 'Completed' ? 'Completed' : 
                 data.status === 'In Progress' ? 'Ongoing' : 
